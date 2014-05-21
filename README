@@ -1,0 +1,6 @@
+This is the repository of the first stab at REDPy.
+
+Currently, we're working on developing objects and methods to handle
+the data with a brute-force approach, then scaling it after that.
+
+Infrastructure for the win!
