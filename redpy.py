@@ -7,6 +7,7 @@
 # Based on codes by Kate Allstadt, Josh Carmichael, and others
 #
 # Requires ObsPy for waveform handling (https://github.com/obspy/obspy)
+# Requires PyTables for database handling (http://www.pytables.org)
 
 import sys
 import scipy
@@ -19,6 +20,70 @@ from obspy.fdsn import Client
 from obspy import UTCDateTime
 from obspy.signal.trigger import classicSTALTA, triggerOnset
 from obspy.core.trace import Trace
+from tables import *
+
+class Triggers(IsDescription):
+
+    """
+    Defines the columns in the "Repeater Catalog" table
+
+    id: unique ID number for the event (integer)
+    startTime: UTC time of start of the waveform (string)
+    waveform: Waveform data (ndarray)
+    windowStart: "trigger" time, in samples from start (integer)
+    windowCoeff: amplitude scaling for cross-correlation (float)
+    windowFFT: Fourier transform of window (complex ndarray)
+
+    Needs work to figure out how to adjust the shape of the waveform and
+    windowFFT columns when the window length and padding around the triggers
+    are not the same from station to station
+    """
+
+    id = Int32Col(shape=(), pos=0)
+    startTime = StringCol(itemsize=32, pos=1)
+    waveform = Float64Col(shape=(3001,), pos=2)
+    windowStart = Int32Col(shape=(), pos=3)
+    windowCoeff = Float64Col(shape=(), pos=4)
+    windowFFT = ComplexCol(shape=(512,), itemsize=16, pos=5)
+
+
+def initializeTable(groupName, groupDesc, scnl, samprate=100.0, winlen=512,
+    ptrig=10.0, atrig=20.0, fmin=1.0, fmax=10.0, title="REDPy Catalog",
+    filename="redtable.h5"):
+
+    """
+    Initializes the hdf5 file with a "Repeater Catalog" table in a group
+    related to the station where the data come from.
+
+    groupName: Short string describing the name of the station, e.g., "hsr"
+    groupDesc: Longer string describing the station, "MSH: HSR-EHZ-UW"
+    scnl: List fully describing station, ["HSR", "EHZ", "UW", "--"]
+    samprate: Sampling rate of that station (default 100.0 Hz)
+    winlen: Length of window for cross-correlation (default 512 samples)
+    ptrig: Length of time cut prior to trigger (default 10.0 s)
+    atrig: Length of time cut after trigger (default 20.0 s)
+    fmin: Lower band for bandpass filter (default 1.0 Hz)
+    fmax: Upper band for bandpass filter (default 10.0 Hz)
+    title: Name of the table (default "REDPy Catalog")
+    filename: Filename for the table (default "redtable.h5")
+
+    Saves table to file and closes it.
+    Will need extensive editing when more tables get added...
+    """
+
+    h5file = open_file(filename, mode="w", title=title)
+    group = h5file.create_group("/", groupName, groupDesc)
+    table = h5file.create_table(group, "repeaters", Triggers,
+        "Repeater Catalog")
+    table.attrs.scnl = scnl
+    table.attrs.samprate = samprate
+    table.attrs.windowLength = winlen
+    table.attrs.fmin = fmin
+    table.attrs.fmax = fmax
+
+    table.flush()
+    h5file.close()
+
 
 def getIRIS(
     date, sta, chan, net, loc="--", nsec=86400, ptrig=10.0, atrig=20.0,
@@ -50,7 +115,7 @@ def getIRIS(
 
     st = st.detrend()
     st = st.merge(method=1, fill_value=0)
-    st = st.filter('bandpass', freqmin=fmin, freqmax=fmax,
+    st = st.filter("bandpass", freqmin=fmin, freqmax=fmax,
                    corners=2, zerophase=True)
 
     return st
@@ -99,6 +164,9 @@ def trigger(
     return trigs
 
 
+
+
+# Superceded by PyTables. Keeping around for reference. 
 
 # This is the new "Trigger" class, which means 'trigger()' probably
 # needs a new name...
