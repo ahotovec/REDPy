@@ -204,6 +204,28 @@ def calcWindow(waveform, windowStart, winlen=512):
     return windowCoeff, windowFFT
 
 
+def populateTrigger(trigger, id, trig, windowStart):
+
+    """
+    Initially populates the trigger row in the PyTable.
+    
+    trigger: object pointing to the row in the table to populate
+        (e.g., h5file.root.hsr.repeaters.row)
+    id: integer id number given to this trigger, should be unique
+    trig: ObsPy trace from triggering function
+    wstart: starting sample of window
+
+    Appends this row to table
+    """
+    
+    trigger['id'] = id
+    trigger['startTime'] = trig.stats.starttime.isoformat()
+    trigger['waveform'] = trig.data
+    trigger['windowStart'] = windowStart
+    trigger['windowCoeff'], trigger['windowFFT'] = calcWindow(trig.data,
+        windowStart)
+    trigger.append()
+
 
 # These two need to be more modular and speedy! Currently VERY SLOW
 # Contemplating making a class of it...
