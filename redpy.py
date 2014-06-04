@@ -47,6 +47,21 @@ class Triggers(IsDescription):
     windowFFT = ComplexCol(shape=(512,), itemsize=16, pos=5)
 
 
+def Correlation(IsDescription):
+
+    """
+    Defines the columns in the "Correlation" table
+
+    id1: unique ID number for the first event (integer)
+    id2: unique ID number for the second event (integer)
+    ccc: cross-correlation coefficient between those two events (float)    
+    """
+    
+    id1 = Int32Col(shape=(), pos=0)
+    id2 = Int32Col(shape=(), pos=1)
+    ccc = Float64Col(shape=(), pos=2)
+
+
 def initializeTable(groupName, groupDesc, scnl, samprate=100.0, winlen=512,
     ptrig=10.0, atrig=20.0, fmin=1.0, fmax=10.0, title="REDPy Catalog",
     filename="redtable.h5"):
@@ -73,15 +88,20 @@ def initializeTable(groupName, groupDesc, scnl, samprate=100.0, winlen=512,
 
     h5file = open_file(filename, mode="w", title=title)
     group = h5file.create_group("/", groupName, groupDesc)
-    table = h5file.create_table(group, "repeaters", Triggers,
-        "Repeater Catalog")
-    table.attrs.scnl = scnl
-    table.attrs.samprate = samprate
-    table.attrs.windowLength = winlen
-    table.attrs.fmin = fmin
-    table.attrs.fmax = fmax
 
-    table.flush()
+    rtable = h5file.create_table(group, "repeaters", Triggers,
+        "Repeater Catalog")
+    rtable.attrs.scnl = scnl
+    rtable.attrs.samprate = samprate
+    rtable.attrs.windowLength = winlen
+    rtable.attrs.fmin = fmin
+    rtable.attrs.fmax = fmax
+    rtable.flush()
+
+    ctable = h5file.create_table(group, "correlation", Correlation,
+        "Correlation Matrix")
+    ctable.flush()
+
     h5file.close()
 
 
