@@ -47,7 +47,7 @@ class Triggers(IsDescription):
     windowFFT = ComplexCol(shape=(512,), itemsize=16, pos=5)
 
 
-def Correlation(IsDescription):
+class Correlation(IsDescription):
 
     """
     Defines the columns in the "Correlation" table
