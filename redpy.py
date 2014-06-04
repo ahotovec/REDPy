@@ -184,6 +184,25 @@ def trigger(
     return trigs
 
 
+def calcWindow(waveform, windowStart, winlen=512):
+
+    """
+    Calculates the amplitude coefficient and FFT for a window of data.
+
+    waveform: numpy array of waveform data
+    windowStart: starting sample of window
+    winlen: window length (default: 512 samples)
+
+    Returns windowCoeff and windowFFT
+    """
+
+    windowCoeff = 1/np.sqrt(sum(waveform[windowStart:(windowStart + winlen)] *
+        waveform[windowStart:(windowStart + winlen)]))
+    windowFFT = np.reshape(fft(waveform[windowStart:(windowStart + winlen)]),
+        (winlen,))
+
+    return windowCoeff, windowFFT
+
 
 
 # Superceded by PyTables. Keeping around for reference. 
@@ -203,29 +222,29 @@ def trigger(
 #
 # I need to make a new class to handle an array of triggers and any
 # operations needed for that array 
-class Trigger(Trace):
-
-    def __init__(self, trace, trigtime, winlen=512):
-        Trace.__init__(self, trace.data, trace.stats)
-        self.trigtime = trigtime
-        self.winlen = winlen
-        self.samprate = self.stats.sampling_rate
-        self.wfft, self.wcoeff = self.calcWindow()
-
-    def calcWindow(self):
-        self.wfft = np.reshape(fft(self.slice(self.trigtime,
-            self.trigtime + (self.winlen-1)/self.samprate).data),
-            (self.winlen, 1))
-        self.wcoeff = 1/np.sqrt(self.slice(self.trigtime,
-            self.trigtime + (self.winlen-1)/self.samprate).data *
-            self.slice(self.trigtime, self.trigtime +
-            (self.winlen-1)/self.samprate).data)
-        
-        return self.wfft, self.wcoeff
-
-    def updateWindow(self, newtrigtime):
-        self.trigtime = newtrigtime
-        self.wfft, self.wcoeff = self.calcWindow()
+#class Trigger(Trace):
+#
+#    def __init__(self, trace, trigtime, winlen=512):
+#        Trace.__init__(self, trace.data, trace.stats)
+#        self.trigtime = trigtime
+#        self.winlen = winlen
+#        self.samprate = self.stats.sampling_rate
+#        self.wfft, self.wcoeff = self.calcWindow()
+#
+#    def calcWindow(self):
+#        self.wfft = np.reshape(fft(self.slice(self.trigtime,
+#            self.trigtime + (self.winlen-1)/self.samprate).data),
+#            (self.winlen, 1))
+#        self.wcoeff = 1/np.sqrt(self.slice(self.trigtime,
+#            self.trigtime + (self.winlen-1)/self.samprate).data *
+#            self.slice(self.trigtime, self.trigtime +
+#            (self.winlen-1)/self.samprate).data)
+#        
+#        return self.wfft, self.wcoeff
+#
+#    def updateWindow(self, newtrigtime):
+#        self.trigtime = newtrigtime
+#        self.wfft, self.wcoeff = self.calcWindow()
 
 
 
