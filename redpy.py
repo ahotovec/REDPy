@@ -205,51 +205,6 @@ def calcWindow(waveform, windowStart, winlen=512):
 
 
 
-# Superceded by PyTables. Keeping around for reference. 
-
-# This is the new "Trigger" class, which means 'trigger()' probably
-# needs a new name...
-# It is essentially a Trace, but has a few extra fields:
-#  - trigtime: UTCDateTime of trigger from trigger()
-#  - winlen: window length in samples for the FFT
-#  - samprate: sampling rate, just for ease of calling
-#  - wfft: windowed FFT, window begins at trigtime
-#  - wcoeff: amplitude coefficient in window for normalizing the
-#            cross-correlation
-#  The idea with the window is that it's a subset of the full trace,
-#  so that I can adjust the trigger time for alignment but keep a
-#  buffer of data around the original trigger for plotting
-#
-# I need to make a new class to handle an array of triggers and any
-# operations needed for that array 
-#class Trigger(Trace):
-#
-#    def __init__(self, trace, trigtime, winlen=512):
-#        Trace.__init__(self, trace.data, trace.stats)
-#        self.trigtime = trigtime
-#        self.winlen = winlen
-#        self.samprate = self.stats.sampling_rate
-#        self.wfft, self.wcoeff = self.calcWindow()
-#
-#    def calcWindow(self):
-#        self.wfft = np.reshape(fft(self.slice(self.trigtime,
-#            self.trigtime + (self.winlen-1)/self.samprate).data),
-#            (self.winlen, 1))
-#        self.wcoeff = 1/np.sqrt(self.slice(self.trigtime,
-#            self.trigtime + (self.winlen-1)/self.samprate).data *
-#            self.slice(self.trigtime, self.trigtime +
-#            (self.winlen-1)/self.samprate).data)
-#        
-#        return self.wfft, self.wcoeff
-#
-#    def updateWindow(self, newtrigtime):
-#        self.trigtime = newtrigtime
-#        self.wfft, self.wcoeff = self.calcWindow()
-
-
-
-
-
 # These two need to be more modular and speedy! Currently VERY SLOW
 # Contemplating making a class of it...
 def xcorr_all_fft(trigs):
