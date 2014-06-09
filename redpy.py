@@ -100,6 +100,9 @@ def initializeTable(groupName, groupDesc, scnl, samprate=100.0, winlen=512,
 
     ctable = h5file.create_table(group, "correlation", Correlation,
         "Correlation Matrix")
+    ctable.attrs.order = 0
+    ctable.attrs.reachability = 0
+    ctable.attrs.coredist = 0
     ctable.flush()
 
     h5file.close()
@@ -207,7 +210,7 @@ def calcWindow(waveform, windowStart, winlen=512):
 def populateTrigger(trigger, id, trig, windowStart):
 
     """
-    Initially populates the trigger row in the PyTable.
+    Initially populates the trigger row in the 'Repeater Catalog' table.
     
     trigger: object pointing to the row in the table to populate
         (e.g., h5file.root.hsr.repeaters.row)
@@ -225,6 +228,136 @@ def populateTrigger(trigger, id, trig, windowStart):
     trigger['windowCoeff'], trigger['windowFFT'] = calcWindow(trig.data,
         windowStart)
     trigger.append()
+
+
+def appendCorrelation(corr, id1, id2, ccc):
+
+    """
+    Appends a new value to the 'Correlation Matrix' table.
+
+    corr: object pointing to the row in the table to populate
+        (e.g., h5file.root.hsr.correlation.row)
+    id1: unique id number of first trigger
+    id2: unique id number of second trigger
+    ccc: cross-correlation between the two triggers in the window
+
+    Appends this row to the table, and automatically puts the smaller of
+    the two id numbers first
+    """
+
+    corr['id1'] = min(id1, id2)
+    corr['id2'] = max(id1, id2)
+    corr['ccc'] = ccc
+    corr.append()
+
+
+def getCell(table, id, column):
+    
+    """
+    Shorthand way of getting data from the PyTable.
+
+    table: PyTable you're querying
+    id: unique id of row you want
+    column: column you want (e.g., 'windowFFT' OR position as integer)
+
+    Returns data inside that cell
+
+    While simple, can be time consuming if called a lot!
+    """
+   
+    c = '(id == {})'.format(id)
+    t = table.where(c)
+    for r in t: data = r[column]
+
+    return data
+
+
+def xcorr1x1(windowFFT1, windowFFT2, windowCoeff1, windowCoeff2):
+
+    """
+    Calculates the cross-correlation coefficient and lag for two windows.
+
+    windowFFT1: FFT of first window
+    windowFFT2: FFT of second window
+    windowCoeff1: amplitude coefficient of first window
+    windowCoeff2: amplitude coefficient of second window
+
+    Order matters for sign of lag, but not CCC.
+
+    Returns maximum cross-correlation and optimal lag (in samples)
+    """
+
+    M = len(windowFFT1)
+    coeff = windowCoeff1 * windowCoeff2
+
+    lags = np.roll(np.linspace(-M/2 + 1, M/2, M, endpoint=True),
+        M/2 + 1).astype(int)
+    cors = np.real(ifft(windowFFT1 * np.conj(windowFFT2))) * coeff
+
+    indx = np.argmax(cors)
+    maxcor = cors[indx]
+    maxlag = lags[indx]
+
+    return maxcor, maxlag
+
+
+def getClusters(ctable, cutoff=0.7):
+
+    """
+    Cuts the clustering order into clusters, defines orphans as -1
+
+    ctable: Correlation table, with clustering order in attributes
+    cutoff: Minimum coefficient to cut the clusters
+
+    Returns cluster numbers wrt. ordered list.
+    """
+
+    order = np.array(ctable.attrs.order)
+    oreach = ctable.attrs.reachability[order]
+    odist = ctable.attrs.coredist[order]
+    cluster_id = -1
+
+    oclust = np.zeros((len(oreach),))
+    for x in range(len(oreach)):
+        if oreach[x] > 1 - cutoff:
+            if odist[x] <= 1 - cutoff:
+                cluster_id += 1
+                oclust[x] = cluster_id
+            else:
+                oclust[x] = -1 # orphan
+        else:
+            oclust[x] = cluster_id
+
+    return oclust    
+
+
+def getCenters(ctable, cutoff=0.7):
+
+    """
+    Finds the "center" of each cluster (including orphans)
+    
+    ctable: Correlation table, with clustering order in attributes
+    cutoff: Minimum coefficient to cut the clusters
+
+    Returns the id numbers of cluster centers and orphans
+    """
+
+    order = np.array(ctable.attrs.order)
+    oreach = ctable.attrs.reachability[order]
+    oclust = getClusters(ctable, cutoff)
+
+    cluster_id = np.max(oclust).astype(int)
+    o = np.array(order)
+    centers = np.zeros((cluster_id + 1,)).astype(int)
+    for clusternum in range(cluster_id + 1):
+        oo = o[oclust == clusternum]
+        centers[clusternum] = oo[np.argmin(oreach[oclust == clusternum])]
+
+    orphans = o[oclust == -1]
+
+    return centers, orphans
+
+
 
 
 # These two need to be more modular and speedy! Currently VERY SLOW
