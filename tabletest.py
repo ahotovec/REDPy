@@ -32,9 +32,8 @@ rtable.flush()
 
 # Need to update this section...
 
-C = np.zeros((len(rtable), len(rtable)))
-L = np.zeros((len(rtable), len(rtable))).astype(int)
-corr = h5file.root.hsr.correlation.row
+ctable = h5file.root.hsr.correlation
+corr = ctable.row
 
 t = time.time()
 for i in range(len(rtable)):
@@ -48,20 +47,22 @@ for i in range(len(rtable)):
         fft1 = ri['windowFFT']
         coeff1 = ri['windowCoeff']
 
+    Ctmp = np.zeros((len(rtable),))
+    Ltmp = np.zeros((len(rtable),))
     for rj in tj:
         fft2 = rj['windowFFT']
         coeff2 = rj['windowCoeff']
         j = rj['id']
-        C[i, j], L[i, j] = xcorr1x1(fft1, fft2, coeff1, coeff2)
+        Ctmp[j], Ltmp[j] = xcorr1x1(fft1, fft2, coeff1, coeff2)
 
-    if max(C[i, :]) > 0.6:
+    if max(Ctmp) > 0.6:
 
-        jmax = np.argmax(C[i, :])
+        jmax = np.argmax(Ctmp)
         ti = rtable.where(ci)
         tj = rtable.where(cj)
 
         for ri in ti:
-            ri['windowStart'] = ri['windowStart'] + L[i, jmax]
+            ri['windowStart'] = ri['windowStart'] + Ltmp[jmax]
             ri['windowCoeff'], ri['windowFFT'] = calcWindow(ri['waveform'],
                 ri['windowStart'])
             ri.update()
@@ -72,18 +73,21 @@ for i in range(len(rtable)):
             fft2 = rj['windowFFT']
             coeff2 = rj['windowCoeff']
             j = rj['id']
-            C[i, j], L[i, j] = xcorr1x1(fft1, fft2, coeff1, coeff2)
+            Ctmp[j], Ltmp[j] = xcorr1x1(fft1, fft2, coeff1, coeff2)
 
     for j in range(0, i+1):
-        if C[i, j] > 0.65:
-            appendCorrelation(corr, i, j, C[i, j])
+        if Ctmp[j] > 0.65:
+            appendCorrelation(corr, i, j, Ctmp[j])
+
+    ctable.flush()
             
 
 print("Correlation done in: {:03.2f} seconds".format(time.time()-t))
 
+C = np.zeros((len(rtable),len(rtable)))
+C[ctable.cols.id1[:], ctable.cols.id2[:]] = ctable.cols.ccc[:]
 C = C + C.T + np.eye(len(C))
-C[C<0.65] = 0
-L = (L - L.T)/100.0
+
 
 # Copied from old stuff:
 maxes = np.max(C - np.eye(len(C)), axis=0)
@@ -97,8 +101,6 @@ order = ttree._ordered_list
 
 Co = C[order, :]
 Co = Co[:, order]
-Lo = L[order, :]
-Lo = Lo[:, order]
 
 # Save the ordering to the correlation table attributes
 h5file.root.hsr.correlation.attrs.order = order
@@ -114,12 +116,6 @@ ax.imshow(C, aspect='auto', vmin=0.6, vmax=1, interpolation='nearest')
 ax = fig.add_subplot(1, 2, 2)
 ax.imshow(Co, aspect='auto', vmin=0.6, vmax=1, interpolation='nearest')
 
-## Plot the L matrices (same as before, just shows how aligned they are)
-#fig = plt.figure(figsize=(12, 6))
-#ax = fig.add_subplot(1, 2, 1)
-#ax.imshow(L, aspect='auto', vmin=-5, vmax=5, interpolation='nearest', cmap='RdBu')
-#ax = fig.add_subplot(1, 2, 2)
-#ax.imshow(Lo, aspect='auto', vmin=-5, vmax=5, interpolation='nearest', cmap='RdBu')
 
 # Plot unordered, unaligned waveforms
 data = np.zeros((len(rtable), 2000))
