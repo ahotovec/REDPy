@@ -30,7 +30,7 @@ for i in range(len(trigs)):
 rtable.flush()
 
 
-print(len(rtable))
+# Need to update this section...
 
 C = np.zeros((len(rtable), len(rtable)))
 L = np.zeros((len(rtable), len(rtable))).astype(int)
@@ -114,14 +114,14 @@ ax.imshow(C, aspect='auto', vmin=0.6, vmax=1, interpolation='nearest')
 ax = fig.add_subplot(1, 2, 2)
 ax.imshow(Co, aspect='auto', vmin=0.6, vmax=1, interpolation='nearest')
 
-# Plot the L matrices (same as before, just shows how aligned they are)
-fig = plt.figure(figsize=(12, 6))
-ax = fig.add_subplot(1, 2, 1)
-ax.imshow(L, aspect='auto', vmin=-5, vmax=5, interpolation='nearest', cmap='RdBu')
-ax = fig.add_subplot(1, 2, 2)
-ax.imshow(Lo, aspect='auto', vmin=-5, vmax=5, interpolation='nearest', cmap='RdBu')
+## Plot the L matrices (same as before, just shows how aligned they are)
+#fig = plt.figure(figsize=(12, 6))
+#ax = fig.add_subplot(1, 2, 1)
+#ax.imshow(L, aspect='auto', vmin=-5, vmax=5, interpolation='nearest', cmap='RdBu')
+#ax = fig.add_subplot(1, 2, 2)
+#ax.imshow(Lo, aspect='auto', vmin=-5, vmax=5, interpolation='nearest', cmap='RdBu')
 
-
+# Plot unordered, unaligned waveforms
 data = np.zeros((len(rtable), 2000))
 fig = plt.figure(figsize=(12, 6))
 for r in rtable.iterrows():
@@ -131,6 +131,7 @@ for r in rtable.iterrows():
 ax = fig.add_subplot(1, 1, 1)
 ax.imshow(data, aspect='auto', vmin=-1, vmax=1, interpolation='nearest', cmap='RdBu')
 
+# Plot ordered, aligned waveforms
 data = np.zeros((len(rtable), 2000))
 fig = plt.figure(figsize=(12, 6))
 for r in rtable.iterrows():
@@ -140,11 +141,6 @@ for r in rtable.iterrows():
 datao = data[order, :]
 ax = fig.add_subplot(1, 1, 1)
 ax.imshow(datao, aspect='auto', vmin=-1, vmax=1, interpolation='nearest', cmap='RdBu')
-
-centers, orphans = getCenters(h5file.root.hsr.correlation)
-    
-
-
 
 
 plt.show()
