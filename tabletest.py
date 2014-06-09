@@ -47,8 +47,8 @@ for i in range(len(rtable)):
         fft1 = ri['windowFFT']
         coeff1 = ri['windowCoeff']
 
-    Ctmp = np.zeros((len(rtable),))
-    Ltmp = np.zeros((len(rtable),))
+    Ctmp = np.zeros((i+1,))
+    Ltmp = np.zeros((i+1,))
     for rj in tj:
         fft2 = rj['windowFFT']
         coeff2 = rj['windowCoeff']
