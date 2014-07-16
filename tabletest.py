@@ -65,7 +65,7 @@ for i in range(len(rtable)):
         for ri in ti:
             ri['windowStart'] = ri['windowStart'] + Ltmp[jmax]
             ri['windowCoeff'], ri['windowFFT'] = redpy.correlation.calcWindow(ri['waveform'],
-                ri['windowStart'])
+                ri['windowStart'], opt)
             ri.update()
             coeff1 = ri['windowCoeff']
             fft1 = ri['windowFFT']

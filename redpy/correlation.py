@@ -1,22 +1,22 @@
 import numpy as np
 from scipy.fftpack import fft, ifft
 
-def calcWindow(waveform, windowStart, winlen=512):
+def calcWindow(waveform, windowStart, opt):
 
     """
     Calculates the amplitude coefficient and FFT for a window of data.
 
     waveform: numpy array of waveform data
     windowStart: starting sample of window
-    winlen: window length (default: 512 samples)
+    opt: Options object describing station/run parameters
 
     Returns windowCoeff and windowFFT
     """
 
-    windowCoeff = 1/np.sqrt(sum(waveform[windowStart:(windowStart + winlen)] *
-        waveform[windowStart:(windowStart + winlen)]))
-    windowFFT = np.reshape(fft(waveform[windowStart:(windowStart + winlen)]),
-        (winlen,))
+    windowCoeff = 1/np.sqrt(sum(waveform[windowStart:(windowStart + opt.winlen)] *
+        waveform[windowStart:(windowStart + opt.winlen)]))
+    windowFFT = np.reshape(fft(waveform[windowStart:(windowStart + opt.winlen)]),
+        (opt.winlen,))
 
     return windowCoeff, windowFFT
 
