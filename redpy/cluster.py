@@ -29,6 +29,7 @@ def getClusters(ctable, cutoff=0.7):
             oclust[x] = cluster_id
 
     return oclust
+
     
 def getCenters(ctable, cutoff=0.7):
 

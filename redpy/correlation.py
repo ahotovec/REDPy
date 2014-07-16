@@ -20,6 +20,7 @@ def calcWindow(waveform, windowStart, winlen=512):
 
     return windowCoeff, windowFFT
 
+
 def xcorr1x1(windowFFT1, windowFFT2, windowCoeff1, windowCoeff2):
 
     """

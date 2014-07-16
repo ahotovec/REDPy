@@ -12,24 +12,24 @@ from obspy import UTCDateTime
 Test script for PyTables functionality
 """
 
-redpy.table.initializeTable("hsr", "MSH: HSR-EHZ-UW", ["HSR", "EHZ", "UW", "--"],
-    filename="test.h5") 
+opt = redpy.config.Options(filename="test.h5")
+
+redpy.table.initializeTable(opt) 
 
 t = UTCDateTime("2004-09-24")
-st = redpy.trigger.getIRIS(t, "HSR", "EHZ", "UW", nsec=3600)
-trigs = redpy.trigger.trigger(st)
+st = redpy.trigger.getIRIS(t, opt, nsec=3600)
+trigs = redpy.trigger.trigger(st, opt)
 
-h5file = open_file("test.h5", "a")
-rtable = h5file.root.hsr.repeaters
-
-wstart = 1000 # Manual definition of window for now
+h5file = open_file(opt.filename, "a")
+rtable = h5file.root.hsr.repeaters # not sure how to not have this hard-coded (hsr refers
+                                   # to a specific group, optimally I'd like to have this
+                                   # so that it can be referenced by "opt"
 
 for i in range(len(trigs)):
-    redpy.table.populateTrigger(rtable.row, i, trigs[i], wstart)
+    redpy.table.populateTrigger(rtable.row, i, trigs[i], opt)
 
 # Write to disk
 rtable.flush()
-
 
 # Need to update this section... look at coral's crosscorr, see if that can speed this up
 

@@ -25,6 +25,7 @@ class Triggers(IsDescription):
     windowStart = Int32Col(shape=(), pos=3)
     windowCoeff = Float64Col(shape=(), pos=4)
     windowFFT = ComplexCol(shape=(512,), itemsize=16, pos=5)
+
     
 class Correlation(IsDescription):
 
@@ -39,41 +40,33 @@ class Correlation(IsDescription):
     id1 = Int32Col(shape=(), pos=0)
     id2 = Int32Col(shape=(), pos=1)
     ccc = Float64Col(shape=(), pos=2)
+
     
-def initializeTable(groupName, groupDesc, scnl, samprate=100.0, winlen=512,
-    ptrig=10.0, atrig=20.0, fmin=1.0, fmax=10.0, title="REDPy Catalog",
-    filename="redtable.h5"):
+def initializeTable(opt):
 
     """
-    Initializes the hdf5 file with a "Repeater Catalog" table in a group
-    related to the station where the data come from.
-
-    groupName: Short string describing the name of the station, e.g., "hsr"
-    groupDesc: Longer string describing the station, "MSH: HSR-EHZ-UW"
-    scnl: List fully describing station, ["HSR", "EHZ", "UW", "--"]
-    samprate: Sampling rate of that station (default 100.0 Hz)
-    winlen: Length of window for cross-correlation (default 512 samples)
-    ptrig: Length of time cut prior to trigger (default 10.0 s)
-    atrig: Length of time cut after trigger (default 20.0 s)
-    fmin: Lower band for bandpass filter (default 1.0 Hz)
-    fmax: Upper band for bandpass filter (default 10.0 Hz)
-    title: Name of the table (default "REDPy Catalog")
-    filename: Filename for the table (default "redtable.h5")
+    Initializes the hdf5 file with a "Repeater Catalog" table and a "Correlation Matrix"
+    table in a group related to the station where the data come from. This is defined
+    via the redpy.config.Options class.
+    
+    opt: an Options object describing the table/run
 
     Saves table to file and closes it.
     Will need extensive editing when more tables get added...
     """
 
-    h5file = open_file(filename, mode="w", title=title)
-    group = h5file.create_group("/", groupName, groupDesc)
+    h5file = open_file(opt.filename, mode="w", title=opt.title)
+    group = h5file.create_group("/", opt.groupName, opt.groupDesc)
 
     rtable = h5file.create_table(group, "repeaters", Triggers,
         "Repeater Catalog")
-    rtable.attrs.scnl = scnl
-    rtable.attrs.samprate = samprate
-    rtable.attrs.windowLength = winlen
-    rtable.attrs.fmin = fmin
-    rtable.attrs.fmax = fmax
+    rtable.attrs.scnl = [opt.station, opt.channel, opt.network, opt.location]
+    rtable.attrs.samprate = opt.samprate
+    rtable.attrs.windowLength = opt.winlen
+    rtable.attrs.ptrig = opt.ptrig
+    rtable.attrs.atrig = opt.atrig
+    rtable.attrs.fmin = opt.fmin
+    rtable.attrs.fmax = opt.fmax
     rtable.flush()
 
     ctable = h5file.create_table(group, "correlation", Correlation,
@@ -84,8 +77,9 @@ def initializeTable(groupName, groupDesc, scnl, samprate=100.0, winlen=512,
     ctable.flush()
 
     h5file.close()
+
     
-def populateTrigger(trigger, id, trig, windowStart):
+def populateTrigger(trigger, id, trig, opt):
 
     """
     Initially populates the trigger row in the 'Repeater Catalog' table.
@@ -94,10 +88,12 @@ def populateTrigger(trigger, id, trig, windowStart):
         (e.g., h5file.root.hsr.repeaters.row)
     id: integer id number given to this trigger, should be unique
     trig: ObsPy trace from triggering function
-    wstart: starting sample of window
+    opt: Options object describing station/run parameters
 
     Appends this row to table
     """
+    
+    windowStart = int(opt.ptrig*opt.samprate)
     
     trigger['id'] = id
     trigger['startTime'] = trig.stats.starttime.isoformat()
@@ -106,6 +102,7 @@ def populateTrigger(trigger, id, trig, windowStart):
     trigger['windowCoeff'], trigger['windowFFT'] = redpy.correlation.calcWindow(trig.data,
         windowStart)
     trigger.append()    
+
 
 def appendCorrelation(corr, id1, id2, ccc):
 
