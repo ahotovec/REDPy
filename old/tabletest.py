@@ -1,23 +1,22 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import time
-import redpy
-
 from tables import *
-from redpy.optics import *
+from redpy import *
+import numpy as np
+from scipy.fftpack import fft
 from obspy import UTCDateTime
-
+import time
 
 """
 Test script for PyTables functionality
 """
 
-redpy.table.initializeTable("hsr", "MSH: HSR-EHZ-UW", ["HSR", "EHZ", "UW", "--"],
+
+initializeTable("hsr", "MSH: HSR-EHZ-UW", ["HSR", "EHZ", "UW", "--"],
     filename="test.h5") 
 
 t = UTCDateTime("2004-09-24")
-st = redpy.trigger.getIRIS(t, "HSR", "EHZ", "UW", nsec=3600)
-trigs = redpy.trigger.trigger(st)
+st = getIRIS(t, "HSR", "EHZ", "UW", nsec=3600)
+trigs = trigger(st)
+trigs = trigs[0:100]
 
 h5file = open_file("test.h5", "a")
 rtable = h5file.root.hsr.repeaters
@@ -25,13 +24,13 @@ rtable = h5file.root.hsr.repeaters
 wstart = 1000 # Manual definition of window for now
 
 for i in range(len(trigs)):
-    redpy.table.populateTrigger(rtable.row, i, trigs[i], wstart)
+    populateTrigger(rtable.row, i, trigs[i], wstart)
 
 # Write to disk
 rtable.flush()
 
 
-# Need to update this section... look at coral's crosscorr, see if that can speed this up
+# Need to update this section...
 
 ctable = h5file.root.hsr.correlation
 corr = ctable.row
@@ -54,7 +53,7 @@ for i in range(len(rtable)):
         fft2 = rj['windowFFT']
         coeff2 = rj['windowCoeff']
         j = rj['id']
-        Ctmp[j], Ltmp[j] = redpy.correlation.xcorr1x1(fft1, fft2, coeff1, coeff2)
+        Ctmp[j], Ltmp[j] = xcorr1x1(fft1, fft2, coeff1, coeff2)
 
     if max(Ctmp) > 0.6:
 
@@ -64,7 +63,7 @@ for i in range(len(rtable)):
 
         for ri in ti:
             ri['windowStart'] = ri['windowStart'] + Ltmp[jmax]
-            ri['windowCoeff'], ri['windowFFT'] = redpy.correlation.calcWindow(ri['waveform'],
+            ri['windowCoeff'], ri['windowFFT'] = calcWindow(ri['waveform'],
                 ri['windowStart'])
             ri.update()
             coeff1 = ri['windowCoeff']
@@ -74,11 +73,11 @@ for i in range(len(rtable)):
             fft2 = rj['windowFFT']
             coeff2 = rj['windowCoeff']
             j = rj['id']
-            Ctmp[j], Ltmp[j] = redpy.correlation.xcorr1x1(fft1, fft2, coeff1, coeff2)
+            Ctmp[j], Ltmp[j] = xcorr1x1(fft1, fft2, coeff1, coeff2)
 
     for j in range(0, i+1):
         if Ctmp[j] > 0.65:
-            redpy.table.appendCorrelation(corr, i, j, Ctmp[j])
+            appendCorrelation(corr, i, j, Ctmp[j])
 
     ctable.flush()
             

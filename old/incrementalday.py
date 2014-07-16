@@ -53,12 +53,16 @@ for n in range(2,len(trigs)):
         L = Ltmp
         X = Xtmp
         wcoeff = wcoefftmp
-    print(100.0*n/len(trigs)) # print % of events done
+#    print(100.0*n/len(trigs)) # print % of events done
 
 print("Done in: " + repr(time.time()-t))
 
 maxes = np.max(C - np.eye(len(C)), axis=0)
 print("Orphans: " + repr(100.0*len(maxes[maxes<0.7])/len(C)) + "%")
+
+print(C[:5, :5])
+print(L[:5, :5])
+
 
 # Cluster with OPTICS
 ttree = red.setOfObjects(1-C)

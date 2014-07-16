@@ -359,7 +359,6 @@ def getCenters(ctable, cutoff=0.7):
 
 
 
-
 # These two need to be more modular and speedy! Currently VERY SLOW
 # Contemplating making a class of it...
 def xcorr_all_fft(trigs):

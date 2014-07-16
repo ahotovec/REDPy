@@ -1,0 +1,49 @@
+import numpy as np
+from scipy.fftpack import fft, ifft
+
+def calcWindow(waveform, windowStart, winlen=512):
+
+    """
+    Calculates the amplitude coefficient and FFT for a window of data.
+
+    waveform: numpy array of waveform data
+    windowStart: starting sample of window
+    winlen: window length (default: 512 samples)
+
+    Returns windowCoeff and windowFFT
+    """
+
+    windowCoeff = 1/np.sqrt(sum(waveform[windowStart:(windowStart + winlen)] *
+        waveform[windowStart:(windowStart + winlen)]))
+    windowFFT = np.reshape(fft(waveform[windowStart:(windowStart + winlen)]),
+        (winlen,))
+
+    return windowCoeff, windowFFT
+
+def xcorr1x1(windowFFT1, windowFFT2, windowCoeff1, windowCoeff2):
+
+    """
+    Calculates the cross-correlation coefficient and lag for two windows.
+
+    windowFFT1: FFT of first window
+    windowFFT2: FFT of second window
+    windowCoeff1: amplitude coefficient of first window
+    windowCoeff2: amplitude coefficient of second window
+
+    Order matters for sign of lag, but not CCC.
+
+    Returns maximum cross-correlation and optimal lag (in samples)
+    """
+
+    M = len(windowFFT1)
+    coeff = windowCoeff1 * windowCoeff2
+
+    lags = np.roll(np.linspace(-M/2 + 1, M/2, M, endpoint=True),
+        M/2 + 1).astype(int)
+    cors = np.real(ifft(windowFFT1 * np.conj(windowFFT2))) * coeff
+
+    indx = np.argmax(cors)
+    maxcor = cors[indx]
+    maxlag = lags[indx]
+
+    return maxcor, maxlag
