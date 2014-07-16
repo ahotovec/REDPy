@@ -100,7 +100,7 @@ def populateTrigger(trigger, id, trig, opt):
     trigger['waveform'] = trig.data
     trigger['windowStart'] = windowStart
     trigger['windowCoeff'], trigger['windowFFT'] = redpy.correlation.calcWindow(trig.data,
-        windowStart)
+        windowStart, opt)
     trigger.append()    
 
 
