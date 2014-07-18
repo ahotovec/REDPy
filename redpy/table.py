@@ -13,6 +13,9 @@ class Triggers(IsDescription):
     windowStart: "trigger" time, in samples from start (integer)
     windowCoeff: amplitude scaling for cross-correlation (float)
     windowFFT: Fourier transform of window (complex ndarray)
+    order: Order in the cluster ordering (integer)
+    reachability: Reachability in the cluster ordering (float)
+    coreDistance: Core distance in the cluster ordering (float)
 
     Needs work to figure out how to adjust the shape of the waveform and
     windowFFT columns when the window length and padding around the triggers
@@ -25,6 +28,9 @@ class Triggers(IsDescription):
     windowStart = Int32Col(shape=(), pos=3)
     windowCoeff = Float64Col(shape=(), pos=4)
     windowFFT = ComplexCol(shape=(512,), itemsize=16, pos=5)
+    order = Int32Col(shape=(), pos=6)
+    reachability = Float64Col(shape=(), pos=7)
+    coreDistance = Float64Col(shape=(), pos=8)
 
     
 class Correlation(IsDescription):
@@ -101,6 +107,9 @@ def populateTrigger(trigger, id, trig, opt):
     trigger['windowStart'] = windowStart
     trigger['windowCoeff'], trigger['windowFFT'] = redpy.correlation.calcWindow(trig.data,
         windowStart, opt)
+    trigger['order'] = 0
+    trigger['reachability'] = 0.0
+    trigger['coreDistance'] = 0.0
     trigger.append()    
 
 

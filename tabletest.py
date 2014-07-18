@@ -23,7 +23,7 @@ trigs = redpy.trigger.trigger(st, opt)
 h5file = open_file(opt.filename, "a")
 rtable = h5file.root.hsr.repeaters # not sure how to not have this hard-coded (hsr refers
                                    # to a specific group, optimally I'd like to have this
-                                   # so that it can be referenced by "opt"
+                                   # so that it can be referenced by "opt")
 
 for i in range(len(trigs)):
     redpy.table.populateTrigger(rtable.row, i, trigs[i], opt)
@@ -103,10 +103,11 @@ order = ttree._ordered_list
 Co = C[order, :]
 Co = Co[:, order]
 
-# Save the ordering to the correlation table attributes
-h5file.root.hsr.correlation.attrs.order = order
-h5file.root.hsr.correlation.attrs.reachability = ttree._reachability
-h5file.root.hsr.correlation.attrs.coredist = ttree._core_dist
+# Save the ordering to the repeater table
+rtable.cols.order[:] = order
+rtable.cols.reachability[:] = ttree._reachability
+rtable.cols.coreDistance[:] = ttree._core_dist
+rtable.flush()
 
 # Plot the C matrices (saturated below 0.65)
 # Left is ordered by time
