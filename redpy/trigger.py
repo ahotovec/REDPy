@@ -23,7 +23,7 @@ def getIRIS(date, opt, nsec=86400):
         date - opt.ptrig, date + nsec + opt.atrig)
 
     st = st.detrend() # can create noise artifacts??
-    st = st.merge(method=1, fill_value=0)
+    st = st.merge(method=1, fill_value='interpolate')
     st = st.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax, corners=2,
         zerophase=True)
 
