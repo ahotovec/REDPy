@@ -21,9 +21,7 @@ st = redpy.trigger.getIRIS(t, opt, nsec=3600)
 trigs = redpy.trigger.trigger(st, opt)
 
 h5file = open_file(opt.filename, "a")
-rtable = h5file.root.hsr.repeaters # not sure how to not have this hard-coded (hsr refers
-                                   # to a specific group, optimally I'd like to have this
-                                   # so that it can be referenced by "opt")
+rtable = eval('h5file.root.'+ opt.groupName + '.repeaters')
 
 for i in range(len(trigs)):
     redpy.table.populateTrigger(rtable.row, i, trigs[i], opt)
