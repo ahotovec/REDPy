@@ -21,9 +21,7 @@ st = redpy.trigger.getIRIS(t, opt, nsec=3600)
 trigs = redpy.trigger.trigger(st, opt)
 
 h5file = open_file(opt.filename, "a")
-rtable = h5file.root.hsr.repeaters # not sure how to not have this hard-coded (hsr refers
-                                   # to a specific group, optimally I'd like to have this
-                                   # so that it can be referenced by "opt")
+rtable = eval('h5file.root.'+ opt.groupName + '.repeaters')
 
 for i in range(len(trigs)):
     redpy.table.populateTrigger(rtable.row, i, trigs[i], opt)
@@ -31,7 +29,7 @@ for i in range(len(trigs)):
 # Write to disk
 rtable.flush()
 
-# Need to update this section... look at coral's crosscorr, see if that can speed this up
+# Need to update this section...
 
 ctable = h5file.root.hsr.correlation
 corr = ctable.row
