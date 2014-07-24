@@ -113,19 +113,22 @@ def initializeTable(opt):
     h5file.close()
 
     
-def populateTrigger(trigger, id, trig, opt):
+def populateRepeater(rtable, id, trig, opt):
 
     """
     Initially populates a new row in the 'Repeater Catalog' table.
     
-    trigger: object pointing to the row in the table to populate
-        (e.g., h5file.root.groupName.repeaters.row)
+    rtable: object pointing to the table to populate
+        (e.g., h5file.root.groupName.repeaters)
     id: integer id number given to this trigger, should be unique
     trig: ObsPy trace from triggering function
     opt: Options object describing station/run parameters
 
-    Appends this row to table
+    Appends this row to table, but does not update the clustering parameters (sets them
+    to 0)
     """
+    
+    trigger = rtable.row
     
     windowStart = int(opt.ptrig*opt.samprate)
     
@@ -139,6 +142,35 @@ def populateTrigger(trigger, id, trig, opt):
     trigger['reachability'] = 0.0
     trigger['coreDistance'] = 0.0
     trigger.append()    
+
+    
+def populateOrphan(otable, id, trig, expires, opt):
+
+    """
+    Initially populates a new row in the 'Orphans' table.
+    
+    otable: object pointing to the table to populate
+        (e.g., h5file.root.groupName.orphans)
+    id: integer id number given to this trigger, should be unique
+    trig: ObsPy trace from triggering function
+    expires: Expiration date (as a string) for orphan
+    opt: Options object describing station/run parameters
+
+    Appends this row to table, 
+    """
+    
+    trigger = otable.row
+    
+    windowStart = int(opt.ptrig*opt.samprate)
+    
+    trigger['id'] = id
+    trigger['startTime'] = trig.stats.starttime.isoformat()
+    trigger['waveform'] = trig.data
+    trigger['windowStart'] = windowStart
+    trigger['windowCoeff'], trigger['windowFFT'] = redpy.correlation.calcWindow(trig.data,
+        windowStart, opt)
+    trigger['expires'] = expires
+    trigger.append() 
 
 
 def appendCorrelation(corr, id1, id2, ccc):

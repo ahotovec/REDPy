@@ -24,7 +24,7 @@ h5file = open_file(opt.filename, "a")
 rtable = eval('h5file.root.'+ opt.groupName + '.repeaters')
 
 for i in range(len(trigs)):
-    redpy.table.populateTrigger(rtable.row, i, trigs[i], opt)
+    redpy.table.populateRepeater(rtable, i, trigs[i], opt)
 
 # Write to disk
 rtable.flush()
