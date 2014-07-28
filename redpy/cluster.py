@@ -1,20 +1,20 @@
 import numpy as np
 from tables import *
 
-def getClusters(ctable, cutoff=0.7):
+def getClusters(rtable, cutoff=0.7):
 
     """
     Cuts the clustering order into clusters, defines orphans as -1
 
-    ctable: Correlation table, with clustering order in attributes
+    rtable: Repeater catalog table, with cluster ordering in columns 6 - 8
     cutoff: Minimum coefficient to cut the clusters
 
     Returns cluster numbers wrt. ordered list.
     """
 
-    order = np.array(ctable.attrs.order)
-    oreach = ctable.attrs.reachability[order]
-    odist = ctable.attrs.coredist[order]
+    order = rtable.cols.order[:] # Ordering
+    oreach = rtable.cols.reachability[order] # Ordered reachability
+    odist = rtable.cols.coreDistance[order] # Ordered core distance
     cluster_id = -1
 
     oclust = np.zeros((len(oreach),))
@@ -31,20 +31,23 @@ def getClusters(ctable, cutoff=0.7):
     return oclust
 
     
-def getCenters(ctable, cutoff=0.7):
+def getCenters(rtable, cutoff=0.7):
 
     """
     Finds the "center" of each cluster (including orphans)
     
-    ctable: Correlation table, with clustering order in attributes
+    rtable: Repeater catalog table, with clustering order in columns 6 - 8
     cutoff: Minimum coefficient to cut the clusters
 
     Returns the id numbers of cluster centers and orphans
+    
+    Orphans may exist even in the repeater table if the cutoff is higher than what
+    was used to originally consider them a repeater
     """
 
-    order = np.array(ctable.attrs.order)
-    oreach = ctable.attrs.reachability[order]
-    oclust = getClusters(ctable, cutoff)
+    order = rtable.cols.order[:]
+    oreach = rtable.cols.reachability[order] # Ordered reachability
+    oclust = getClusters(rtable, cutoff) # Clusters
 
     cluster_id = np.max(oclust).astype(int)
     o = np.array(order)
