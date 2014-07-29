@@ -3,7 +3,8 @@ class Options(object):
     def __init__(self, title="REDPy Catalog", filename="redtable.h5", groupName="hsr",
         groupDesc="MSH: HSR-EHZ-UW Default", station="HSR", channel="EHZ", network="UW",
         location="--", samprate=100.0, lwin=7.0, swin=0.8, trigon=3.0, trigoff=2.0,
-        mintrig=10.0, winlen=512, ptrig=10.0, atrig=20.0, fhigh=0.25, fmin=1.0, fmax=10.0):
+        mintrig=10.0, winlen=512, ptrig=10.0, atrig=20.0, fhigh=0.25, fmin=1.0,
+        fmax=10.0, cmin=0.7):
         
 		"""
 		Defines the settings that are often passed to routines and that define the table.
@@ -30,14 +31,17 @@ class Options(object):
 		mintrig: Minimum spacing between triggers (default 10.0 s)
 	
 		WINDOWING PARAMETERS:
-		winlen: Length of window for cross-correlation (default 512 samples, power of 2 best)
+		winlen: Length of window for cross-correlation (default 512 samples, 2^n is best)
 		ptrig: Length of time cut prior to trigger (default 10.0 s)
 		atrig: Length of time cut after trigger (default 20.0 s)
 	
 		FILTERING PARAMETERS:
-        fhigh: highpass filter used to reduce microseis noise in "raw" waveforms (default 0.25 Hz)
-		fmin: Lower band for bandpass filter used for triggering and xcorr (default 1.0 Hz)
-		fmax: Upper band for bandpass filter used for triggering and xcorr (default 10.0 Hz)
+        fhigh: Highpass filter to reduce microseism in "raw" waveforms (default 0.25 Hz)
+		fmin: Lower band of bandpass filter for triggering and xcorr (default 1.0 Hz)
+		fmax: Upper band of bandpass filter for triggering and xcorr (default 10.0 Hz)
+		
+		CLUSTERING PARAMETERS:
+		cmin: Minimum correlation to be considered a repeater (default 0.7)
 	
 		I envision that these could eventually be set interactively or by control file.
 		This list will likely expand.	   
@@ -63,4 +67,5 @@ class Options(object):
 		self.fhigh = fhigh
 		self.fmin = fmin
 		self.fmax = fmax
+		self.cmin = cmin
 		

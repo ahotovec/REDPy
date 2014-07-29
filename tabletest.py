@@ -88,25 +88,17 @@ C = np.zeros((len(rtable),len(rtable)))
 C[ctable.cols.id1[:], ctable.cols.id2[:]] = ctable.cols.ccc[:]
 C = C + C.T + np.eye(len(C))
 
-
 # Copied from old stuff:
 maxes = np.max(C - np.eye(len(C)), axis=0)
 print("Orphans: {:.2%}".format(1.0* len(maxes[maxes<0.65]) / len(C)))
 
-# Cluster with OPTICS
-ttree = setOfObjects(1-C)
-prep_optics(ttree,1)
-build_optics(ttree,1)
-order = ttree._ordered_list
+# Run OPTICS
+redpy.cluster.runFullOPTICS(rtable, ctable)
 
+order = rtable.cols.order[:]
 Co = C[order, :]
 Co = Co[:, order]
 
-# Save the ordering to the repeater table
-rtable.cols.order[:] = order
-rtable.cols.reachability[:] = ttree._reachability
-rtable.cols.coreDistance[:] = ttree._core_dist
-rtable.flush()
 
 # Plot the C matrices (saturated below 0.65)
 # Left is ordered by time

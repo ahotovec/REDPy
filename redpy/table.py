@@ -31,6 +31,8 @@ class Repeaters(IsDescription):
     order = Int32Col(shape=(), pos=6)
     reachability = Float64Col(shape=(), pos=7)
     coreDistance = Float64Col(shape=(), pos=8)
+    clusterNumber = Int32Col(shape=(), pos=9)
+    isCore = Int32Col(shape=(), pos=10)
 
 
 class Orphans(IsDescription):
@@ -142,9 +144,11 @@ def populateRepeater(rtable, id, trig, opt):
     trigger['windowStart'] = windowStart
     trigger['windowCoeff'], trigger['windowFFT'] = redpy.correlation.calcWindow(trig2.data,
         windowStart, opt)
-    trigger['order'] = 0
-    trigger['reachability'] = 0.0
-    trigger['coreDistance'] = 0.0
+    trigger['order'] = -1
+    trigger['reachability'] = -1.0
+    trigger['coreDistance'] = -1.0
+    trigger['clusterNumber'] = -1
+    trigger['isCore'] = -1
     trigger.append()    
 
     
