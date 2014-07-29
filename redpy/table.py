@@ -132,11 +132,15 @@ def populateRepeater(rtable, id, trig, opt):
     
     windowStart = int(opt.ptrig*opt.samprate)
     
+    #calculate second filtered version of data for use in cross correlation
+    trig2 = trig.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax, corners=2,
+                             zerophase=True)
+    
     trigger['id'] = id
     trigger['startTime'] = trig.stats.starttime.isoformat()
     trigger['waveform'] = trig.data
     trigger['windowStart'] = windowStart
-    trigger['windowCoeff'], trigger['windowFFT'] = redpy.correlation.calcWindow(trig.data,
+    trigger['windowCoeff'], trigger['windowFFT'] = redpy.correlation.calcWindow(trig2.data,
         windowStart, opt)
     trigger['order'] = 0
     trigger['reachability'] = 0.0

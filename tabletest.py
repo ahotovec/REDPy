@@ -23,6 +23,7 @@ trigs = redpy.trigger.trigger(st, opt)
 h5file = open_file(opt.filename, "a")
 rtable = eval('h5file.root.'+ opt.groupName + '.repeaters')
 
+#Filters the data and populates new row in Repeater catalog table with FFT and COEFF
 for i in range(len(trigs)):
     redpy.table.populateRepeater(rtable, i, trigs[i], opt)
 
@@ -31,7 +32,7 @@ rtable.flush()
 
 # Need to update this section...
 
-ctable = h5file.root.hsr.correlation
+ctable = eval('h5file.root.' + opt.groupName + '.correlation')
 corr = ctable.row
 
 t = time.time()
@@ -90,7 +91,7 @@ C = C + C.T + np.eye(len(C))
 
 # Copied from old stuff:
 maxes = np.max(C - np.eye(len(C)), axis=0)
-print("Orphans: {:.2%}".format(1.0* len(maxes[maxes<0.7]) / len(C)))
+print("Orphans: {:.2%}".format(1.0* len(maxes[maxes<0.65]) / len(C)))
 
 # Cluster with OPTICS
 ttree = setOfObjects(1-C)
@@ -112,9 +113,9 @@ rtable.flush()
 # Right is ordered by cluster ordering
 fig = plt.figure(figsize=(12, 6))
 ax = fig.add_subplot(1, 2, 1)
-ax.imshow(C, aspect='auto', vmin=0.6, vmax=1, interpolation='nearest')
+ax.imshow(C, aspect='auto', vmin=0.65, vmax=1, interpolation='nearest')
 ax = fig.add_subplot(1, 2, 2)
-ax.imshow(Co, aspect='auto', vmin=0.6, vmax=1, interpolation='nearest')
+ax.imshow(Co, aspect='auto', vmin=0.65, vmax=1, interpolation='nearest')
 
 
 # Plot unordered, unaligned waveforms

@@ -25,8 +25,10 @@ def getIRIS(date, opt, nsec=86400):
 
     st = st.detrend() # can create noise artifacts??
     st = st.merge(method=1, fill_value='interpolate')
-    st = st.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax, corners=2,
-        zerophase=True)
+    st = st.filter("highpass", freq=opt.fhigh, corners=2,
+            zerophase=True)
+    #st = st.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax, corners=2,
+    #                 zerophase=True)
 
     return st
 
@@ -42,7 +44,10 @@ def trigger(st, opt):
     Returns triggered traces as OBSPy trace object
     """
 
-    tr = st[0]
+    #filter the data for triggering
+    st_f = st.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax, corners=2,
+               zerophase=True)
+    tr = st_f[0]
     t = tr.stats.starttime
 
     cft = classicSTALTA(tr.data, opt.swin*opt.samprate, opt.lwin*opt.samprate)
@@ -50,9 +55,11 @@ def trigger(st, opt):
     
     pick = np.zeros([len(on_off),1])
     for n in range(len(pick)):
-        pick[n] = aicpick(st, on_off[n, 0], opt)
+        pick[n] = aicpick(st_f, on_off[n, 0], opt)
 
     ttime = 0
+    
+    #slice out the raw data, not filtered except for a lowpass to reduce long period drift
     for n in range(len(on_off)):
         if on_off[n, 0] > ttime + opt.mintrig*opt.samprate:
             if ttime is 0 and pick[n] > ttime + opt.ptrig*opt.samprate:
