@@ -115,7 +115,7 @@ def initializeTable(opt):
     h5file.close()
 
     
-def populateRepeater(rtable, id, trig, opt):
+def populateRepeater(rtable, id, trig, opt, windowStart=-1):
 
     """
     Initially populates a new row in the 'Repeater Catalog' table.
@@ -125,6 +125,7 @@ def populateRepeater(rtable, id, trig, opt):
     id: integer id number given to this trigger, should be unique
     trig: ObsPy trace from triggering function
     opt: Options object describing station/run parameters
+    windowStart: triggering time (defaults to opt.ptrig seconds)
 
     Appends this row to table, but does not update the clustering parameters (sets them
     to 0)
@@ -132,24 +133,22 @@ def populateRepeater(rtable, id, trig, opt):
     
     trigger = rtable.row
     
-    windowStart = int(opt.ptrig*opt.samprate)
-    
-    #calculate second filtered version of data for use in cross correlation
-    trig2 = trig.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax, corners=2,
-                             zerophase=True)
+    if windowStart == -1:
+        windowStart = int(opt.ptrig*opt.samprate)
     
     trigger['id'] = id
     trigger['startTime'] = trig.stats.starttime.isoformat()
     trigger['waveform'] = trig.data
     trigger['windowStart'] = windowStart
-    trigger['windowCoeff'], trigger['windowFFT'] = redpy.correlation.calcWindow(trig2.data,
-        windowStart, opt)
+    trigger['windowCoeff'], trigger['windowFFT'] = redpy.correlation.calcWindow(
+        trig.data, windowStart, opt)
     trigger['order'] = -1
     trigger['reachability'] = -1.0
     trigger['coreDistance'] = -1.0
     trigger['clusterNumber'] = -1
     trigger['isCore'] = -1
-    trigger.append()    
+    trigger.append()  
+    rtable.flush()  
 
     
 def populateOrphan(otable, id, trig, expires, opt):
@@ -175,11 +174,41 @@ def populateOrphan(otable, id, trig, expires, opt):
     trigger['startTime'] = trig.stats.starttime.isoformat()
     trigger['waveform'] = trig.data
     trigger['windowStart'] = windowStart
-    trigger['windowCoeff'], trigger['windowFFT'] = redpy.correlation.calcWindow(trig.data,
-        windowStart, opt)
+    trigger['windowCoeff'], trigger['windowFFT'] = redpy.correlation.calcWindow(
+        trig.data, windowStart, opt)
     trigger['expires'] = expires
     trigger.append() 
+    otable.flush()
 
+
+def moveOrphan(rtable, otable, oindex, opt):
+    
+    """
+    Moves a row from the 'Orphans' table to the 'Repeater Catalog' table.
+    """
+    
+    trigger = rtable.row
+    orow = otable[oindex]
+    
+    trigger['id'] = orow['id']
+    trigger['startTime'] = orow['startTime']
+    trigger['waveform'] = orow['waveform']
+    trigger['windowStart'] = orow['windowStart']
+    trigger['windowCoeff'] = orow['windowCoeff']
+    trigger['windowFFT'] = orow['windowFFT']
+    trigger['order'] = -1
+    trigger['reachability'] = -1.0
+    trigger['coreDistance'] = -1.0
+    trigger['clusterNumber'] = -1
+    trigger['isCore'] = -1
+    trigger.append()
+    
+    otable.remove_row(oindex)
+    
+    otable.flush()  
+    rtable.flush()  
+    
+    
 
 def appendCorrelation(corr, id1, id2, ccc):
 

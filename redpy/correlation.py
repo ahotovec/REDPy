@@ -1,4 +1,5 @@
 import numpy as np
+import obspy.core.trace as trace
 from scipy.fftpack import fft, ifft
 
 def calcWindow(waveform, windowStart, opt):
@@ -12,6 +13,11 @@ def calcWindow(waveform, windowStart, opt):
 
     Returns windowCoeff and windowFFT
     """
+    
+    # Calculate filtered version of data for use in cross correlation
+    trig = trace.Trace(waveform, {"sampling_rate":opt.samprate})
+    waveform = trig.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax, corners=2,
+		zerophase=True).data
 
     windowCoeff = 1/np.sqrt(sum(waveform[windowStart:(windowStart + opt.winlen)] *
         waveform[windowStart:(windowStart + opt.winlen)]))

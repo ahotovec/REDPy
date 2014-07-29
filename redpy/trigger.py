@@ -44,7 +44,7 @@ def trigger(st, opt):
     Returns triggered traces as OBSPy trace object
     """
 
-    #filter the data for triggering
+    # Filter the data for triggering
     st_f = st.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax, corners=2,
                zerophase=True)
     tr = st_f[0]
@@ -59,7 +59,7 @@ def trigger(st, opt):
 
     ttime = 0
     
-    #slice out the raw data, not filtered except for a lowpass to reduce long period drift
+    # Slice out the raw data, not filtered except for lowpass to reduce long period drift
     for n in range(len(on_off)):
         if on_off[n, 0] > ttime + opt.mintrig*opt.samprate:
             if ttime is 0 and pick[n] > ttime + opt.ptrig*opt.samprate:
