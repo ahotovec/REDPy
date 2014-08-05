@@ -77,7 +77,7 @@ for i in range(len(rtable)):
 
     for j in range(0, i+1):
         if Ctmp[j] > 0.65:
-            redpy.table.appendCorrelation(corr, i, j, Ctmp[j])
+            redpy.table.appendCorrelation(corr, i, j, Ctmp[j], opt)
 
     ctable.flush()
             

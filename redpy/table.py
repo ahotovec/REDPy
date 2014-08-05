@@ -210,7 +210,7 @@ def moveOrphan(rtable, otable, oindex, opt):
     
     
 
-def appendCorrelation(corr, id1, id2, ccc):
+def appendCorrelation(ctable, id1, id2, ccc, opt):
 
     """
     Appends a new value to the 'Correlation Matrix' table.
@@ -220,15 +220,20 @@ def appendCorrelation(corr, id1, id2, ccc):
     id1: unique id number of first trigger
     id2: unique id number of second trigger
     ccc: cross-correlation between the two triggers in the window
+    opt: Options object describing station/run parameters
 
     Appends this row to the table, and automatically puts the smaller of
     the two id numbers first
+    Only appends if the value is greater than the minimum defined in opt
     """
-
-    corr['id1'] = min(id1, id2)
-    corr['id2'] = max(id1, id2)
-    corr['ccc'] = ccc
-    corr.append()
+    
+    if ccc >= opt.cmin:
+        corr = ctable.row
+        corr['id1'] = min(id1, id2)
+        corr['id2'] = max(id1, id2)
+        corr['ccc'] = ccc
+        corr.append()        
+        ctable.flush()
 
 
 def getCell(table, id, column):

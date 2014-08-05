@@ -14,9 +14,14 @@ def setClusters(rtable, cutoff=0.7):
     """
 
     order = rtable.cols.order[:] # Ordering
-    oreach = rtable.cols.reachability[order] # Ordered reachability
-    odist = rtable.cols.coreDistance[order] # Ordered core distance
+    oreach = rtable.cols.reachability[:] # Ordered reachability
+    oreach = oreach[order]
+    odist = rtable.cols.coreDistance[:]
+    odist = odist[order] # Ordered core distance
     cluster_id = -1
+    
+    oo = order[order] # This is equivalent to the unsorted rows, needed to convert back
+                      # to real position in the saved table ordering
 
     oclust = np.zeros((len(oreach),))
     for x in range(len(oreach)):
@@ -29,7 +34,7 @@ def setClusters(rtable, cutoff=0.7):
         else:
             oclust[x] = cluster_id
 
-    rtable.cols.clusterNumber[order] = oclust
+    rtable.cols.clusterNumber[:] = oclust[oo[order]]
     rtable.flush()
 
     
@@ -47,8 +52,10 @@ def setCenters(rtable, cutoff=0.7):
     """
 
     order = rtable.cols.order[:]
-    oreach = rtable.cols.reachability[order]
-    oclust = rtable.cols.clusterNumber[order]
+    oreach = rtable.cols.reachability[:]
+    oreach = oreach[order]
+    oclust = rtable.cols.clusterNumber[:]
+    oclust = oclust[order]
 
     cluster_id = np.max(oclust).astype(int)
     ocenters = np.zeros((cluster_id + 1,)).astype(int)
@@ -61,9 +68,11 @@ def setCenters(rtable, cutoff=0.7):
     oo = order[order] # This is equivalent to the unsorted rows, needed to convert back
                       # to real position in the saved table ordering
 
-    rtable.cols.isCore[:] = np.zeros((len(order),)).astype(int) # Reset everything to 0
-    rtable.cols.isCore[oo[ocenters]] = np.ones((len(ocenters),)).astype(int)
-    rtable.cols.isCore[oo[oorphans]] = -1*np.ones((len(oorphans),)).astype(int)
+    cores = np.zeros((len(order),)).astype(int) # Reset everything to 0
+    cores[oo[ocenters]] = np.ones((len(ocenters),)).astype(int)
+    cores[oo[oorphans]] = -1*np.ones((len(oorphans),)).astype(int)
+    
+    rtable.cols.isCore[:] = cores
     rtable.flush()
     
     
@@ -79,7 +88,15 @@ def runFullOPTICS(rtable, ctable):
     """
     
     C = np.zeros((len(rtable),len(rtable)))
-    C[ctable.cols.id1[:], ctable.cols.id2[:]] = ctable.cols.ccc[:]
+    id1 = ctable.cols.id1[:]
+    id2 = ctable.cols.id2[:]
+
+    # Convert id to row
+    rtable_ids = rtable.cols.id[:]
+    for i in range(len(id1)):
+        C[np.where(rtable_ids == id1[i])[0][0],
+            np.where(rtable_ids == id2[i])[0][0]] = ctable.cols.ccc[i]
+            
     C = C + C.T + np.eye(len(C))
     
     # Cluster with OPTICS
@@ -92,4 +109,8 @@ def runFullOPTICS(rtable, ctable):
     rtable.cols.order[:] = order
     rtable.cols.reachability[:] = ttree._reachability
     rtable.cols.coreDistance[:] = ttree._core_dist
+    
+    # Update the clusters and cores, too!
+    setClusters(rtable)
+    setCenters(rtable)
     rtable.flush()
