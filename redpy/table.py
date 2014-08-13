@@ -84,7 +84,7 @@ def initializeTable(opt):
     Matrix' tables in a group related to the station where the data come from. This is
     defined via the redpy.config.Options class.
     
-    opt: an Options object describing the table/run
+    opt: Options object describing the station/run parameters
 
     Saves table to file and closes it.
     Will likely need extensive editing when more tables get added...
@@ -120,7 +120,7 @@ def populateRepeater(rtable, id, trig, opt, windowStart=-1):
     """
     Initially populates a new row in the 'Repeater Catalog' table.
     
-    rtable: object pointing to the table to populate
+    rtable: object pointing to the repeater table to populate
         (e.g., h5file.root.groupName.repeaters)
     id: integer id number given to this trigger, should be unique
     trig: ObsPy trace from triggering function
@@ -146,7 +146,7 @@ def populateRepeater(rtable, id, trig, opt, windowStart=-1):
     trigger['reachability'] = -1.0
     trigger['coreDistance'] = -1.0
     trigger['clusterNumber'] = -1
-    trigger['isCore'] = -1
+    trigger['isCore'] = 0 # Set to zero to avoid being counted erroneously as a core
     trigger.append()  
     rtable.flush()  
 
@@ -179,6 +179,7 @@ def populateOrphan(otable, id, trig, expires, opt):
     trigger['expires'] = expires
     trigger.append() 
     otable.flush()
+    print("Orphans abandoned: {0}".format(len(otable)))
 
 
 def moveOrphan(rtable, otable, oindex, opt):
@@ -200,14 +201,13 @@ def moveOrphan(rtable, otable, oindex, opt):
     trigger['reachability'] = -1.0
     trigger['coreDistance'] = -1.0
     trigger['clusterNumber'] = -1
-    trigger['isCore'] = -1
+    trigger['isCore'] = 0 # Set to zero to avoid being counted erroneously as a core
     trigger.append()
     
     otable.remove_row(oindex)
     
     otable.flush()  
     rtable.flush()  
-    
     
 
 def appendCorrelation(ctable, id1, id2, ccc, opt):
@@ -234,24 +234,3 @@ def appendCorrelation(ctable, id1, id2, ccc, opt):
         corr['ccc'] = ccc
         corr.append()        
         ctable.flush()
-
-
-def getCell(table, id, column):
-    
-    """
-    Shorthand way of getting data from the PyTable.
-
-    table: PyTable you're querying
-    id: unique id of row you want
-    column: column you want (e.g., 'windowFFT' OR position as integer)
-
-    Returns data inside that cell
-
-    While simple, can be time consuming if called a lot!
-    """
-   
-    c = '(id == {})'.format(id)
-    t = table.where(c)
-    for r in t: data = r[column]
-
-    return data
