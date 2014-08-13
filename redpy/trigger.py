@@ -53,9 +53,10 @@ def trigger(st, opt):
     cft = classicSTALTA(tr.data, opt.swin*opt.samprate, opt.lwin*opt.samprate)
     on_off = triggerOnset(cft, opt.trigon, opt.trigoff)
     
-    pick = np.zeros([len(on_off),1])
-    for n in range(len(pick)):
-        pick[n] = aicpick(st_f, on_off[n, 0], opt)
+    pick = on_off[:,0]  # turned off AIC; too slow while testing
+    #pick = np.zeros([len(on_off),1])
+    #for n in range(len(pick)):
+    #    pick[n] = aicpick(st_f, on_off[n, 0], opt)
 
     ttime = 0
     
