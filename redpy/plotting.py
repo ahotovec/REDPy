@@ -23,6 +23,8 @@ def createOrderedWaveformFigure(rtable):
 
 def createCMatrixFigure(rtable, ctable):
     
+    order = rtable.cols.order[:]
+    
     C = np.zeros((len(rtable),len(rtable)))
     id1 = ctable.cols.id1[:]
     id2 = ctable.cols.id2[:]
