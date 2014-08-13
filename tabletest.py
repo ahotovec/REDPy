@@ -16,8 +16,8 @@ opt = redpy.config.Options(filename="test.h5")
 
 redpy.table.initializeTable(opt) 
 
-t = UTCDateTime("2004-09-24")
-st = redpy.trigger.getIRIS(t, opt, nsec=3600)
+t = UTCDateTime("2004-09-23")
+st = redpy.trigger.getIRIS(t, opt, nsec=86400)
 trigs = redpy.trigger.trigger(st, opt)
 
 h5file = open_file(opt.filename, "a")
@@ -33,10 +33,10 @@ rtable.flush()
 # Need to update this section...
 
 ctable = eval('h5file.root.' + opt.groupName + '.correlation')
-corr = ctable.row
 
 t = time.time()
 for i in range(len(rtable)):
+    print("{0} of {1}".format(i,len(rtable)))
     ci = '(id == {})'.format(i)
     cj = '(id < {})'.format(i)
     
@@ -55,7 +55,7 @@ for i in range(len(rtable)):
         j = rj['id']
         Ctmp[j], Ltmp[j] = redpy.correlation.xcorr1x1(fft1, fft2, coeff1, coeff2)
 
-    if max(Ctmp) > 0.6:
+    if max(Ctmp) > 0.65:
 
         jmax = np.argmax(Ctmp)
         ti = rtable.where(ci)
@@ -76,8 +76,8 @@ for i in range(len(rtable)):
             Ctmp[j], Ltmp[j] = redpy.correlation.xcorr1x1(fft1, fft2, coeff1, coeff2)
 
     for j in range(0, i+1):
-        if Ctmp[j] > 0.65:
-            redpy.table.appendCorrelation(corr, i, j, Ctmp[j], opt)
+        if Ctmp[j] > 0.7:
+            redpy.table.appendCorrelation(ctable, i, j, Ctmp[j], opt)
 
     ctable.flush()
             
