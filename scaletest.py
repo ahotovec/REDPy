@@ -25,12 +25,13 @@ ctable = eval('h5file.root.'+ opt.groupName + '.correlation')
 
 ttimer = time.time()
 tstart = UTCDateTime('2014-08-08')
-nhour = 1*24
+nhour = int(6.5*24)
 
 previd = 0
 for hour in range(nhour):
 
     t = tstart+hour*3600
+    print(t)
     st = redpy.trigger.getIRIS(t, opt, nsec=3600)
     trigs = redpy.trigger.trigger(st, opt)
     
@@ -44,10 +45,8 @@ for hour in range(nhour):
         
         # Loop through remaining triggers
         for i in range(ostart,len(trigs)):  
-            print("{0} of {1}".format(i,len(trigs)-1))
             id = previd + i
             redpy.correlation.runCorrelation(rtable, otable, ctable, trigs[i], id, opt)
-        #redpy.cluster.runFullOPTICS(rtable, ctable)
         previd = id + 1
 
 print("Correlation done in: {:03.2f} seconds".format(time.time()-ttimer))
