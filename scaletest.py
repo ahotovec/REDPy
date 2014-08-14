@@ -18,28 +18,39 @@ opt = redpy.config.Options(filename="test.h5", cmin=0.7)
 
 redpy.table.initializeTable(opt) 
 
-# This time range has ~3400 triggers, a small handful of repeating earthquakes, and a 
-# TON of noise spikes
-t = UTCDateTime("2014-08-01")
-st = redpy.trigger.getIRIS(t, opt, nsec=13*86400)
-
-trigs = redpy.trigger.trigger(st, opt)
-
 h5file = open_file(opt.filename, "a")
 rtable = eval('h5file.root.'+ opt.groupName + '.repeaters')
 otable = eval('h5file.root.'+ opt.groupName + '.orphans')
 ctable = eval('h5file.root.'+ opt.groupName + '.correlation')
 
-# First trigger goes to orphans table
-redpy.table.populateOrphan(otable, 0, trigs[0], 'Never', opt)
+ttimer = time.time()
+tstart = UTCDateTime('2014-08-08')
+nhour = 1*24
 
-t = time.time()
-# Loop through remaining triggers
-for i in range(1,len(trigs)):  
-    print("{0} of {1}".format(i,len(trigs)-1))  
-    redpy.correlation.runCorrelation(rtable, otable, ctable, trigs[i], i, opt)
+previd = 0
+for hour in range(nhour):
 
-print("Correlation done in: {:03.2f} seconds".format(time.time()-t))
+    t = tstart+hour*3600
+    st = redpy.trigger.getIRIS(t, opt, nsec=3600)
+    trigs = redpy.trigger.trigger(st, opt)
+    
+    if len(trigs) > 0:
+        
+        ostart = 0
+        if len(otable) == 0:
+            # First trigger goes to orphans table
+            redpy.table.populateOrphan(otable, 0, trigs[0], 'Never', opt)
+            ostart = 1
+        
+        # Loop through remaining triggers
+        for i in range(ostart,len(trigs)):  
+            print("{0} of {1}".format(i,len(trigs)-1))
+            id = previd + i
+            redpy.correlation.runCorrelation(rtable, otable, ctable, trigs[i], id, opt)
+        #redpy.cluster.runFullOPTICS(rtable, ctable)
+        previd = id + 1
+
+print("Correlation done in: {:03.2f} seconds".format(time.time()-ttimer))
 
 # Run clustering one more time before plotting
 redpy.cluster.runFullOPTICS(rtable, ctable)
