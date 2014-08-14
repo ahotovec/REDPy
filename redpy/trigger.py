@@ -45,7 +45,8 @@ def trigger(st, opt):
     """
 
     # Filter the data for triggering
-    st_f = st.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax, corners=2,
+    st_f = st.copy
+    st_f = st_f.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax, corners=2,
                zerophase=True)
     tr = st_f[0]
     t = tr.stats.starttime
