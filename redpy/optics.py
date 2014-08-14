@@ -58,9 +58,9 @@ Modified setOfObjects tree structure"""
     for j in SetofObjects._index:
         # Find smallest nonzero distance
         SetofObjects._core_dist[j] = np.sort(SetofObjects.data[j,:])[1]
-    print(
-        'Core distances and neighborhoods prepped for ' + str(
-        SetofObjects._n) + ' points.')
+   # print(
+   #     'Core distances and neighborhoods prepped for ' + str(
+   #     SetofObjects._n) + ' points.')
 
 # Main OPTICS loop #
 
@@ -99,7 +99,7 @@ def expandClusterOrder(SetOfObjects, point, epsilon):
 #                    SetOfObjects._reachability[point]) + '\n'))
                 # Keep following line! ##
             point = set_reach_dist(SetOfObjects, point, epsilon)
-        print('Object Found!')
+        # print('Object Found!')
     else:
         SetOfObjects._processed[point] = True # Probably not needed... #
 

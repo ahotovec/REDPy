@@ -45,36 +45,43 @@ def trigger(st, opt):
     """
 
     # Filter the data for triggering
-    st_f = st.copy
+
+    st_f = st.copy()
     st_f = st_f.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax, corners=2,
                zerophase=True)
-    tr = st_f[0]
+    tr = st[0]
+    tr_f = st_f[0]
     t = tr.stats.starttime
 
-    cft = classicSTALTA(tr.data, opt.swin*opt.samprate, opt.lwin*opt.samprate)
+    cft = classicSTALTA(tr_f.data, opt.swin*opt.samprate, opt.lwin*opt.samprate)
     on_off = triggerOnset(cft, opt.trigon, opt.trigoff)
     
-    pick = np.zeros([len(on_off),1])
-    for n in range(len(pick)):
-        pick[n] = aicpick(st_f, on_off[n, 0], opt)
-
-    ttime = 0
+    if len(on_off) > 0:
     
-    # Slice out the raw data, not filtered except for lowpass to reduce long period drift
-    for n in range(len(on_off)):
-        if on_off[n, 0] > ttime + opt.mintrig*opt.samprate:
-            if ttime is 0 and pick[n] > ttime + opt.ptrig*opt.samprate:
-                ttime = pick[n]
-                trigs = st.slice(t - opt.ptrig + ttime/opt.samprate,
-                                 t + opt.atrig + ttime/opt.samprate)
-            else:
-                ttime = pick[n]
-                if ttime < len(tr.data) - (opt.atrig + opt.ptrig)*opt.samprate:
-                    trigs = trigs.append(tr.slice(
-                        t - opt.ptrig + ttime/opt.samprate,
-                        t + opt.atrig + ttime/opt.samprate))
-
-    return trigs
+        pick = on_off[:,0]  # turned off AIC; too slow while testing
+        #pick = np.zeros([len(on_off),1])
+        #for n in range(len(pick)):
+        #    pick[n] = aicpick(st_f, on_off[n, 0], opt)
+    
+        ttime = 0
+        
+        # Slice out the raw data, not filtered except for lowpass to reduce long period drift
+        for n in range(len(on_off)):
+            if on_off[n, 0] > ttime + opt.mintrig*opt.samprate:
+                if ttime is 0 and pick[n] > ttime + opt.ptrig*opt.samprate:
+                    ttime = pick[n]
+                    trigs = st.slice(t - opt.ptrig + ttime/opt.samprate,
+                                     t + opt.atrig + ttime/opt.samprate)
+                else:
+                    ttime = pick[n]
+                    if ttime < len(tr.data) - (opt.atrig + opt.ptrig)*opt.samprate:
+                        trigs = trigs.append(tr.slice(
+                            t - opt.ptrig + ttime/opt.samprate,
+                            t + opt.atrig + ttime/opt.samprate))
+                            
+        return trigs
+    else:
+        return []
     
 
 def aicpick(st, initialTrigger, opt):

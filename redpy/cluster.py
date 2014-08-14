@@ -1,13 +1,14 @@
 import numpy as np
 from tables import *
 from redpy.optics import *
+import time
 
 def setClusters(rtable, cutoff=0.7):
 
     """
     Cuts the clustering order into flat clusters, defines orphans as -1
 
-    rtable: Repeater catalog table, with cluster ordering in columns 6 - 8
+    rtable: Repeater table, with cluster ordering in columns 6 - 8
     cutoff: Minimum coefficient to cut the clusters
 
     Sets cluster numbers in column 9 of the repeater table
@@ -19,9 +20,6 @@ def setClusters(rtable, cutoff=0.7):
     odist = rtable.cols.coreDistance[:]
     odist = odist[order] # Ordered core distance
     cluster_id = -1
-    
-    oo = order[order] # This is equivalent to the unsorted rows, needed to convert back
-                      # to real position in the saved table ordering
 
     oclust = np.zeros((len(oreach),))
     for x in range(len(oreach)):
@@ -34,7 +32,10 @@ def setClusters(rtable, cutoff=0.7):
         else:
             oclust[x] = cluster_id
 
-    rtable.cols.clusterNumber[:] = oclust[oo[order]]
+    clust = np.zeros((len(oreach),))
+    clust[order] = oclust
+
+    rtable.cols.clusterNumber[:] = clust
     rtable.flush()
 
     
@@ -43,7 +44,7 @@ def setCenters(rtable, cutoff=0.7):
     """
     Finds the "center" of each cluster (including orphans, if they exist)
     
-    rtable: Repeater catalog table, with clustering order in columns 6 - 8
+    rtable: Repeater table, with clustering order in columns 6 - 8
     cutoff: Minimum coefficient to cut the clusters
 
     Sets column 10 of the repeater table to 0 if it is not a core, 1 if it is a core,
@@ -52,25 +53,21 @@ def setCenters(rtable, cutoff=0.7):
     """
 
     order = rtable.cols.order[:]
-    oreach = rtable.cols.reachability[:]
-    oreach = oreach[order]
-    oclust = rtable.cols.clusterNumber[:]
-    oclust = oclust[order]
-
-    cluster_id = np.max(oclust).astype(int)
-    ocenters = np.zeros((cluster_id + 1,)).astype(int)
-    for clusternum in range(cluster_id + 1):
-        clustermembers = order[oclust == clusternum]
-        ocenters[clusternum] = clustermembers[np.argmin(oreach[oclust == clusternum])]
-        
-    oorphans = order[oclust == -1]
+    oo = np.sort(order) # Unsorted row position
     
-    oo = order[order] # This is equivalent to the unsorted rows, needed to convert back
-                      # to real position in the saved table ordering
+    reach = rtable.cols.reachability[:]
+    clust = rtable.cols.clusterNumber[:]
+
+    cluster_id = np.max(clust).astype(int)
+    centers = np.zeros((cluster_id + 1,)).astype(int)
+    for clusternum in range(cluster_id + 1):
+        clustermembers = oo[clust == clusternum]
+        centers[clusternum] = clustermembers[np.argmin(reach[clustermembers])]    
+    orphans = order[clust == -1]    
 
     cores = np.zeros((len(order),)).astype(int) # Reset everything to 0
-    cores[oo[ocenters]] = np.ones((len(ocenters),)).astype(int)
-    cores[oo[oorphans]] = -1*np.ones((len(oorphans),)).astype(int)
+    cores[centers] = np.ones((len(centers),)).astype(int)
+    cores[orphans] = -1*np.ones((len(orphans),)).astype(int)
     
     rtable.cols.isCore[:] = cores
     rtable.flush()
@@ -81,21 +78,22 @@ def runFullOPTICS(rtable, ctable):
     """
     Runs a full, brute-force OPTICS clustering using the correlation values in ctable
     
-    rtable: Repeater catalog table
+    rtable: Repeater table
     ctable: Correlation matrix table
     
     Sets the order, reachability, and coreDistance columns in rtable
     """
+    t = time.time()
     
     C = np.zeros((len(rtable),len(rtable)))
     id1 = ctable.cols.id1[:]
     id2 = ctable.cols.id2[:]
-
+    
     # Convert id to row
     rtable_ids = rtable.cols.id[:]
-    for i in range(len(id1)):
-        C[np.where(rtable_ids == id1[i])[0][0],
-            np.where(rtable_ids == id2[i])[0][0]] = ctable.cols.ccc[i]
+    r = np.zeros((max(rtable_ids)+1,)).astype('int')
+    r[rtable_ids] = range(len(rtable_ids))
+    C[r[id1], r[id2]] = ctable.cols.ccc[:]
             
     C = C + C.T + np.eye(len(C))
     
@@ -109,8 +107,21 @@ def runFullOPTICS(rtable, ctable):
     rtable.cols.order[:] = order
     rtable.cols.reachability[:] = ttree._reachability
     rtable.cols.coreDistance[:] = ttree._core_dist
-    
+    rtable.flush()
+        
     # Update the clusters and cores, too!
     setClusters(rtable)
     setCenters(rtable)
-    rtable.flush()
+    
+    print("Total time spent clustering: {:03.2f} seconds".format(time.time()-t))
+    
+    if len(rtable) > 0:
+        print("Repeaters found: {0}".format(len(rtable)))
+        print("Number of clusters: {0}".format(max(rtable.cols.clusterNumber[:])))
+        bigfam = 0
+        for n in range(max(rtable.cols.clusterNumber[:])+1):
+            tmp = len(rtable.get_where_list('(isCore == 0) & (clusterNumber == {})'.format(n)))
+            if tmp > bigfam:
+               bigfam = tmp
+        print("Members in largest cluster: {0}".format(bigfam))
+        print("Number of leftovers in clustering: {0}".format(len(rtable.get_where_list('clusterNumber == -1'))))
