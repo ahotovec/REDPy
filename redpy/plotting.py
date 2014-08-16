@@ -47,3 +47,18 @@ def createCMatrixFigure(rtable, ctable):
     ax = fig.add_subplot(1, 2, 2)
     ax.imshow(Co, aspect='auto', vmin=0.65, vmax=1, interpolation='nearest')
 
+def createWigglePlot(jtable,opt):
+    #waveform wiggle plot of input waveforms
+    fig = plt.figure(figsize=(20, 15))
+    n=0.
+    for r in jtable.iterrows():
+        dat=r['waveform']
+        dat=dat/max(dat)
+        tvec = np.arange(0,len(dat)*1/opt.samprate,1/opt.samprate)
+        plt.plot(tvec,np.add(dat,n))
+        n = n+3
+    plt.ylabel('index')
+    plt.xlabel('time(s)')
+    #plt.title('Junk triggers')
+    plt.autoscale(tight=True)
+    plt.show()

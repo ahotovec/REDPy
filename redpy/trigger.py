@@ -1,8 +1,11 @@
 from obspy import UTCDateTime
 from obspy.fdsn import Client
 from obspy.core.trace import Trace
+from obspy.core.stream import Stream
 from obspy.signal.trigger import classicSTALTA, triggerOnset
 import numpy as np
+from scipy import stats
+from scipy.fftpack import fft
 
 def getIRIS(date, opt, nsec=86400):
 
@@ -82,7 +85,46 @@ def trigger(st, opt):
         return trigs
     else:
         return []
+
+
+def dataclean(alltrigs, opt, flag=1):
+
+    """
+    Examine triggers and weed out spikes and calibration pulses using kurtosis and outlier ratios
+    alltrigs: triggers output from
+    opt: opt from config
+    flag: 1 if defining window to check, 0 if want to check whole waveform for spikes (note that different threshold values should be used for different window lengths)
     
+    Returns good trigs (trigs) and junk (junk)
+    
+    """
+    trigs=Stream()
+    junk=Stream()
+    for i in range(len(alltrigs)):
+        #define data
+        dat=alltrigs[i].data
+        if flag==0:
+            datcut=dat
+        else:
+            datcut=alltrigs[i].data[range(int((opt.ptrig-opt.kurtwin/2)*opt.samprate),int((opt.ptrig+opt.kurtwin/2)*opt.samprate))]
+        
+        #calculate kurtosis in window
+        k = stats.kurtosis(datcut)
+        #compute kurtosis of frequency amplitude spectrum next
+        
+        datf = np.absolute(fft(dat))
+        kf = stats.kurtosis(datf)
+        #calculate outlier ratio using z ((data-median)/mad), outliers have z>4.45
+        mad = np.median(np.absolute(dat - np.median(dat)))
+        z=(dat-np.median(dat))/mad
+        orm = len(z[z>4.45])/len(z)
+        if k<opt.kurtmax and orm<opt.oratiomax and kf<opt.kurtfmax:
+            trigs.append(alltrigs[i])
+        else:
+            junk.append(alltrigs[i])
+                
+    return trigs, junk
+
 
 def aicpick(st, initialTrigger, opt):
     
