@@ -60,8 +60,27 @@ class Orphans(IsDescription):
     windowCoeff = Float64Col(shape=(), pos=4)
     windowFFT = ComplexCol(shape=(512,), itemsize=16, pos=5)
     expires = StringCol(itemsize=32, pos=6)
+
+class Junk(IsDescription):
     
+    """
+    Defines the columns in the 'Orphans' table
     
+    startTime: UTC time of start of the waveform (string)
+    waveform: Waveform data (ndarray)
+    windowStart: "trigger" time, in samples from start (integer)
+    
+    Needs work to figure out how to adjust the shape of the waveform and
+    windowFFT columns when the window length and padding around the triggers
+    are not the same from station to station
+    """
+    
+    startTime = StringCol(itemsize=32, pos=1)
+    waveform = Float64Col(shape=(3001,), pos=2)
+    windowStart = Int32Col(shape=(), pos=3)
+    isjunk = Int32Col(shape=(), pos=0)
+
+
 class Correlation(IsDescription):
 
     """
@@ -80,7 +99,7 @@ class Correlation(IsDescription):
 def initializeTable(opt):
 
     """
-    Initializes the hdf5 file with 'Repeater Catalog', 'Orphans', and 'Correlation
+    Initializes the hdf5 file with 'Repeater Catalog', 'Orphans', 'Junk', and 'Correlation
     Matrix' tables in a group related to the station where the data come from. This is
     defined via the redpy.config.Options class.
     
@@ -107,6 +126,9 @@ def initializeTable(opt):
     otable = h5file.create_table(group, "orphans", Orphans,
         "Orphan Catalog")
     otable.flush()
+    
+    jtable = h5file.create_table(group, "junk", Junk, "Junk Catalog")
+    jtable.flush()
 
     ctable = h5file.create_table(group, "correlation", Correlation,
         "Correlation Matrix")
@@ -179,7 +201,35 @@ def populateOrphan(otable, id, trig, expires, opt):
     trigger['expires'] = expires
     trigger.append() 
     otable.flush()
-    print("Orphans abandoned: {0}".format(len(otable)))
+    #print("Orphans abandoned: {0}".format(len(otable)))
+
+
+def populateJunk(jtable, trig, isjunk, opt):
+    
+    """
+    Initially populates a new row in the 'Orphans' table.
+    
+    jtable: object pointing to the table to populate
+    (e.g., h5file.root.groupName.junk)
+    trig: ObsPy trace from triggering function
+    isjunk: Integer flag, 0=junk, 1=expired orphan
+    opt: Options object describing station/run parameters
+    
+    Appends this row to table,
+    """
+    
+    trigger = jtable.row
+    
+    windowStart = int(opt.ptrig*opt.samprate)
+    
+    trigger['startTime'] = trig.stats.starttime.isoformat()
+    trigger['waveform'] = trig.data
+    trigger['windowStart'] = windowStart
+    trigger['isjunk'] = isjunk
+    trigger.append()
+    jtable.flush()
+
+    # print("Junk events: {0}".format(len(jtable)))
 
 
 def moveOrphan(rtable, otable, oindex, opt):

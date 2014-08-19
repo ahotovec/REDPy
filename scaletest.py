@@ -22,10 +22,11 @@ h5file = open_file(opt.filename, "a")
 rtable = eval('h5file.root.'+ opt.groupName + '.repeaters')
 otable = eval('h5file.root.'+ opt.groupName + '.orphans')
 ctable = eval('h5file.root.'+ opt.groupName + '.correlation')
+jtable = eval('h5file.root.'+ opt.groupName + '.junk')
 
 ttimer = time.time()
-tstart = UTCDateTime('2014-08-09')
-nhour = int(4*24)
+tstart = UTCDateTime('2014-08-12')
+nhour = int(1*24)
 
 previd = 0
 for hour in range(nhour):
@@ -34,8 +35,14 @@ for hour in range(nhour):
     print(t)
     st = redpy.trigger.getIRIS(t, opt, nsec=3600)
     alltrigs = redpy.trigger.trigger(st, opt)
-    trigs, junk = redpy.trigger.dataclean(alltrigs, opt)
-    
+
+    # Clean out data spikes etc.
+    trigs, junk = redpy.trigger.dataclean(alltrigs,opt,flag=1)
+
+    #save junk triggers in separate table for quality checking purposes
+    for i in range(len(junk)):
+        redpy.table.populateJunk(jtable,junk[i],0,opt)
+
     if len(trigs) > 0:
         
         ostart = 0
@@ -50,6 +57,8 @@ for hour in range(nhour):
             redpy.correlation.runCorrelation(rtable, otable, ctable, trigs[i], id, opt)
         previd = id + 1
 
+
+
 print("Correlation done in: {:03.2f} seconds".format(time.time()-ttimer))
 
 # Run clustering one more time before plotting
@@ -63,11 +72,13 @@ print("Number of clusters: {0}".format(max(rtable.cols.clusterNumber[:])))
 # May need to alter code to better deal with these guys, currently if there is a leftover,
 # it is likely to never be re-associated with a family again...
 print("Number of leftovers in clustering: {0}".format(len(rtable.get_where_list('clusterNumber == -1'))))
+print("Number of junk triggers: {0}".format(len(jtable)))
 
 # Plot ordered waveforms and correlation matrix (unordered and ordered)
 redpy.plotting.createOrderedWaveformFigure(rtable)
 redpy.plotting.createCMatrixFigure(rtable, ctable)
-
+# Plot junk events
+redpy.plotting.createWigglePlot(jtable, opt)
 plt.show()
 
 h5file.close()
