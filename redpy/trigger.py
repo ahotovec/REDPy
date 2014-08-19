@@ -1,8 +1,10 @@
 from obspy import UTCDateTime
 from obspy.fdsn import Client
 from obspy.core.trace import Trace
+from obspy.core.stream import Stream
 from obspy.signal.trigger import classicSTALTA, triggerOnset
 import numpy as np
+from scipy import stats
 
 def getIRIS(date, opt, nsec=86400):
 
@@ -45,6 +47,7 @@ def trigger(st, opt):
     """
 
     # Filter the data for triggering
+
     st_f = st.copy()
     st_f = st_f.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax, corners=2,
                zerophase=True)
@@ -81,7 +84,33 @@ def trigger(st, opt):
         return trigs
     else:
         return []
+
+
+def dataclean(alltrigs, opt):
+
+    """
+    Examine triggers and weed out spikes and calibration pulses using kurtosis and outlier ratios
+    alltrigs: triggers output from
     
+    Returns good trigs (trigs) and junk (junk)
+    
+    """
+    trigs=Stream()
+    junk=Stream()
+    for i in range(len(alltrigs)):
+        #calculate kurtosis
+        k = stats.kurtosis(alltrigs[i].data)
+        #calculate outlier ratio using z ((data-median)/mad), outliers have z>4.45
+        mad = np.median(np.absolute(alltrigs[i].data - np.median(alltrigs[i].data)))
+        z=(alltrigs[i].data-np.median(alltrigs[i].data))/mad
+        orm = len(z[z>4.45])/len(z)
+        if k<opt.kurtmax and orm<opt.oratiomax:
+            trigs.append(alltrigs[i])
+        else:
+            junk.append(alltrigs[i])
+        
+    return trigs, junk
+
 
 def aicpick(st, initialTrigger, opt):
     

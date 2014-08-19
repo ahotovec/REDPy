@@ -14,7 +14,7 @@ Control script to test scaling
 Currently has a decent amount of printing to check on things as it's running
 """
 
-opt = redpy.config.Options(filename="test.h5", cmin=0.7)
+opt = redpy.config.Options(filename="testk.h5", cmin=0.7)
 
 redpy.table.initializeTable(opt) 
 
@@ -24,8 +24,8 @@ otable = eval('h5file.root.'+ opt.groupName + '.orphans')
 ctable = eval('h5file.root.'+ opt.groupName + '.correlation')
 
 ttimer = time.time()
-tstart = UTCDateTime('2014-08-08')
-nhour = int(6.5*24)
+tstart = UTCDateTime('2014-08-09')
+nhour = int(4*24)
 
 previd = 0
 for hour in range(nhour):
@@ -33,7 +33,8 @@ for hour in range(nhour):
     t = tstart+hour*3600
     print(t)
     st = redpy.trigger.getIRIS(t, opt, nsec=3600)
-    trigs = redpy.trigger.trigger(st, opt)
+    alltrigs = redpy.trigger.trigger(st, opt)
+    trigs, junk = redpy.trigger.dataclean(alltrigs, opt)
     
     if len(trigs) > 0:
         
