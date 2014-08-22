@@ -2,11 +2,11 @@ from tables import *
 from obspy.core.trace import Trace
 import redpy.correlation
 
-class Repeaters(IsDescription):
+def Repeaters(opt):
 
     """
-    Defines the columns in the 'Repeater Catalog' table
-
+    Defines the columns in the 'Repeater Catalog' table based on the Options in opt
+    
     id: unique ID number for the event (integer)
     startTime: UTC time of start of the waveform (string)
     waveform: Waveform data (ndarray)
@@ -17,28 +17,30 @@ class Repeaters(IsDescription):
     reachability: Reachability in the cluster ordering (float)
     coreDistance: Core distance in the cluster ordering (float)
 
-    Needs work to figure out how to adjust the shape of the waveform and
-    windowFFT columns when the window length and padding around the triggers
-    are not the same from station to station
+    Returns a dictionary defining the table
     """
+    
+    dict = {
+        "id"            : Int32Col(shape=(), pos=0),
+        "startTime"     : StringCol(itemsize=32, pos=1),
+        "waveform"      : Float64Col(shape=(opt.wshape,), pos=2),
+        "windowStart"   : Int32Col(shape=(), pos=3),
+        "windowCoeff"   : Float64Col(shape=(), pos=4),
+        "windowFFT"     : ComplexCol(shape=(opt.winlen,), itemsize=16, pos=5),
+        "order"         : Int32Col(shape=(), pos=6),
+        "reachability"  : Float64Col(shape=(), pos=7),
+        "coreDistance"  : Float64Col(shape=(), pos=8),
+        "clusterNumber" : Int32Col(shape=(), pos=9),
+        "isCore"        : Int32Col(shape=(), pos=10),
+        }
+    
+    return dict
 
-    id = Int32Col(shape=(), pos=0)
-    startTime = StringCol(itemsize=32, pos=1)
-    waveform = Float64Col(shape=(3001,), pos=2)
-    windowStart = Int32Col(shape=(), pos=3)
-    windowCoeff = Float64Col(shape=(), pos=4)
-    windowFFT = ComplexCol(shape=(512,), itemsize=16, pos=5)
-    order = Int32Col(shape=(), pos=6)
-    reachability = Float64Col(shape=(), pos=7)
-    coreDistance = Float64Col(shape=(), pos=8)
-    clusterNumber = Int32Col(shape=(), pos=9)
-    isCore = Int32Col(shape=(), pos=10)
 
-
-class Orphans(IsDescription):
+def Orphans(opt):
 
     """
-    Defines the columns in the 'Orphans' table
+    Defines the columns in the 'Orphans' table based on the Options in opt
 
     id: unique ID number for the event (integer)
     startTime: UTC time of start of the waveform (string)
@@ -47,53 +49,65 @@ class Orphans(IsDescription):
     windowCoeff: amplitude scaling for cross-correlation (float)
     windowFFT: Fourier transform of window (complex ndarray)
     expires: UTC time of when orphan should no longer be considered (string)
-
-    Needs work to figure out how to adjust the shape of the waveform and
-    windowFFT columns when the window length and padding around the triggers
-    are not the same from station to station
+    
+    Returns a dictionary defining the table
     """
+    
+    dict = {
+        "id"          : Int32Col(shape=(), pos=0),
+        "startTime"   : StringCol(itemsize=32, pos=1),
+        "waveform"    : Float64Col(shape=(opt.wshape,), pos=2),
+        "windowStart" : Int32Col(shape=(), pos=3),
+        "windowCoeff" : Float64Col(shape=(), pos=4),
+        "windowFFT"   : ComplexCol(shape=(opt.winlen,), itemsize=16, pos=5),
+        "expires"     : StringCol(itemsize=32, pos=6)
+        }
 
-    id = Int32Col(shape=(), pos=0)
-    startTime = StringCol(itemsize=32, pos=1)
-    waveform = Float64Col(shape=(3001,), pos=2)
-    windowStart = Int32Col(shape=(), pos=3)
-    windowCoeff = Float64Col(shape=(), pos=4)
-    windowFFT = ComplexCol(shape=(512,), itemsize=16, pos=5)
-    expires = StringCol(itemsize=32, pos=6)
+    return dict
 
-class Junk(IsDescription):
+
+def Junk(opt):
     
     """
-    Defines the columns in the 'Orphans' table
+    Defines the columns in the 'Junk' table, a holding tank for testing suspect events
     
     startTime: UTC time of start of the waveform (string)
     waveform: Waveform data (ndarray)
     windowStart: "trigger" time, in samples from start (integer)
+    isjunk: Logic holder (integer)
     
-    Needs work to figure out how to adjust the shape of the waveform and
-    windowFFT columns when the window length and padding around the triggers
-    are not the same from station to station
+    Returns a dictionary defining the table
     """
     
-    startTime = StringCol(itemsize=32, pos=1)
-    waveform = Float64Col(shape=(3001,), pos=2)
-    windowStart = Int32Col(shape=(), pos=3)
-    isjunk = Int32Col(shape=(), pos=0)
+    dict = {
+        "startTime"   : StringCol(itemsize=32, pos=1),
+        "waveform"    : Float64Col(shape=(opt.wshape,), pos=2),
+        "windowStart" : Int32Col(shape=(), pos=3),
+        "isjunk"      : Int32Col(shape=(), pos=0)
+        }
+        
+    return dict
 
 
-class Correlation(IsDescription):
+def Correlation(opt):
 
     """
     Defines the columns in the 'Correlation' table
 
     id1: unique ID number for the first event (integer)
     id2: unique ID number for the second event (integer)
-    ccc: cross-correlation coefficient between those two events (float)    
+    ccc: cross-correlation coefficient between those two events (float)
+    
+    Returns a dictionary defining the table
     """
     
-    id1 = Int32Col(shape=(), pos=0)
-    id2 = Int32Col(shape=(), pos=1)
-    ccc = Float64Col(shape=(), pos=2)
+    dict = {
+        "id1" : Int32Col(shape=(), pos=0),
+        "id2" : Int32Col(shape=(), pos=1),
+        "ccc" : Float64Col(shape=(), pos=2)
+    }
+
+    return dict
 
     
 def initializeTable(opt):
@@ -112,7 +126,7 @@ def initializeTable(opt):
     h5file = open_file(opt.filename, mode="w", title=opt.title)
     group = h5file.create_group("/", opt.groupName, opt.groupDesc)
 
-    rtable = h5file.create_table(group, "repeaters", Repeaters,
+    rtable = h5file.create_table(group, "repeaters", Repeaters(opt),
         "Repeater Catalog")
     rtable.attrs.scnl = [opt.station, opt.channel, opt.network, opt.location]
     rtable.attrs.samprate = opt.samprate
@@ -123,14 +137,14 @@ def initializeTable(opt):
     rtable.attrs.fmax = opt.fmax
     rtable.flush()
     
-    otable = h5file.create_table(group, "orphans", Orphans,
+    otable = h5file.create_table(group, "orphans", Orphans(opt),
         "Orphan Catalog")
     otable.flush()
     
-    jtable = h5file.create_table(group, "junk", Junk, "Junk Catalog")
+    jtable = h5file.create_table(group, "junk", Junk(opt), "Junk Catalog")
     jtable.flush()
 
-    ctable = h5file.create_table(group, "correlation", Correlation,
+    ctable = h5file.create_table(group, "correlation", Correlation(opt),
         "Correlation Matrix")
     ctable.flush()
 

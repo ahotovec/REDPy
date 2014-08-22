@@ -14,7 +14,8 @@ Control script to test scaling
 Currently has a decent amount of printing to check on things as it's running
 """
 
-opt = redpy.config.Options(filename="testk.h5", cmin=0.7)
+opt = redpy.config.Options(filename="testsep.h5", cmin=0.7,
+    station="SEP", network="CC", samprate=50.0, winlen=256)
 
 redpy.table.initializeTable(opt) 
 
@@ -75,7 +76,7 @@ print("Number of leftovers in clustering: {0}".format(len(rtable.get_where_list(
 print("Number of junk triggers: {0}".format(len(jtable)))
 
 # Plot ordered waveforms and correlation matrix (unordered and ordered)
-redpy.plotting.createOrderedWaveformFigure(rtable)
+redpy.plotting.createOrderedWaveformFigure(rtable, opt)
 redpy.plotting.createCMatrixFigure(rtable, ctable)
 # Plot junk events
 redpy.plotting.createWigglePlot(jtable, opt)

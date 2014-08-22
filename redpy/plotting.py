@@ -3,23 +3,26 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 """
-These are very brute force plotting; should be replaced with more
+These are very brute force plotting; should be replaced with more sophisticated functions
 """
 
 
-def createOrderedWaveformFigure(rtable):
-    data = np.zeros((len(rtable), 2000))
+def createOrderedWaveformFigure(rtable, opt):
+    data = np.zeros((len(rtable), int(20*opt.samprate)))
     fig = plt.figure(figsize=(12, 6))
     n=-1
     for r in rtable.iterrows():
         n = n+1
-        data[n, :] = r['waveform'][r['windowStart']-500:r['windowStart']+1500]
-        data[n, :] = data[n, :]/max(data[n, 500:1012])
+        data[n, :] = r['waveform'][r['windowStart']-int(
+            5*opt.samprate):r['windowStart']+int(15*opt.samprate)]
+        data[n, :] = data[n, :]/max(data[n, int(5*opt.samprate):int(
+            5*opt.samprate)+opt.winlen])
     
     order = rtable.cols.order[:]
     datao = data[order, :]
     ax = fig.add_subplot(1, 1, 1)
     ax.imshow(datao, aspect='auto', vmin=-1, vmax=1, interpolation='nearest', cmap='RdBu')
+
 
 def createCMatrixFigure(rtable, ctable):
     
@@ -47,7 +50,8 @@ def createCMatrixFigure(rtable, ctable):
     ax = fig.add_subplot(1, 2, 2)
     ax.imshow(Co, aspect='auto', vmin=0.65, vmax=1, interpolation='nearest')
 
-def createWigglePlot(jtable,opt):
+
+def createWigglePlot(jtable, opt):
     #waveform wiggle plot of input waveforms
     fig = plt.figure(figsize=(20, 15))
     n=0.
