@@ -4,7 +4,7 @@ class Options(object):
         groupDesc="MSH: HSR-EHZ-UW Default", station="HSR", channel="EHZ", network="UW",
         location="--", samprate=100.0, lwin=7.0, swin=0.8, trigon=3.0, trigoff=2.0,
         mintrig=10.0, kurtmax=80., kurtfmax=150., oratiomax=0.06, kurtwin=5., winlen=512,
-        ptrig=10.0, atrig=20.0, fhigh=0.25, fmin=1., fmax=10.0, cmin=0.7):
+        ptrig=10.0, atrig=20.0, fhigh=0.25, fmin=1., fmax=10.0, cmin=0.7, minorph=7.0, maxorph=30.0):
         
         """
         Defines the settings that are often passed to routines and that define the table.
@@ -53,6 +53,10 @@ class Options(object):
         
         CLUSTERING PARAMETERS:
         cmin: Minimum correlation to be considered a repeater (default 0.7)
+        
+        ORPHAN EXPIRATION PARAMETERS
+        minorph: minimum amount of time (days) to keep the smaller orphans alive (corresponds to trigon) (default 7 days)
+        maxorph: maximum amount of time (days) to keep the largest orphans alive (corresponds to trigon+7) (default 30 days)
     
         I envision that these could eventually be set interactively or by control file.
         This list will likely expand.       
@@ -84,3 +88,5 @@ class Options(object):
         self.fmin = fmin
         self.fmax = fmax
         self.cmin = cmin
+        self.maxorph = maxorph
+        self.minorph = minorph

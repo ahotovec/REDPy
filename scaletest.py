@@ -35,7 +35,7 @@ for hour in range(nhour):
     t = tstart+hour*3600
     print(t)
     st = redpy.trigger.getIRIS(t, opt, nsec=3600)
-    alltrigs = redpy.trigger.trigger(st, opt)
+    alltrigs, maxratio = redpy.trigger.trigger(st, opt)
 
     # Clean out data spikes etc.
     trigs, junk = redpy.trigger.dataclean(alltrigs,opt,flag=1)
