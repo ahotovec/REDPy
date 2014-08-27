@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import redpy
+import datetime
 
 from tables import *
 from redpy.optics import *
@@ -27,7 +28,7 @@ jtable = eval('h5file.root.'+ opt.groupName + '.junk')
 
 ttimer = time.time()
 tstart = UTCDateTime('2014-08-12')
-nhour = int(1*24)
+nhour = int(0.3*24)
 
 previd = 0
 for hour in range(nhour):
@@ -35,7 +36,7 @@ for hour in range(nhour):
     t = tstart+hour*3600
     print(t)
     st = redpy.trigger.getIRIS(t, opt, nsec=3600)
-    alltrigs, maxratio = redpy.trigger.trigger(st, opt)
+    alltrigs = redpy.trigger.trigger(st, opt)
 
     # Clean out data spikes etc.
     trigs, junk = redpy.trigger.dataclean(alltrigs,opt,flag=1)
@@ -49,7 +50,7 @@ for hour in range(nhour):
         ostart = 0
         if len(otable) == 0:
             # First trigger goes to orphans table
-            redpy.table.populateOrphan(otable, 0, trigs[0], 'Never', opt)
+            redpy.table.populateOrphan(otable, 0, trigs[0], opt)
             ostart = 1
         
         # Loop through remaining triggers
@@ -58,7 +59,10 @@ for hour in range(nhour):
             redpy.correlation.runCorrelation(rtable, otable, ctable, trigs[i], id, opt)
         previd = id + 1
 
-
+# Clear out expired orphans
+#print 'length of otable before is %i' % len(otable)
+redpy.table.clearExpiredOrphans(otable,opt,tstart+2*3600)
+#print 'length of otable after is %i' % len(otable)
 
 print("Correlation done in: {:03.2f} seconds".format(time.time()-ttimer))
 
@@ -79,7 +83,9 @@ print("Number of junk triggers: {0}".format(len(jtable)))
 redpy.plotting.createOrderedWaveformFigure(rtable, opt)
 redpy.plotting.createCMatrixFigure(rtable, ctable)
 # Plot junk events
-redpy.plotting.createWigglePlot(jtable, opt)
+if len(jtable) > 0:
+    redpy.plotting.createWigglePlot(jtable, opt)
+
 plt.show()
 
 h5file.close()

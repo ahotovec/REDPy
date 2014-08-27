@@ -74,7 +74,7 @@ def trigger(st, opt):
                     ttime = pick[n]
                     trigs = st.slice(t - opt.ptrig + ttime/opt.samprate,
                                      t + opt.atrig + ttime/opt.samprate)
-                    trigs[ind].maxratio = np.amax(cft[on_off[n,0]:on_off[n,1]])
+                    trigs[ind].stats.maxratio = np.amax(cft[on_off[n,0]:on_off[n,1]])
                     ind = ind+1
                 else:
                     ttime = pick[n]
@@ -82,7 +82,7 @@ def trigger(st, opt):
                         trigs = trigs.append(tr.slice(
                             t - opt.ptrig + ttime/opt.samprate,
                             t + opt.atrig + ttime/opt.samprate))
-                        trigs[ind].maxratio = np.amax(cft[on_off[n,0]:on_off[n,1]])
+                        trigs[ind].stats.maxratio = np.amax(cft[on_off[n,0]:on_off[n,1]])
                         ind = ind+1
                             
         return trigs
