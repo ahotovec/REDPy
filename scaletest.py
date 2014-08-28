@@ -28,7 +28,7 @@ jtable = eval('h5file.root.'+ opt.groupName + '.junk')
 
 ttimer = time.time()
 tstart = UTCDateTime('2014-08-12')
-nhour = int(0.3*24)
+nhour = int(1*24)
 
 previd = 0
 for hour in range(nhour):
@@ -59,19 +59,18 @@ for hour in range(nhour):
             redpy.correlation.runCorrelation(rtable, otable, ctable, trigs[i], id, opt)
         previd = id + 1
 
-# Clear out expired orphans
-#print 'length of otable before is %i' % len(otable)
-redpy.table.clearExpiredOrphans(otable,opt,tstart+2*3600)
-#print 'length of otable after is %i' % len(otable)
-
 print("Correlation done in: {:03.2f} seconds".format(time.time()-ttimer))
 
 # Run clustering one more time before plotting
 redpy.cluster.runFullOPTICS(rtable, ctable)
 
+# Clear out expired orphans
+redpy.table.clearExpiredOrphans(otable,opt,UTCDateTime('2014-08-25')) # For testing orphan removal, type date manually here (make it at least opt.minorph days later than tstart. For real time running, use commented line below
+#redpy.table.clearExpiredOrphans(otable,opt,tstart+nhour*3600)
+
 # Print some information about the run
 print("Repeaters found: {0}".format(len(rtable)))
-print("Orphans abandoned: {0}".format(len(otable)))
+print("Orphans saved: {0}".format(len(otable)))
 print("Number of clusters: {0}".format(max(rtable.cols.clusterNumber[:])))
 # Leftovers are 'orphans' in the repeater table - OPTICS didn't think they belonged to a family
 # May need to alter code to better deal with these guys, currently if there is a leftover,
