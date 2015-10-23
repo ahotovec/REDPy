@@ -30,8 +30,6 @@ def getIRIS(date, opt, nsec=86400):
     st = st.merge(method=1, fill_value='interpolate')
     st = st.filter("highpass", freq=opt.fhigh, corners=2,
             zerophase=True)
-    #st = st.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax, corners=2,
-    #                 zerophase=True)
 
     return st
 
@@ -67,20 +65,25 @@ def trigger(st, opt):
         #    pick[n] = aicpick(st_f, on_off[n, 0], opt)
     
         ttime = 0
-        
-        # Slice out the raw data, not filtered except for lowpass to reduce long period drift
+        ind = 0
+        # Slice out the raw data, not filtered except for highpass to reduce long period drift,
+        # and save the maximum STA/LTA ratio value as trigs.maxratio
         for n in range(len(on_off)):
             if on_off[n, 0] > ttime + opt.mintrig*opt.samprate:
                 if ttime is 0 and pick[n] > ttime + opt.ptrig*opt.samprate:
                     ttime = pick[n]
                     trigs = st.slice(t - opt.ptrig + ttime/opt.samprate,
                                      t + opt.atrig + ttime/opt.samprate)
+                    trigs[ind].stats.maxratio = np.amax(cft[on_off[n,0]:on_off[n,1]])
+                    ind = ind+1
                 else:
                     ttime = pick[n]
                     if ttime < len(tr.data) - (opt.atrig + opt.ptrig)*opt.samprate:
                         trigs = trigs.append(tr.slice(
                             t - opt.ptrig + ttime/opt.samprate,
                             t + opt.atrig + ttime/opt.samprate))
+                        trigs[ind].stats.maxratio = np.amax(cft[on_off[n,0]:on_off[n,1]])
+                        ind = ind+1
                             
         return trigs
     else:

@@ -1,5 +1,8 @@
 from tables import *
 from obspy.core.trace import Trace
+from obspy import UTCDateTime
+import datetime
+import numpy as np
 import redpy.correlation
 
 def Repeaters(opt):
@@ -187,7 +190,7 @@ def populateRepeater(rtable, id, trig, opt, windowStart=-1):
     rtable.flush()  
 
     
-def populateOrphan(otable, id, trig, expires, opt):
+def populateOrphan(otable, id, trig, opt):
 
     """
     Initially populates a new row in the 'Orphans' table.
@@ -212,8 +215,11 @@ def populateOrphan(otable, id, trig, expires, opt):
     trigger['windowStart'] = windowStart
     trigger['windowCoeff'], trigger['windowFFT'] = redpy.correlation.calcWindow(
         trig.data, windowStart, opt)
-    trigger['expires'] = expires
-    trigger.append() 
+    #equation of a straight line between (opt.trigon,opt.minorph) and (opt.trigon+7,opt.maxorph) - finds y value (in days from trig starttime) that goes with maxratio of current trigger
+    adddays = ((opt.maxorph-opt.minorph)/7.)*(trig.stats.maxratio-opt.trigon)+opt.minorph
+    trigger['expires'] = (trig.stats.starttime+adddays*86400).isoformat()
+    #print trigger['expires']
+    trigger.append()
     otable.flush()
     #print("Orphans abandoned: {0}".format(len(otable)))
 
@@ -271,8 +277,19 @@ def moveOrphan(rtable, otable, oindex, opt):
     otable.remove_row(oindex)
     
     otable.flush()  
-    rtable.flush()  
-    
+    rtable.flush()
+
+def clearExpiredOrphans(otable,opt,tend):
+    """
+    Deletes orphans that have passed their expiration date (relative to the end time of the current clustering run)
+    """
+
+    #index = otable.get_where_list('expires > tend.isoformat()')
+    index = np.where(otable.cols.expires[:] > tend.isoformat())
+    for n in range(len(index[0])-1,-1,-1):
+        otable.remove_row(index[0][n])
+    otable.flush()
+    print '%i Orphans aged out of the system' % len(index[0])
 
 def appendCorrelation(ctable, id1, id2, ccc, opt):
 

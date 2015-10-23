@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import redpy
+import datetime
 
 from tables import *
 from redpy.optics import *
@@ -49,7 +50,7 @@ for hour in range(nhour):
         ostart = 0
         if len(otable) == 0:
             # First trigger goes to orphans table
-            redpy.table.populateOrphan(otable, 0, trigs[0], 'Never', opt)
+            redpy.table.populateOrphan(otable, 0, trigs[0], opt)
             ostart = 1
         
         # Loop through remaining triggers
@@ -58,16 +59,18 @@ for hour in range(nhour):
             redpy.correlation.runCorrelation(rtable, otable, ctable, trigs[i], id, opt)
         previd = id + 1
 
-
-
 print("Correlation done in: {:03.2f} seconds".format(time.time()-ttimer))
 
 # Run clustering one more time before plotting
 redpy.cluster.runFullOPTICS(rtable, ctable)
 
+# Clear out expired orphans
+redpy.table.clearExpiredOrphans(otable,opt,UTCDateTime('2014-08-25')) # For testing orphan removal, type date manually here (make it at least opt.minorph days later than tstart. For real time running, use commented line below
+#redpy.table.clearExpiredOrphans(otable,opt,tstart+nhour*3600)
+
 # Print some information about the run
 print("Repeaters found: {0}".format(len(rtable)))
-print("Orphans abandoned: {0}".format(len(otable)))
+print("Orphans saved: {0}".format(len(otable)))
 print("Number of clusters: {0}".format(max(rtable.cols.clusterNumber[:])))
 # Leftovers are 'orphans' in the repeater table - OPTICS didn't think they belonged to a family
 # May need to alter code to better deal with these guys, currently if there is a leftover,
@@ -79,7 +82,9 @@ print("Number of junk triggers: {0}".format(len(jtable)))
 redpy.plotting.createOrderedWaveformFigure(rtable, opt)
 redpy.plotting.createCMatrixFigure(rtable, ctable)
 # Plot junk events
-redpy.plotting.createWigglePlot(jtable, opt)
+if len(jtable) > 0:
+    redpy.plotting.createWigglePlot(jtable, opt)
+
 plt.show()
 
 h5file.close()

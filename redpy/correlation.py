@@ -170,7 +170,7 @@ def compareGoodOrphans(rtable, otable, ctable, trig, id, coeffi, ffti, cor, lag,
         if len(rtable) > 0:
             compareSingleOrphan2Cores(rtable, otable, ctable, trig, id, coeffi, ffti, opt)
         else:
-            redpy.table.populateOrphan(otable, id, trig, 'Never', opt)
+            redpy.table.populateOrphan(otable, id, trig, opt)
     # If there is a match, check new event and its matches with cores
     else:
         compareMultipleOrphans2Cores(rtable, ctable, written, opt)
@@ -298,7 +298,7 @@ def compareSingleOrphan2Cores(rtable, otable, ctable, trig, id, coeffi, ffti, op
         
     # If doesn't match anything, append as orphan   
     if written == 0:
-        redpy.table.populateOrphan(otable, id, trig, 'Never', opt)
+        redpy.table.populateOrphan(otable, id, trig, opt)
 
 
 def runCorrelation(rtable, otable, ctable, trig, id, opt):
@@ -330,4 +330,4 @@ def runCorrelation(rtable, otable, ctable, trig, id, opt):
             compareSingleOrphan2Cores(rtable, otable, ctable, trig, id, coeffi, ffti, opt)
         # Populate as an orphan if there are no repeaters yet
         else:
-            redpy.table.populateOrphan(otable, id, trig, 'Never', opt)
+            redpy.table.populateOrphan(otable, id, trig, opt)
