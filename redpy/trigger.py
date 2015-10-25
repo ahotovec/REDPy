@@ -23,8 +23,9 @@ def getIRIS(date, opt, nsec=86400):
     client = Client("IRIS")
 
     # Download data with padding to account for triggering algorithm
+    # Make overlap symmetric
     st = client.get_waveforms(opt.network, opt.station, opt.location, opt.channel,
-        date - opt.ptrig, date + nsec + opt.atrig)
+        date - opt.atrig, date + nsec + opt.atrig)
 
     st = st.detrend() # can create noise artifacts??
     st = st.merge(method=1, fill_value='interpolate')
@@ -34,15 +35,16 @@ def getIRIS(date, opt, nsec=86400):
     return st
 
 
-def trigger(st, opt):
+def trigger(st, ptime, opt):
 
     """
     Run triggering algorithm on a stream of data.
 
     st: OBSPy stream of data
+    ptime: time or previous trigger in samples
     opt: Options object describing station/run parameters
 
-    Returns triggered traces as OBSPy trace object
+    Returns triggered traces as OBSPy trace object and ptime for next run 
     """
 
     # Filter the data for triggering
@@ -59,35 +61,41 @@ def trigger(st, opt):
     
     if len(on_off) > 0:
     
-        pick = on_off[:,0]  # turned off AIC; too slow while testing
-        #pick = np.zeros([len(on_off),1])
-        #for n in range(len(pick)):
-        #    pick[n] = aicpick(st_f, on_off[n, 0], opt)
-    
-        ttime = 0
+        pick = on_off[:,0]    
         ind = 0
-        # Slice out the raw data, not filtered except for highpass to reduce long period drift,
-        # and save the maximum STA/LTA ratio value as trigs.maxratio
-        for n in range(len(on_off)):
-            if on_off[n, 0] > ttime + opt.mintrig*opt.samprate:
-                if ttime is 0 and pick[n] > ttime + opt.ptrig*opt.samprate:
-                    ttime = pick[n]
+        
+        # Slice out the raw data (not filtered except for highpass to reduce long period
+        # drift) and save the maximum STA/LTA ratio value for
+        # use in orphan expiration
+
+        for n in range(len(pick)):
+            
+            ttime = pick[n]
+            
+            if (ttime >= opt.atrig*opt.samprate) and (ttime >= ptime + opt.mintrig*opt.samprate) and (ttime < len(tr.data) - 2*opt.atrig*opt.samprate):
+                
+                ptime = ttime
+                if ind is 0:
+                    # Slice and save as first trace              
                     trigs = st.slice(t - opt.ptrig + ttime/opt.samprate,
                                      t + opt.atrig + ttime/opt.samprate)
                     trigs[ind].stats.maxratio = np.amax(cft[on_off[n,0]:on_off[n,1]])
                     ind = ind+1
                 else:
-                    ttime = pick[n]
-                    if ttime < len(tr.data) - (opt.atrig + opt.ptrig)*opt.samprate:
-                        trigs = trigs.append(tr.slice(
+                    # Slice and append to previous traces
+                    trigs = trigs.append(tr.slice(
                             t - opt.ptrig + ttime/opt.samprate,
                             t + opt.atrig + ttime/opt.samprate))
-                        trigs[ind].stats.maxratio = np.amax(cft[on_off[n,0]:on_off[n,1]])
-                        ind = ind+1
-                            
-        return trigs
+                    trigs[ind].stats.maxratio = np.amax(cft[on_off[n,0]:on_off[n,1]])
+                    ind = ind+1
+        
+        ptime = ptime - len(tr.data) + opt.ptrig*opt.samprate                                      
+        if ind is 0:
+            return [], -len(tr.data)
+        else:
+            return trigs, ptime
     else:
-        return []
+        return [], -len(tr.data)
 
 
 def dataclean(alltrigs, opt, flag=1):
