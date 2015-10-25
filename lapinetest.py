@@ -25,11 +25,10 @@ jtable = eval('h5file.root.'+ opt.groupName + '.junk')
 
 ttimer = time.time()
 tstart = UTCDateTime('2015-10-22 00:00')
-nhour = 24
+nhour = 72
 
 previd = 0
 ptime = -2000
-lasttable = 0
 for hour in range(nhour):
 
     t = tstart+hour*3600
@@ -57,12 +56,6 @@ for hour in range(nhour):
             id = previd + i
             redpy.correlation.runCorrelation(rtable, otable, ctable, trigs[i], id, opt)
         previd = id + 1
-        
-        
-        if len(rtable) > lasttable:
-            redpy.cluster.runFullOPTICS(rtable, ctable)
-            redpy.plotting.createCMatrixFigure(rtable, ctable)
-            lasttable = len(rtable)
 
 print("Correlation done in: {:03.2f} seconds".format(time.time()-ttimer))
 
