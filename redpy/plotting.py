@@ -8,15 +8,24 @@ These are very brute force plotting; should be replaced with more sophisticated 
 
 
 def createOrderedWaveformFigure(rtable, opt):
-    data = np.zeros((len(rtable), int(20*opt.samprate)))
+    data = np.zeros((len(rtable), int((opt.ptrig+opt.atrig)*opt.samprate)))
     fig = plt.figure(figsize=(12, 6))
     n=-1
     for r in rtable.iterrows():
         n = n+1
-        data[n, :] = r['waveform'][r['windowStart']-int(
-            5*opt.samprate):r['windowStart']+int(15*opt.samprate)]
-        data[n, :] = data[n, :]/max(data[n, int(5*opt.samprate):int(
-            5*opt.samprate)+opt.winlen])
+        
+        # Determine padding        
+        ppad = int(max(0, r['windowStart'] - opt.ptrig*opt.samprate - 1))
+        apad = int(max(0, opt.ptrig*opt.samprate - r['windowStart']))
+        
+        tmp = r['waveform'][max(0, r['windowStart']-int(
+            opt.ptrig*opt.samprate)):min(len(r['waveform']),
+            r['windowStart']+int(opt.atrig*opt.samprate))]
+            
+        tmp = np.hstack((np.zeros(ppad), tmp, np.zeros(apad)))
+        data[n, :] = tmp/max(tmp[int((opt.ptrig-opt.winlen/2)*opt.samprate):int(
+            (opt.ptrig+opt.winlen/2)*opt.samprate)])
+
     
     order = rtable.cols.order[:]
     datao = data[order, :]
