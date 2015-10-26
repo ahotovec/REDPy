@@ -1,5 +1,6 @@
 from obspy import UTCDateTime
 from obspy.fdsn import Client
+from obspy.earthworm import Client as EWClient
 from obspy.core.trace import Trace
 from obspy.core.stream import Stream
 from obspy.signal.trigger import classicSTALTA, triggerOnset
@@ -21,10 +22,40 @@ def getIRIS(date, opt, nsec=86400):
     """    
 
     client = Client("IRIS")
-
+    
     # Download data with padding to account for triggering algorithm
     # Make overlap symmetric
     st = client.get_waveforms(opt.network, opt.station, opt.location, opt.channel,
+        date - opt.atrig, date + nsec + opt.atrig)
+
+    st = st.detrend() # can create noise artifacts??
+    st = st.merge(method=1, fill_value='interpolate')
+    st = st.filter("highpass", freq=opt.fhigh, corners=2,
+            zerophase=True)
+
+    return st
+
+
+def getEarthworm(date, server, port, opt, nsec=86400):
+    
+    """
+    Download data from a (local) Earthworm waveserver.
+    
+    date: UTCDateTime of beginning of period of interest
+    server: String name of server
+    port: Port number
+    opt: Options object describing station/run parameters
+    nsec: Number of seconds to download without padding
+        (default 86400 s, or 1 day)
+    
+    Returns ObsPy stream object
+    """
+    
+    client = EWClient(server, port)
+    
+    # Download data with padding to account for triggering algorithm
+    # Make overlap symmetric
+    st = client.getWaveform(opt.network, opt.station, opt.location, opt.channel,
         date - opt.atrig, date + nsec + opt.atrig)
 
     st = st.detrend() # can create noise artifacts??

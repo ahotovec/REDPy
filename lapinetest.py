@@ -8,12 +8,20 @@ from tables import *
 from redpy.optics import *
 from obspy import UTCDateTime
 
-# Current issues: alignment, holes in cmatrix (from when two clusters combine?)
-# Something's also up with needing to run OPTICS before plotting....?
+import warnings
+warnings.filterwarnings("ignore")
+
+# Current issues: alignment between clusters when they combine, holes in cmatrix
+# Something's also up with needing to run OPTICS before plotting or the last cluster is
+#  plotted as being identical
 
 opt = redpy.config.Options(title="La Pine Test", filename="LPtest.h5", groupName="svic",
         groupDesc="LaPine: SVIC", station="SVIC", network="CC", channel="EHZ",
         winlen=1024, ptrig=20.0, atrig=40.0)
+
+# opt = redpy.config.Options(title="La Pine Test", filename="LPtest2.h5", groupName="crbu",
+#         groupDesc="LaPine: CRBU", station="CRBU", network="CC", channel="EHZ",
+#         winlen=512, ptrig=20.0, atrig=40.0, samprate=50.0, cmin=0.75)
 
 redpy.table.initializeTable(opt) 
 
@@ -25,7 +33,7 @@ jtable = eval('h5file.root.'+ opt.groupName + '.junk')
 
 ttimer = time.time()
 tstart = UTCDateTime('2015-10-22 00:00')
-nhour = 72
+nhour = 120
 
 previd = 0
 ptime = -2000
@@ -34,6 +42,7 @@ for hour in range(nhour):
     t = tstart+hour*3600
     print(t)
     st = redpy.trigger.getIRIS(t, opt, nsec=3600)
+#     st = redpy.trigger.getEarthworm(t, "mazama.ess.washington.edu", 16017 ,opt, nsec=3600)
     alltrigs, ptime = redpy.trigger.trigger(st, ptime, opt)
 
     # Clean out data spikes etc.
@@ -52,12 +61,13 @@ for hour in range(nhour):
             ostart = 1
         
         # Loop through remaining triggers
-        for i in range(ostart,len(trigs)):  
-            id = previd + i
-            redpy.correlation.runCorrelation(rtable, otable, ctable, trigs[i], id, opt)
-        previd = id + 1
-
-print("Correlation done in: {:03.2f} seconds".format(time.time()-ttimer))
+         for i in range(ostart,len(trigs)):  
+             id = previd + i
+             redpy.correlation.runCorrelation(rtable, otable, ctable, trigs[i], id, opt)
+         previd = id + 1
+         print(previd)
+ 
+ print("Correlation done in: {:03.2f} seconds".format(time.time()-ttimer))
 
 if len(rtable) > 0:
     # Run clustering one more time before plotting
