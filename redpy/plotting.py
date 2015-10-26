@@ -15,8 +15,8 @@ def createOrderedWaveformFigure(rtable, opt):
         n = n+1
         
         # Determine padding        
-        ppad = int(max(0, r['windowStart'] - opt.ptrig*opt.samprate - 1))
-        apad = int(max(0, opt.ptrig*opt.samprate - r['windowStart']))
+        ppad = int(max(0, opt.ptrig*opt.samprate - r['windowStart']))
+        apad = int(max(0, r['windowStart'] - opt.ptrig*opt.samprate - 1))
         
         tmp = r['waveform'][max(0, r['windowStart']-int(
             opt.ptrig*opt.samprate)):min(len(r['waveform']),
