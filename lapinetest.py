@@ -21,7 +21,8 @@ opt = redpy.config.Options(title="La Pine Test", filename="LPtest.h5", groupName
 
 # opt = redpy.config.Options(title="La Pine Test", filename="LPtest2.h5", groupName="crbu",
 #         groupDesc="LaPine: CRBU", station="CRBU", network="CC", channel="EHZ",
-#         winlen=512, ptrig=20.0, atrig=40.0, samprate=50.0, cmin=0.75)
+#         source="mazama.ess.washington.edu", port=16017, winlen=512, ptrig=20.0,
+#         atrig=40.0, samprate=50.0, cmin=0.75)
 
 redpy.table.initializeTable(opt) 
 
@@ -33,16 +34,15 @@ jtable = eval('h5file.root.'+ opt.groupName + '.junk')
 
 ttimer = time.time()
 tstart = UTCDateTime('2015-10-22 00:00')
-nhour = 120
+nhour = 24*5+16
 
 previd = 0
 ptime = -2000
 for hour in range(nhour):
 
-    t = tstart+hour*3600
+    t = tstart+hour*opt.nsec
     print(t)
-    st = redpy.trigger.getIRIS(t, opt, nsec=3600)
-#     st = redpy.trigger.getEarthworm(t, "mazama.ess.washington.edu", 16017 ,opt, nsec=3600)
+    st = redpy.trigger.getData(t, opt)
     alltrigs, ptime = redpy.trigger.trigger(st, ptime, opt)
 
     # Clean out data spikes etc.
@@ -61,13 +61,13 @@ for hour in range(nhour):
             ostart = 1
         
         # Loop through remaining triggers
-         for i in range(ostart,len(trigs)):  
-             id = previd + i
-             redpy.correlation.runCorrelation(rtable, otable, ctable, trigs[i], id, opt)
-         previd = id + 1
-         print(previd)
+        for i in range(ostart,len(trigs)):  
+            id = previd + i
+            redpy.correlation.runCorrelation(rtable, otable, ctable, trigs[i], id, opt)
+        previd = id + 1
+        print(previd)
  
- print("Correlation done in: {:03.2f} seconds".format(time.time()-ttimer))
+print("Correlation done in: {:03.2f} seconds".format(time.time()-ttimer))
 
 if len(rtable) > 0:
     # Run clustering one more time before plotting

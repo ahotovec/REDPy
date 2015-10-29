@@ -2,9 +2,10 @@ class Options(object):
     
     def __init__(self, title="REDPy Catalog", filename="redtable.h5", groupName="hsr",
         groupDesc="MSH: HSR-EHZ-UW Default", station="HSR", channel="EHZ", network="UW",
-        location="--", samprate=100.0, lwin=7.0, swin=0.8, trigon=3.0, trigoff=2.0,
-        mintrig=10.0, kurtmax=80., kurtfmax=150., oratiomax=0.06, kurtwin=5., winlen=512,
-        ptrig=10.0, atrig=20.0, fhigh=0.25, fmin=1., fmax=10.0, cmin=0.7, minorph=7.0, maxorph=30.0):
+        location="--", samprate=100.0, server="IRIS", port=16017, nsec=3600, lwin=7.0,
+        swin=0.8, trigon=3.0, trigoff=2.0, mintrig=10.0, kurtmax=80., kurtfmax=150.,
+        oratiomax=0.06, kurtwin=5., winlen=512, ptrig=10.0, atrig=20.0, fhigh=0.25,
+        fmin=1., fmax=10.0, cmin=0.7, minorph=7.0, maxorph=30.0):
         
         """
         Defines the settings that are often passed to routines and that define the table.
@@ -22,7 +23,10 @@ class Options(object):
         network: String of network code (default "UW")
         location: String of location code (default "--")
         samprate: Sampling rate of that station (default 100.0 Hz)
-        
+        server: Source of data (default "IRIS", otherwise name of waveserver)
+        port: Port number for server (default 16017, not used if using IRIS)
+        nsec: Number of seconds to download from server at a time (default 3600 s) 
+                
         TRIGGERING PARAMETERS:
         lwin: Length of long window for STALTA (default 7.0 s)
         swin: Length of short window for STALTA (default 0.8 s)
@@ -71,6 +75,8 @@ class Options(object):
         self.network = network
         self.location = location
         self.samprate = samprate
+        self.server = server
+        self.port = port
         self.lwin = lwin
         self.swin = swin
         self.trigon = trigon
