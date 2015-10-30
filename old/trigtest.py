@@ -9,19 +9,35 @@ from obspy import UTCDateTime
 
 
 """
-Test script for PyTables functionality
+Test script for data cleaning effectiveness
 """
 
 opt = redpy.config.Options(filename="test.h5")
 
 redpy.table.initializeTable(opt) 
 
-t = UTCDateTime("2004-09-23")
+t = UTCDateTime("2014-08-12")
 st = redpy.trigger.getIRIS(t, opt, nsec=86400)
-temptrig = redpy.trigger.trigger(st, opt)
+alltrigs = redpy.trigger.trigger(st, opt)
 
-# Clean out data spikes and calibration pulses
-trigs, junk = redpy.trigger.dataclean(temptrig,opt)
+# Clean out data spikes etc.
+trigs, junk = redpy.trigger.dataclean(alltrigs,opt)
+
+print trigs
+print junk
+
+#for i in range(len(junk)):
+#    junk[i].plot()
+
+for i in range(len(trigs)):
+    trigs[i].plot()
+
+"""
+
+
+
+
+
 
 h5file = open_file(opt.filename, "a")
 rtable = eval('h5file.root.'+ opt.groupName + '.repeaters')
@@ -140,3 +156,5 @@ plt.show()
 
 # Close file when done
 h5file.close()
+
+"""
