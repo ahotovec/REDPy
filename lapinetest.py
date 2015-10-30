@@ -15,14 +15,8 @@ warnings.filterwarnings("ignore")
 # Something's also up with needing to run OPTICS before plotting or the last cluster is
 #  plotted as being identical
 
-opt = redpy.config.Options(title="La Pine Test", filename="LPtest.h5", groupName="svic",
-        groupDesc="LaPine: SVIC", station="SVIC", network="CC", channel="EHZ",
-        winlen=1024, ptrig=20.0, atrig=40.0)
-
-# opt = redpy.config.Options(title="La Pine Test", filename="LPtest2.h5", groupName="crbu",
-#         groupDesc="LaPine: CRBU", station="CRBU", network="CC", channel="EHZ",
-#         source="mazama.ess.washington.edu", port=16017, winlen=512, ptrig=20.0,
-#         atrig=40.0, samprate=50.0, cmin=0.75)
+# Changed options to read a configuration file
+opt = redpy.config.Options('lapine.cfg')
 
 redpy.table.initializeTable(opt) 
 
@@ -34,7 +28,7 @@ jtable = eval('h5file.root.'+ opt.groupName + '.junk')
 
 ttimer = time.time()
 tstart = UTCDateTime('2015-10-22 00:00')
-nhour = 24*5+16
+nhour = 24*7
 
 previd = 0
 ptime = -2000
