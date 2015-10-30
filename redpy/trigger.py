@@ -22,11 +22,12 @@ def getData(date, opt):
     # Choose where data are downloaded automatically via options
     # Download data with padding to account for triggering algorithm
     # Make overlap symmetric
-    if opt.server is "IRIS"
+    
+    if opt.server is "IRIS":
         client = Client("IRIS")
         st = client.get_waveforms(opt.network, opt.station, opt.location, opt.channel,
             date - opt.atrig, date + opt.nsec + opt.atrig)
-    else
+    else:
         client = EWClient(opt.server, opt.port)
         st = client.getWaveform(opt.network, opt.station, opt.location, opt.channel,
             date - opt.atrig, date + opt.nsec + opt.atrig)
