@@ -25,12 +25,23 @@ def createOrderedWaveformFigure(rtable, opt):
         tmp = np.hstack((np.zeros(ppad), tmp, np.zeros(apad)))
         data[n, :] = tmp/max(tmp[int((opt.ptrig-opt.winlen/2)*opt.samprate):int(
             (opt.ptrig+opt.winlen/2)*opt.samprate)])
-
     
     order = rtable.cols.order[:]
     datao = data[order, :]
     ax = fig.add_subplot(1, 1, 1)
-    ax.imshow(datao, aspect='auto', vmin=-1, vmax=1, interpolation='nearest', cmap='RdBu')
+    ax.imshow(datao, aspect='auto', vmin=-1, vmax=1, interpolation='nearest', cmap='RdBu',
+        extent=[-1*opt.ptrig, opt.atrig, n+0.5, -0.5])
+    
+    clust = rtable.cols.clusterNumber[:]
+    clust = clust[order]
+    diffclust = np.diff(clust)
+    
+    for n in range(len(diffclust)):
+        if diffclust[n]!=0:
+            plt.axhline(y=n+0.5, color='k')
+    
+    plt.xlabel('Time (s)')
+    plt.ylabel('Ordered Event #')
 
 
 def createCMatrixFigure(rtable, ctable):
