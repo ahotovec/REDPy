@@ -15,7 +15,7 @@ configuration).
 WARNING: Does not currently check for duplicates, do not run with any overlap of previous
 runs!
  
-usage: backfill.py [-h] [-v] [-c CONFIGFILE]
+usage: backfill.py [-h] [-v] [-e ENDTIME] [-c CONFIGFILE] starttime
 
 positional arguments:
   starttime             start time to begin filling (YYYY-MM-DDTHH:MM:SS)

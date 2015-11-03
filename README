@@ -9,3 +9,8 @@ numpy | scipy | matplotlib | obspy | pytables
 Should work with an install of Anaconda for Python 2.7 and:
 conda install -c obspy obspy
 conda install pytables
+
+Run in this order:
+initialize.py - initial set up of hdf5 table
+backfill.py - backfill table between a given start and end date
+makeplots.py - output plots
