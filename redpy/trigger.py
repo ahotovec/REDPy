@@ -40,16 +40,16 @@ def getData(date, opt):
     return st
 
 
-def trigger(st, ptime, opt):
+def trigger(st, rtable, opt):
 
     """
     Run triggering algorithm on a stream of data.
 
     st: OBSPy stream of data
-    ptime: time or previous trigger in samples
+    rtable: Repeater table contains reference time of previous trigger in samples
     opt: Options object describing station/run parameters
 
-    Returns triggered traces as OBSPy trace object and ptime for next run 
+    Returns triggered traces as OBSPy trace object updates ptime for next run 
     """
 
     # Filter the data for triggering
@@ -73,6 +73,7 @@ def trigger(st, ptime, opt):
         # drift) and save the maximum STA/LTA ratio value for
         # use in orphan expiration
 
+        ptime = rtable.attrs.ptime
         for n in range(len(pick)):
             
             ttime = pick[n]
@@ -96,11 +97,14 @@ def trigger(st, ptime, opt):
         
         ptime = ptime - len(tr.data) + opt.ptrig*opt.samprate                                      
         if ind is 0:
-            return [], -len(tr.data)
+            rtable.attrs.ptime = -len(tr.data)
+            return []
         else:
-            return trigs, ptime
+            rtable.attrs.ptime = ptime
+            return trigs
     else:
-        return [], -len(tr.data)
+        rtable.attrs.ptime =  -len(tr.data)
+        return []
 
 
 def dataclean(alltrigs, opt, flag=1):
