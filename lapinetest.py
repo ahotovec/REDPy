@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import time
 import redpy
 import datetime
 
@@ -11,36 +10,25 @@ from obspy import UTCDateTime
 import warnings
 warnings.filterwarnings("ignore")
 
-# Current issues: alignment between clusters when they combine, holes in cmatrix
-# Something's also up with needing to run OPTICS before plotting or the last cluster is
-#  plotted as being identical
-
 # Changed options to read a configuration file
 opt = redpy.config.Options('lapine.cfg')
 
 redpy.table.initializeTable(opt) 
 
-h5file = open_file(opt.filename, "a")
-rtable = eval('h5file.root.'+ opt.groupName + '.repeaters')
-otable = eval('h5file.root.'+ opt.groupName + '.orphans')
-ctable = eval('h5file.root.'+ opt.groupName + '.correlation')
-jtable = eval('h5file.root.'+ opt.groupName + '.junk')
+h5file, rtable, otable, ctable, jtable = redpy.table.openTable(opt)
 
-ttimer = time.time()
-tstart = UTCDateTime('2015-10-22 00:00')
-nhour = 24*7
+tstart = UTCDateTime('2015-10-18 00:00')
+nhour = 24*14
 
-previd = 0
-ptime = -2000
 for hour in range(nhour):
 
     t = tstart+hour*opt.nsec
     print(t)
     st = redpy.trigger.getData(t, opt)
-    alltrigs, ptime = redpy.trigger.trigger(st, ptime, opt)
+    alltrigs = redpy.trigger.trigger(st, rtable, opt)
 
     # Clean out data spikes etc.
-    trigs, junk = redpy.trigger.dataclean(alltrigs,opt,flag=1)
+    trigs, junk = redpy.trigger.dataclean(alltrigs, opt, flag=1)
 
     #save junk triggers in separate table for quality checking purposes
     for i in range(len(junk)):
@@ -56,21 +44,17 @@ for hour in range(nhour):
         
         # Loop through remaining triggers
         for i in range(ostart,len(trigs)):  
-            id = previd + i
+            id = rtable.attrs.previd + i
             redpy.correlation.runCorrelation(rtable, otable, ctable, trigs[i], id, opt)
-        previd = id + 1
-        print(previd)
+        rtable.attrs.previd = id + 1
+    
+    redpy.table.clearExpiredOrphans(otable, opt, tstart+hour*3600)
+    print("Length of Orphan table: {0}".format(len(otable)))
  
-print("Correlation done in: {:03.2f} seconds".format(time.time()-ttimer))
-
 if len(rtable) > 0:
     # Run clustering one more time before plotting
     redpy.cluster.runFullOPTICS(rtable, ctable)
-    
-    # Clear out expired orphans
-    #redpy.table.clearExpiredOrphans(otable,opt,UTCDateTime('2014-08-25')) # For testing orphan removal, type date manually here (make it at least opt.minorph days later than tstart. For real time running, use commented line below
-    #redpy.table.clearExpiredOrphans(otable,opt,tstart+nhour*3600)
-    
+        
     # Print some information about the run
     print("Repeaters found: {0}".format(len(rtable)))
     print("Orphans saved: {0}".format(len(otable)))
@@ -81,8 +65,6 @@ if len(rtable) > 0:
     print("Number of leftovers in clustering: {0}".format(len(rtable.get_where_list('clusterNumber == -1'))))
     print("Number of junk triggers: {0}".format(len(jtable)))
     
-    print(previd)
-    print(ptime)
     
     # Plot ordered waveforms and correlation matrix (unordered and ordered)
     redpy.plotting.createOrderedWaveformFigure(rtable, opt)
