@@ -14,3 +14,7 @@ Run in this order:
 initialize.py - initial set up of hdf5 table
 backfill.py - backfill table between a given start and end date
 makeplots.py - output plots
+
+Optional:
+single.py - fill table with last N seconds (default 3600 s, 1 hour),
+    designed to be run as a cron job every N seconds
