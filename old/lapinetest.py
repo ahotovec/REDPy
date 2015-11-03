@@ -17,8 +17,8 @@ redpy.table.initializeTable(opt)
 
 h5file, rtable, otable, ctable, jtable = redpy.table.openTable(opt)
 
-tstart = UTCDateTime('2015-10-18 00:00')
-nhour = 24*14
+tstart = UTCDateTime('2015-10-10 00:00')
+nhour = 24*21
 
 for hour in range(nhour):
 
@@ -63,8 +63,7 @@ if len(rtable) > 0:
     # May need to alter code to better deal with these guys, currently if there is a leftover,
     # it is likely to never be re-associated with a family again...
     print("Number of leftovers in clustering: {0}".format(len(rtable.get_where_list('clusterNumber == -1'))))
-    print("Number of junk triggers: {0}".format(len(jtable)))
-    
+    print("Number of junk triggers: {0}".format(len(jtable)))   
     
     # Plot ordered waveforms and correlation matrix (unordered and ordered)
     redpy.plotting.createOrderedWaveformFigure(rtable, opt)
