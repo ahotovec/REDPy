@@ -138,6 +138,8 @@ def initializeTable(opt):
     rtable.attrs.atrig = opt.atrig
     rtable.attrs.fmin = opt.fmin
     rtable.attrs.fmax = opt.fmax
+    rtable.attrs.previd = 0
+    rtable.attrs.ptime = -9999
     rtable.flush()
     
     otable = h5file.create_table(group, "orphans", Orphans(opt),
@@ -153,6 +155,25 @@ def initializeTable(opt):
 
     h5file.close()
 
+
+def openTable(opt):
+    """
+    Convenience function to open the catalog and access the tables in it.
+    
+    opt: Options object describint station/run parameters
+    
+    Returns handles to h5file, rtable, otable, ctable, and jtable
+    """
+
+    h5file = open_file(opt.filename, "a")
+    
+    rtable = eval('h5file.root.'+ opt.groupName + '.repeaters')
+    otable = eval('h5file.root.'+ opt.groupName + '.orphans')
+    ctable = eval('h5file.root.'+ opt.groupName + '.correlation')
+    jtable = eval('h5file.root.'+ opt.groupName + '.junk')
+    
+    return h5file, rtable, otable, ctable, jtable
+
     
 def populateRepeater(rtable, id, trig, opt, windowStart=-1):
 
@@ -166,8 +187,8 @@ def populateRepeater(rtable, id, trig, opt, windowStart=-1):
     opt: Options object describing station/run parameters
     windowStart: triggering time (defaults to opt.ptrig seconds)
 
-    Appends this row to table, but does not update the clustering parameters (sets them
-    to 0)
+    Appends this row to Repeaters table, but does not update the clustering parameters
+        (sets them to 0)
     """
     
     trigger = rtable.row
@@ -199,10 +220,9 @@ def populateOrphan(otable, id, trig, opt):
         (e.g., h5file.root.groupName.orphans)
     id: integer id number given to this trigger, should be unique
     trig: ObsPy trace from triggering function
-    expires: Expiration date (as a string) for orphan
     opt: Options object describing station/run parameters
 
-    Appends this row to table, 
+    Appends this row to Orphans table, adding an expiration date 
     """
     
     trigger = otable.row
@@ -215,27 +235,23 @@ def populateOrphan(otable, id, trig, opt):
     trigger['windowStart'] = windowStart
     trigger['windowCoeff'], trigger['windowFFT'] = redpy.correlation.calcWindow(
         trig.data, windowStart, opt)
-    #equation of a straight line between (opt.trigon,opt.minorph) and (opt.trigon+7,opt.maxorph) - finds y value (in days from trig starttime) that goes with maxratio of current trigger
+
     adddays = ((opt.maxorph-opt.minorph)/7.)*(trig.stats.maxratio-opt.trigon)+opt.minorph
     trigger['expires'] = (trig.stats.starttime+adddays*86400).isoformat()
-    #print trigger['expires']
     trigger.append()
     otable.flush()
-    #print("Orphans abandoned: {0}".format(len(otable)))
 
 
 def populateJunk(jtable, trig, isjunk, opt):
     
     """
-    Initially populates a new row in the 'Orphans' table.
+    Initially populates a new row in the 'Junk' table.
     
     jtable: object pointing to the table to populate
-    (e.g., h5file.root.groupName.junk)
+        (e.g., h5file.root.groupName.junk)
     trig: ObsPy trace from triggering function
     isjunk: Integer flag, 0=junk, 1=expired orphan
     opt: Options object describing station/run parameters
-    
-    Appends this row to table,
     """
     
     trigger = jtable.row
@@ -248,8 +264,6 @@ def populateJunk(jtable, trig, isjunk, opt):
     trigger['isjunk'] = isjunk
     trigger.append()
     jtable.flush()
-
-    # print("Junk events: {0}".format(len(jtable)))
 
 
 def moveOrphan(rtable, otable, oindex, opt):
@@ -279,17 +293,25 @@ def moveOrphan(rtable, otable, oindex, opt):
     otable.flush()  
     rtable.flush()
 
-def clearExpiredOrphans(otable,opt,tend):
+
+def clearExpiredOrphans(otable, opt, tend):
     """
-    Deletes orphans that have passed their expiration date (relative to the end time of the current clustering run)
+    Deletes orphans that have passed their expiration date
+    
+    otable: object pointing to the table to populate
+        (e.g., h5file.root.groupName.orphans)
+    opt: Options object describing station/run parameters
+    tend: Time to remove orphans older than, corresponds usually to end of run increment
+    
+    Removes orphans from table, prints how many were removed
     """
 
-    #index = otable.get_where_list('expires > tend.isoformat()')
-    index = np.where(otable.cols.expires[:] > tend.isoformat())
+    index = np.where(otable.cols.expires[:] < tend.isoformat())
     for n in range(len(index[0])-1,-1,-1):
         otable.remove_row(index[0][n])
     otable.flush()
     print '%i Orphans aged out of the system' % len(index[0])
+
 
 def appendCorrelation(ctable, id1, id2, ccc, opt):
 
@@ -305,6 +327,7 @@ def appendCorrelation(ctable, id1, id2, ccc, opt):
 
     Appends this row to the table, and automatically puts the smaller of
     the two id numbers first
+    
     Only appends if the value is greater than the minimum defined in opt
     """
     
