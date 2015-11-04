@@ -46,7 +46,7 @@ tstart = tend-opt.nsec
 if args.verbose: print(tstart)
 
 # Download and trigger
-st = redpy.trigger.getData(tstart+n*opt.nsec, opt)
+st = redpy.trigger.getData(tstart, opt)
 alltrigs = redpy.trigger.trigger(st, rtable, opt)
 
 # Clean out data spikes etc.
