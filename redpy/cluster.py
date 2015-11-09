@@ -1,6 +1,7 @@
 import numpy as np
 from tables import *
 from redpy.optics import *
+from redpy.correlation import *
 import time
 
 def setClusters(rtable, cutoff=0.7):
@@ -72,8 +73,32 @@ def setCenters(rtable, cutoff=0.7):
     rtable.cols.isCore[:] = cores
     rtable.flush()
     
+
+def checkCores(rtable, ctable, opt):
+    """
+    Checks to make sure cores are correlated with each other
     
-def runFullOPTICS(rtable, ctable):
+    rtable: Repeater table
+    ctable: Correlation matrix table
+    
+    Sets appropriate correlation values in ctable
+    """
+    
+    cores = rtable.get_where_list('(isCore==1)')
+    if cores.any():
+        for core1 in range(len(cores)-1):
+            for core2 in range(core1+1,len(cores)):
+                cid1 = rtable.cols.id[cores[core1]]
+                cid2 = rtable.cols.id[cores[core2]]
+                if not ctable.get_where_list('((id1 == {0}) & (id2 == {1})) | \
+                    ((id1 == {1}) & (id2 == {0}))'.format(cid1,cid2)).any():
+                    cor, lag = redpy.correlation.xcorr1x1(rtable[cores[core1]]['windowFFT'],
+                        rtable[cores[core2]]['windowFFT'], rtable[cores[core1]]['windowCoeff'],
+                        rtable[cores[core2]]['windowCoeff'])
+                    redpy.table.appendCoreCorrelation(ctable, cid1, cid2, cor, opt)
+
+    
+def runFullOPTICS(rtable, ctable, opt):
     
     """
     Runs a full, brute-force OPTICS clustering using the correlation values in ctable
@@ -84,6 +109,8 @@ def runFullOPTICS(rtable, ctable):
     Sets the order, reachability, and coreDistance columns in rtable
     """
     t = time.time()
+    
+    checkCores(rtable, ctable, opt)
     
     C = np.zeros((len(rtable),len(rtable)))
     id1 = ctable.cols.id1[:]
@@ -117,11 +144,11 @@ def runFullOPTICS(rtable, ctable):
     
     if len(rtable) > 0:
         print("Repeaters found: {0}".format(len(rtable)))
-        print("Number of clusters: {0}".format(max(rtable.cols.clusterNumber[:])))
+        print("Number of clusters: {0}".format(max(rtable.cols.clusterNumber[:])+1))
         bigfam = 0
         for n in range(max(rtable.cols.clusterNumber[:])+1):
             tmp = len(rtable.get_where_list('(isCore == 0) & (clusterNumber == {})'.format(n)))
             if tmp > bigfam:
                bigfam = tmp
-        print("Members in largest cluster: {0}".format(bigfam))
+        print("Members in largest cluster: {0}".format(bigfam+1))
         print("Number of leftovers in clustering: {0}".format(len(rtable.get_where_list('clusterNumber == -1'))))

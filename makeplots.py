@@ -32,10 +32,12 @@ else:
 
 h5file, rtable, otable, ctable, jtable = redpy.table.openTable(opt)
 
+redpy.cluster.runFullOPTICS(rtable, ctable, opt)
+
 if args.verbose:
     print("Repeaters found: {0}".format(len(rtable)))
     print("Orphans saved: {0}".format(len(otable)))
-    print("Number of clusters: {0}".format(max(rtable.cols.clusterNumber[:])))
+    print("Number of clusters: {0}".format(max(rtable.cols.clusterNumber[:])+1))
     print("Number of leftovers in clustering: {0}".format(len(rtable.get_where_list('clusterNumber == -1'))))
     print("Number of junk triggers: {0}".format(len(jtable)))   
 

@@ -338,3 +338,28 @@ def appendCorrelation(ctable, id1, id2, ccc, opt):
         corr['ccc'] = ccc
         corr.append()        
         ctable.flush()
+        
+def appendCoreCorrelation(ctable, id1, id2, ccc, opt):
+
+    """
+    Appends a new value to the 'Correlation Matrix' table.
+
+    corr: object pointing to the row in the table to populate
+        (e.g., h5file.root.hsr.correlation.row)
+    id1: unique id number of first trigger
+    id2: unique id number of second trigger
+    ccc: cross-correlation between the two triggers in the window
+    opt: Options object describing station/run parameters
+
+    Appends this row to the table, and automatically puts the smaller of
+    the two id numbers first
+    
+    Will append if the value is less than the minimum defined in opt
+    """
+    
+    corr = ctable.row
+    corr['id1'] = min(id1, id2)
+    corr['id2'] = max(id1, id2)
+    corr['ccc'] = ccc
+    corr.append()        
+    ctable.flush()
