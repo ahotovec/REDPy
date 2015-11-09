@@ -243,7 +243,7 @@ def compareMultipleOrphans2Cores(rtable, ctable, written, opt):
         
     # Run clustering if events create a new family
     if found == 0:
-        redpy.cluster.runFullOPTICS(rtable, ctable)
+        redpy.cluster.runFullOPTICS(rtable, ctable, opt)
         
 
 def compareSingleOrphan2Cores(rtable, otable, ctable, trig, id, coeffi, ffti, opt):

@@ -100,7 +100,7 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
 print("Caught up to: {0}".format(tstart+n*opt.nsec))
 
 if len(rtable) > 0:
-    redpy.cluster.runFullOPTICS(rtable, ctable)
+    redpy.cluster.runFullOPTICS(rtable, ctable, opt)
 
 if args.verbose: print("Closing table...")
 h5file.close()
