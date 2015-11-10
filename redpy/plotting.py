@@ -61,14 +61,14 @@ def createCMatrixFigure(rtable, ctable):
     Co = C[order, :]
     Co = Co[:, order]
 
-    # Plot the C matrices (saturated below 0.65)
+    # Plot the C matrices (saturated below 0.6)
     # Left is ordered by time
     # Right is ordered by cluster ordering
     fig = plt.figure(figsize=(12, 6))
     ax = fig.add_subplot(1, 2, 1)
-    ax.imshow(C, aspect='auto', vmin=0.65, vmax=1, interpolation='nearest')
+    ax.imshow(C, aspect='auto', vmin=0.6, vmax=1, interpolation='nearest')
     ax = fig.add_subplot(1, 2, 2)
-    ax.imshow(Co, aspect='auto', vmin=0.65, vmax=1, interpolation='nearest')
+    ax.imshow(Co, aspect='auto', vmin=0.6, vmax=1, interpolation='nearest')
 
 
 def createWigglePlot(jtable, opt):
