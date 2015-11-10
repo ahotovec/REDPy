@@ -81,20 +81,25 @@ def checkCores(rtable, ctable, opt):
     rtable: Repeater table
     ctable: Correlation matrix table
     
-    Sets appropriate correlation values in ctable
+    Sets appropriate correlation values in ctable. I think this may
+    be very computationally expensive to constantly check to make sure
+    the values are filled...
     """
     
     cores = rtable.get_where_list('(isCore==1)')
+    n = 0
     if cores.any():
-        for core1 in range(len(cores)-1):
-            for core2 in range(core1+1,len(cores)):
-                cid1 = rtable.cols.id[cores[core1]]
-                cid2 = rtable.cols.id[cores[core2]]
-                if not ctable.get_where_list('((id1 == {0}) & (id2 == {1})) | \
-                    ((id1 == {1}) & (id2 == {0}))'.format(cid1,cid2)).any():
-                    cor, lag = redpy.correlation.xcorr1x1(rtable[cores[core1]]['windowFFT'],
-                        rtable[cores[core2]]['windowFFT'], rtable[cores[core1]]['windowCoeff'],
-                        rtable[cores[core2]]['windowCoeff'])
+        for core1 in cores[0:-2]:
+            cid1 = rtable.cols.id[core1]
+            n = n+1
+            for core2 in cores[n:-1]:
+                cid2 = rtable.cols.id[core2]
+                clist = ctable.get_where_list('(id1 == {0}) & (id2 == {1})'.format(
+                    np.min([cid1,cid2]),np.max([cid1,cid2])))
+                if not clist.any():
+                    cor, lag = redpy.correlation.xcorr1x1(rtable.cols.windowFFT[core1],
+                        rtable.cols.windowFFT[core2], rtable.cols.windowCoeff[core1],
+                        rtable.cols.windowCoeff[core2])
                     redpy.table.appendCoreCorrelation(ctable, cid1, cid2, cor, opt)
 
     
@@ -111,6 +116,7 @@ def runFullOPTICS(rtable, ctable, opt):
     t = time.time()
     
     checkCores(rtable, ctable, opt)
+    print("Time spent checking cores: {:03.2f} seconds".format(time.time()-t))
     
     C = np.zeros((len(rtable),len(rtable)))
     id1 = ctable.cols.id1[:]
