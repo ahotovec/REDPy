@@ -94,8 +94,11 @@ def checkCores(rtable, ctable, opt):
             n = n+1
             for core2 in cores[n:-1]:
                 cid2 = rtable.cols.id[core2]
+                
+                # This line is super slow...
                 clist = ctable.get_where_list('(id1 == {0}) & (id2 == {1})'.format(
                     np.min([cid1,cid2]),np.max([cid1,cid2])))
+                    
                 if not clist.any():
                     cor, lag = redpy.correlation.xcorr1x1(rtable.cols.windowFFT[core1],
                         rtable.cols.windowFFT[core2], rtable.cols.windowCoeff[core1],
@@ -115,6 +118,7 @@ def runFullOPTICS(rtable, ctable, opt):
     """
     t = time.time()
     
+    # May move this over to a 'cleanup' function so it isn't run every run of OPTICS    
     checkCores(rtable, ctable, opt)
     print("Time spent checking cores: {:03.2f} seconds".format(time.time()-t))
     
