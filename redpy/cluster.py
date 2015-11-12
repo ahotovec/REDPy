@@ -268,8 +268,8 @@ def runFullOPTICS(rtable, ctable, opt):
     rtable.flush()
         
     # Update the clusters and cores, too!
-    setClusters(rtable)
-    setCenters(rtable)
+    setClusters(rtable, opt)
+    setCenters(rtable, opt)
     
     print("Total time spent clustering: {:03.2f} seconds".format(time.time()-t))
     
