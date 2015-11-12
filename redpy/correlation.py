@@ -59,6 +59,7 @@ def xcorr1x1(windowFFT1, windowFFT2, windowCoeff1, windowCoeff2):
     
 
 def xcorr1xtable(coeffi, ffti, subtable, opt):
+
     """
     Correlates a new event with all events in a subtable.
     
@@ -89,6 +90,7 @@ def xcorr1xtable(coeffi, ffti, subtable, opt):
 
 
 def compare2Family(rtable, ctable, rnumber, cnum, opt):
+
     """
     Correlates a known repeater with all events in a family except the core.
     
@@ -111,6 +113,7 @@ def compare2Family(rtable, ctable, rnumber, cnum, opt):
 
 
 def compareGoodOrphans(rtable, otable, ctable, trig, id, coeffi, ffti, cor, lag, opt):
+
     """
     Goes and finds the matches of the new event in the orphan table, appends them to
     the repeater table, and then compares to cores
@@ -177,6 +180,7 @@ def compareGoodOrphans(rtable, otable, ctable, trig, id, coeffi, ffti, cor, lag,
 
 
 def compareMultipleOrphans2Cores(rtable, ctable, written, opt):
+
     """
     Compares multiple orphans that have already been written to the end of the repeater
     table to the other repeaters
@@ -247,6 +251,7 @@ def compareMultipleOrphans2Cores(rtable, ctable, written, opt):
         
 
 def compareSingleOrphan2Cores(rtable, otable, ctable, trig, id, coeffi, ffti, opt):
+
     """
     Compares a single orphan to the cluster cores, adds the orphan to the best cluster
     if it matches, else appends to the orphan table
@@ -302,6 +307,7 @@ def compareSingleOrphan2Cores(rtable, otable, ctable, trig, id, coeffi, ffti, op
 
 
 def runCorrelation(rtable, otable, ctable, trig, id, opt):
+
     """
     Adds a new trigger to the correct table, runs the correlations and clustering
     

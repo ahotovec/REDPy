@@ -78,7 +78,9 @@ def trigger(st, rtable, opt):
             
             ttime = pick[n]
             
-            if (ttime >= opt.atrig*opt.samprate) and (ttime >= ptime + opt.mintrig*opt.samprate) and (ttime < len(tr.data) - 2*opt.atrig*opt.samprate):
+            if (ttime >= opt.atrig*opt.samprate) and (ttime >= ptime +
+                opt.mintrig*opt.samprate) and (ttime < len(tr.data) -
+                2*opt.atrig*opt.samprate):
                 
                 ptime = ttime
                 if ind is 0:
@@ -108,16 +110,19 @@ def trigger(st, rtable, opt):
 
 
 def dataclean(alltrigs, opt, flag=1):
+
     """
-    Examine triggers and weed out spikes and calibration pulses using kurtosis and outlier ratios
+    Examine triggers and weed out spikes and calibration pulses using kurtosis and
+    outlier ratios
     
     alltrigs: triggers output from triggering
     opt: opt from config
-    flag: 1 if defining window to check, 0 if want to check whole waveform for spikes (note that different threshold values should be used for different window lengths)
+    flag: 1 if defining window to check, 0 if want to check whole waveform for spikes
+        (note that different threshold values should be used for different window lengths)
     
     Returns good trigs (trigs) and junk (junk)
-    
     """
+    
     trigs=Stream()
     junk=Stream()
     for i in range(len(alltrigs)):
@@ -126,7 +131,8 @@ def dataclean(alltrigs, opt, flag=1):
         if flag==0:
             datcut=dat
         else:
-            datcut=alltrigs[i].data[range(int((opt.ptrig-opt.kurtwin/2)*opt.samprate),int((opt.ptrig+opt.kurtwin/2)*opt.samprate))]
+            datcut=alltrigs[i].data[range(int((opt.ptrig-opt.kurtwin/2)*opt.samprate),
+                int((opt.ptrig+opt.kurtwin/2)*opt.samprate))]
         
         #calculate kurtosis in window
         k = stats.kurtosis(datcut)
