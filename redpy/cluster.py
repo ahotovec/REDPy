@@ -160,8 +160,7 @@ def alignAll(rtable, ctable, opt):
                             coeffn, fftn = redpy.correlation.calcWindow(
                                 rtable.cols.waveform[n], rtable.cols.windowStart[n] - lag,
                                 opt)
-                            rtable.cols.windowCoeff[n], rtable.cols.windowFFT[n] = coeffn,
-                                fftn
+                            rtable.cols.windowCoeff[n], rtable.cols.windowFFT[n] = coeffn, fftn
                             rtable.cols.windowStart[n] = rtable.cols.windowStart[n] - lag
                             rtable.cols.clusterNumber[n] = fnum
                             rtable.cols.isCore[n] = 0
