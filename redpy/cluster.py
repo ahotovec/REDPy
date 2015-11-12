@@ -16,7 +16,7 @@ def setClusters(rtable, opt):
     Sets cluster numbers in column 9 of the repeater table
     """
     
-    cutoff = opt.mincor
+    cutoff = opt.cmin
 
     order = rtable.cols.order[:] # Ordering
     oreach = rtable.cols.reachability[:] # Ordered reachability
@@ -56,7 +56,7 @@ def setCenters(rtable, opt):
     opt is higher than what was used to originally consider them a repeater.
     """
     
-    cutoff = opt.mincor
+    cutoff = opt.cmin
 
     order = rtable.cols.order[:]
     oo = np.sort(order) # Unsorted row position
