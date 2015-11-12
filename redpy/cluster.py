@@ -2,18 +2,21 @@ import numpy as np
 from tables import *
 from redpy.optics import *
 from redpy.correlation import *
+from redpy.table import *
 import time
 
-def setClusters(rtable, cutoff=0.7):
+def setClusters(rtable, opt):
 
     """
     Cuts the clustering order into flat clusters, defines orphans as -1
 
     rtable: Repeater table, with cluster ordering in columns 6 - 8
-    cutoff: Minimum coefficient to cut the clusters
+    opt: Options object describing station/run parameters
 
     Sets cluster numbers in column 9 of the repeater table
     """
+    
+    cutoff = opt.mincor
 
     order = rtable.cols.order[:] # Ordering
     oreach = rtable.cols.reachability[:] # Ordered reachability
@@ -40,18 +43,20 @@ def setClusters(rtable, cutoff=0.7):
     rtable.flush()
 
     
-def setCenters(rtable, cutoff=0.7):
+def setCenters(rtable, opt):
 
     """
     Finds the "center" of each cluster (including orphans, if they exist)
     
     rtable: Repeater table, with clustering order in columns 6 - 8
-    cutoff: Minimum coefficient to cut the clusters
+    opt: Options object describing station/run parameters
 
     Sets column 10 of the repeater table to 0 if it is not a core, 1 if it is a core,
-    and -1 if it is an orphan. Orphans may exist in the repeater table if the cutoff is
-    higher than what was used to originally consider them a repeater.
+    and -1 if it is an orphan. Orphans may exist in the repeater table if the cutoff in
+    opt is higher than what was used to originally consider them a repeater.
     """
+    
+    cutoff = opt.mincor
 
     order = rtable.cols.order[:]
     oo = np.sort(order) # Unsorted row position
@@ -72,38 +77,154 @@ def setCenters(rtable, cutoff=0.7):
     
     rtable.cols.isCore[:] = cores
     rtable.flush()
-    
 
-def checkCores(rtable, ctable, opt):
+
+def alignAll(rtable, ctable, opt):
+
     """
-    Checks to make sure cores are correlated with each other
+    Aligns events in the table and combines similar families that were misaligned
     
     rtable: Repeater table
     ctable: Correlation matrix table
+    opt: Options object describing station/run parameters    
     
-    Sets appropriate correlation values in ctable. I think this may
-    be very computationally expensive to constantly check to make sure
-    the values are filled...
+    Ensures all members of a family are properly aligned to the core and that all new 
+    members of a family are cross-correlated with the old members. 
     """
     
-    cores = rtable.get_where_list('(isCore==1)')
-    n = 0
-    if cores.any():
-        for core1 in cores[0:-2]:
-            cid1 = rtable.cols.id[core1]
-            n = n+1
-            for core2 in cores[n:-1]:
-                cid2 = rtable.cols.id[core2]
-                
-                # This line is super slow...
-                clist = ctable.get_where_list('(id1 == {0}) & (id2 == {1})'.format(
-                    np.min([cid1,cid2]),np.max([cid1,cid2])))
-                    
-                if not clist.any():
-                    cor, lag = redpy.correlation.xcorr1x1(rtable.cols.windowFFT[core1],
-                        rtable.cols.windowFFT[core2], rtable.cols.windowCoeff[core1],
-                        rtable.cols.windowCoeff[core2])
-                    redpy.table.appendCoreCorrelation(ctable, cid1, cid2, cor, opt)
+    print('Cleaning up...')
+    t = time.time()
+    cores = rtable.where('(isCore==1)')
+    for core in cores:
+        fam = rtable.get_where_list('(clusterNumber=={}) & (isCore==0)'.format(
+            core['clusterNumber']))
+        if len(fam) > 1:
+            for n in fam:
+                # Correlate 1x1
+                cor, lag = redpy.correlation.xcorr1x1(core['windowFFT'],
+                    rtable[n]['windowFFT'], core['windowCoeff'], rtable[n]['windowCoeff'])
+                # Adjust windowStart by lag, recalculate window
+                rtable.cols.windowStart[n] = rtable.cols.windowStart[n] - lag
+                rtable.cols.windowCoeff[n], rtable.cols.windowFFT[n] = redpy.correlation.calcWindow(
+                    rtable.cols.waveform[n], rtable.cols.windowStart[n], opt)
+                rtable.flush()
+    print('Time spent aligning families to their cores: {} seconds'.format(time.time()-t))
+    
+    t = time.time()
+    tfill = 0
+    cores = rtable.get_where_list('(isCore==1)')    
+    c = 0
+    for core1 in cores[0:-1]:
+        c = c+1
+        if (rtable[core1]['isCore'] == 1):
+            for core2 in cores[c:]:
+                if (rtable[core2]['isCore'] == 1):
+                    # Try comparing cores with no lag
+                    cor, lag = redpy.correlation.xcorr1x1(rtable[core1]['windowFFT'],
+                        rtable[core2]['windowFFT'], rtable[core1]['windowCoeff'],
+                        rtable[core2]['windowCoeff'])
+                    if cor <= opt.cmin - 0.05:
+                        # Try comparing cores with window moved forward half window length
+                        coeffi, ffti = redpy.correlation.calcWindow(
+                            rtable[core2]['waveform'], rtable[core2]['windowStart']
+                            - opt.winlen/2, opt)
+                        cor, lag = redpy.correlation.xcorr1x1(rtable[core1]['windowFFT'],
+                            ffti, rtable[core1]['windowCoeff'], coeffi)
+                        lag = lag + opt.winlen/2
+                        if cor <= opt.cmin - 0.05:
+                            # Try with window moved back half window length
+                            coeffi, ffti = redpy.correlation.calcWindow(
+                                rtable[core2]['waveform'], rtable[core2]['windowStart'] +
+                                opt.winlen/2, opt)
+                            cor, lag = redpy.correlation.xcorr1x1(
+                                rtable[core1]['windowFFT'], ffti,
+                                rtable[core1]['windowCoeff'], coeffi)
+                            lag = lag - opt.winlen/2
+                    if cor > opt.cmin - 0.05:
+                        f1 = rtable.get_where_list(
+                            '(clusterNumber=={})'.format(rtable[core1]['clusterNumber']))
+                        f2 = rtable.get_where_list(
+                            '(clusterNumber=={})'.format(rtable[core2]['clusterNumber']))
+                        # Determine smaller family to adjust
+                        if len(f1) >= len(f2):
+                            f = f2
+                            ff = rtable[f1]
+                            fnum = rtable[core1]['clusterNumber']
+                        else:
+                            f = f1
+                            ff = rtable[f2]
+                            lag = -lag    
+                            fnum = rtable[core2]['clusterNumber']    
+                        # Shove the smaller family over, remove isCore, set clusterNumber
+                        for n in f:
+                            coeffn, fftn = redpy.correlation.calcWindow(
+                                rtable.cols.waveform[n], rtable.cols.windowStart[n] - lag,
+                                opt)
+                            rtable.cols.windowCoeff[n], rtable.cols.windowFFT[n] = coeffn,
+                                fftn
+                            rtable.cols.windowStart[n] = rtable.cols.windowStart[n] - lag
+                            rtable.cols.clusterNumber[n] = fnum
+                            rtable.cols.isCore[n] = 0
+                            rtable.flush()
+                            corn, lagn = redpy.correlation.xcorr1xtable(coeffn, fftn, ff,
+                                opt)
+                            for j in range(len(corn)):
+                                redpy.table.appendCorrelation(ctable, rtable[n]['id'],
+                                    ff[j]['id'], corn[j], opt)
+    print('Time merging families: {} seconds'.format(time.time()-t))
+
+
+def deepClean(rtable, ctable, opt):
+
+    """
+    Completely recalculates the correlation table after realignment.
+    
+    rtable: Repeater table
+    ctable: Correlation matrix table
+    opt: Options object describing station/run parameters
+    
+    May take a VERY long time to complete! Run with extreme caution.
+    """
+    
+    alignAll(rtable, ctable, opt)
+
+    txcorr = 0
+    tstore = 0
+    cores = rtable.where('(isCore==1)')
+    for core in cores:
+        fam = rtable.get_where_list('(clusterNumber=={})'.format(core['clusterNumber']))
+        if len(fam) > 2:
+            
+            # Destroy any lines in ctable relating to the members of this family
+            cstring = []
+            cstring.append('(id1 == {0}) | (id2 == {0})'.format(rtable[fam[0]]['id']))
+            for f in range(1,len(fam)):
+                cstring.append(' | (id1 == {0}) | (id2 == {0})'.format(
+                    rtable[fam[f]]['id']))
+            cindex = ctable.get_where_list(''.join(cstring))
+            for n in reversed(cindex):
+                ctable.remove_row(n)
+            
+            c = 0
+            # Refill the correlation table
+            # There is a LOT of overhead associated with this step!
+            print('Cross-correlating {} events...'.format(len(fam)))
+            for n in fam[0:-1]:                
+                c = c+1
+                ffti = rtable[n]['windowFFT']
+                coeffi = rtable[n]['windowCoeff']
+                id = rtable[n]['id']
+                # Correlate
+                for m in fam[c:]:
+                    tx = time.time()
+                    cor, lag = redpy.correlation.xcorr1x1(ffti, rtable[m]['windowFFT'],
+                        coeffi, rtable[m]['windowCoeff'])
+                    txcorr = txcorr + time.time() - tx
+                    ts = time.time()
+                    redpy.table.appendCorrelation(ctable, id, rtable[m]['id'], cor, opt)
+                    tstore = tstore + time.time() - ts
+    print('Time spent cross-correlating: {} seconds'.format(txcorr))
+    print('Time spent storing correlations in ctable: {} seconds'.format(tstore))
 
     
 def runFullOPTICS(rtable, ctable, opt):
@@ -113,14 +234,15 @@ def runFullOPTICS(rtable, ctable, opt):
     
     rtable: Repeater table
     ctable: Correlation matrix table
+    opt: Options object describing station/run parameters
     
     Sets the order, reachability, and coreDistance columns in rtable
     """
     t = time.time()
     
     # May move this over to a 'cleanup' function so it isn't run every run of OPTICS    
-    checkCores(rtable, ctable, opt)
-    print("Time spent checking cores: {:03.2f} seconds".format(time.time()-t))
+    #checkCores(rtable, ctable, opt)
+    #print("Time spent checking cores: {:03.2f} seconds".format(time.time()-t))
     
     C = np.zeros((len(rtable),len(rtable)))
     id1 = ctable.cols.id1[:]
@@ -157,8 +279,10 @@ def runFullOPTICS(rtable, ctable, opt):
         print("Number of clusters: {0}".format(max(rtable.cols.clusterNumber[:])+1))
         bigfam = 0
         for n in range(max(rtable.cols.clusterNumber[:])+1):
-            tmp = len(rtable.get_where_list('(isCore == 0) & (clusterNumber == {})'.format(n)))
+            tmp = len(rtable.get_where_list(
+                '(isCore == 0) & (clusterNumber == {})'.format(n)))
             if tmp > bigfam:
                bigfam = tmp
         print("Members in largest cluster: {0}".format(bigfam+1))
-        print("Number of leftovers in clustering: {0}".format(len(rtable.get_where_list('clusterNumber == -1'))))
+        print("Number of leftovers in clustering: {0}".format(len(rtable.get_where_list(
+            'clusterNumber == -1'))))
