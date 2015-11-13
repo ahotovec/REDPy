@@ -101,49 +101,48 @@ def alignAll(rtable, ctable, opt):
         if len(fam) > 1:
             for n in fam:
                 # Correlate 1x1
-                cor, lag = redpy.correlation.xcorr1x1(core['windowFFT'],
-                    rtable[n]['windowFFT'], core['windowCoeff'], rtable[n]['windowCoeff'])
+                fftj = core['windowFFT']
+                coeffj = core['windowCoeff']
+                cor, lag = redpy.correlation.xcorr1x1(fftj, rtable[n]['windowFFT'],
+                    coeffj, rtable[n]['windowCoeff'])
                 cormax = cor
                 lagmax = lag
                 if cor <= opt.cmin - 0.05:
                     # Try comparing cores with window moved forward half window length
-                    coeffi, ffti = redpy.correlation.calcWindow(
-                        rtable[n]['waveform'], rtable[n]['windowStart'] - opt.winlen/2, opt)
-                    cor, lag = redpy.correlation.xcorr1x1(core['windowFFT'],
-                        ffti, core['windowCoeff'], coeffi)
+                    waveform = rtable[n]['waveform']
+                    windowStart = rtable[n]['windowStart']
+                    coeffi, ffti = redpy.correlation.calcWindow(waveform,
+                        windowStart - opt.winlen/2, opt)
+                    cor, lag = redpy.correlation.xcorr1x1(fftj, ffti, coeffj, coeffi)
                     lag = lag + opt.winlen/2
                     if cor > cormax:
 						cormax = cor
 						lagmax = lag
                     if cor <= opt.cmin - 0.05:
                         # Try with window moved back half window length
-                        coeffi, ffti = redpy.correlation.calcWindow(
-                             rtable[n]['waveform'], rtable[n]['windowStart'] +
-                             opt.winlen/2, opt)
-                        cor, lag = redpy.correlation.xcorr1x1(core['windowFFT'],
-                             ffti, core['windowCoeff'], coeffi)
+                        coeffi, ffti = redpy.correlation.calcWindow(waveform,
+                            windowStart + opt.winlen/2, opt)
+                        cor, lag = redpy.correlation.xcorr1x1(fftj, ffti, coeffj, coeffi)
                         lag = lag - opt.winlen/2
                         if cor > cormax:
                             cormax = cor
                             lagmax = lag
                         if cor <= opt.cmin - 0.05:
                             # Try comparing cores with window moved forward full window length
-							coeffi, ffti = redpy.correlation.calcWindow(
-								rtable[n]['waveform'], rtable[n]['windowStart'] -
-								opt.winlen, opt)
-							cor, lag = redpy.correlation.xcorr1x1(core['windowFFT'],
-								ffti, core['windowCoeff'], coeffi)
+							coeffi, ffti = redpy.correlation.calcWindow(waveform,
+							    windowStart - opt.winlen, opt)
+							cor, lag = redpy.correlation.xcorr1x1(fftj, ffti, coeffj,
+							    coeffi)
 							lag = lag + opt.winlen
 							if cor > cormax:
 								cormax = cor
 								lagmax = lag
 							if cor <= opt.cmin - 0.05:
 								# Try with window moved back full window length
-								coeffi, ffti = redpy.correlation.calcWindow(
-									 rtable[n]['waveform'], rtable[n]['windowStart'] +
-									 opt.winlen, opt)
-								cor, lag = redpy.correlation.xcorr1x1(core['windowFFT'],
-									 ffti, core['windowCoeff'], coeffi)
+								coeffi, ffti = redpy.correlation.calcWindow(waveform,
+								    windowStart + opt.winlen, opt)
+								cor, lag = redpy.correlation.xcorr1x1(fftj, ffti, coeffj,
+								    coeffi)
 								lag = lag - opt.winlen
 								if cor > cormax:
 									cormax = cor
@@ -167,53 +166,50 @@ def alignAll(rtable, ctable, opt):
             for core2 in cores[c:]:
                 if (rtable[core2]['isCore'] == 1):
                     # Try comparing cores with no lag
-                    cor, lag = redpy.correlation.xcorr1x1(rtable[core1]['windowFFT'],
-                        rtable[core2]['windowFFT'], rtable[core1]['windowCoeff'],
-                        rtable[core2]['windowCoeff'])
+                    coeffj = rtable[core1]['windowCoeff']
+                    fftj = rtable[core1]['windowFFT']
+                    cor, lag = redpy.correlation.xcorr1x1(fftj, rtable[core2]['windowFFT'],
+                        coeffj, rtable[core2]['windowCoeff'])
                     cormax = cor
                     lagmax = lag
                     if cor <= opt.cmin - 0.05:
+                        waveform = rtable[core2]['waveform']
+                        windowStart = rtable[core2]['windowStart']
                         # Try comparing cores with window moved forward half window length
-                        coeffi, ffti = redpy.correlation.calcWindow(
-                            rtable[core2]['waveform'], rtable[core2]['windowStart']
-                            - opt.winlen/2, opt)
-                        cor, lag = redpy.correlation.xcorr1x1(rtable[core1]['windowFFT'],
-                            ffti, rtable[core1]['windowCoeff'], coeffi)
+                        coeffi, ffti = redpy.correlation.calcWindow(waveform,
+                            windowStart - opt.winlen/2, opt)
+                        cor, lag = redpy.correlation.xcorr1x1(fftj, ffti, coeffj,
+                            coeffi)
                         lag = lag + opt.winlen/2
                         if cor > cormax:
                             cormax = cor
                             lagmax = lag
                         if cor <= opt.cmin - 0.05:
                             # Try with window moved back half window length
-                            coeffi, ffti = redpy.correlation.calcWindow(
-                                rtable[core2]['waveform'], rtable[core2]['windowStart'] +
-                                opt.winlen/2, opt)
-                            cor, lag = redpy.correlation.xcorr1x1(
-                                rtable[core1]['windowFFT'], ffti,
-                                rtable[core1]['windowCoeff'], coeffi)
+                            coeffi, ffti = redpy.correlation.calcWindow(waveform,
+                                windowStart + opt.winlen/2, opt)
+                            cor, lag = redpy.correlation.xcorr1x1(fftj, ffti, coeffj,
+                                coeffi)
                             lag = lag - opt.winlen/2
                             if cor > cormax:
                                 cormax = cor
                                 lagmax = lag
                             if cor <= opt.cmin - 0.05:
 								# Try comparing cores with window moved forward full window length
-								coeffi, ffti = redpy.correlation.calcWindow(
-									rtable[core2]['waveform'], rtable[core2]['windowStart']
-									- opt.winlen, opt)
-								cor, lag = redpy.correlation.xcorr1x1(rtable[core1]['windowFFT'],
-									ffti, rtable[core1]['windowCoeff'], coeffi)
+								coeffi, ffti = redpy.correlation.calcWindow(waveform,
+								    windowStart - opt.winlen, opt)
+								cor, lag = redpy.correlation.xcorr1x1(fftj, ffti, coeffj,
+								    coeffi)
 								lag = lag + opt.winlen
 								if cor > cormax:
 									cormax = cor
 									lagmax = lag
 								if cor <= opt.cmin - 0.05:
 									# Try with window moved back half window length
-									coeffi, ffti = redpy.correlation.calcWindow(
-										rtable[core2]['waveform'], rtable[core2]['windowStart'] +
-										opt.winlen, opt)
-									cor, lag = redpy.correlation.xcorr1x1(
-										rtable[core1]['windowFFT'], ffti,
-										rtable[core1]['windowCoeff'], coeffi)
+									coeffi, ffti = redpy.correlation.calcWindow(waveform,
+									    windowStart + opt.winlen, opt)
+									cor, lag = redpy.correlation.xcorr1x1(fftj, ffti,
+									    coeffj, coeffi)
 									lag = lag - opt.winlen
 									if cor > cormax:
 										cormax = cor
@@ -240,7 +236,8 @@ def alignAll(rtable, ctable, opt):
                             coeffn, fftn = redpy.correlation.calcWindow(
                                 rtable.cols.waveform[n], rtable.cols.windowStart[n] - lag,
                                 opt)
-                            rtable.cols.windowCoeff[n], rtable.cols.windowFFT[n] = coeffn, fftn
+                            rtable.cols.windowCoeff[n] = coeffn
+                            rtable.cols.windowFFT[n] = fftn
                             rtable.cols.windowStart[n] = rtable.cols.windowStart[n] - lag
                             rtable.cols.clusterNumber[n] = fnum
                             rtable.cols.isCore[n] = 0
