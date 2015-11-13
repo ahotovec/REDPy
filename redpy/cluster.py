@@ -103,7 +103,54 @@ def alignAll(rtable, ctable, opt):
                 # Correlate 1x1
                 cor, lag = redpy.correlation.xcorr1x1(core['windowFFT'],
                     rtable[n]['windowFFT'], core['windowCoeff'], rtable[n]['windowCoeff'])
+                cormax = cor
+                lagmax = lag
+                if cor <= opt.cmin - 0.05:
+                    # Try comparing cores with window moved forward half window length
+                    coeffi, ffti = redpy.correlation.calcWindow(
+                        rtable[n]['waveform'], rtable[n]['windowStart'] - opt.winlen/2, opt)
+                    cor, lag = redpy.correlation.xcorr1x1(core['windowFFT'],
+                        ffti, core['windowCoeff'], coeffi)
+                    lag = lag + opt.winlen/2
+                    if cor > cormax:
+						cormax = cor
+						lagmax = lag
+                    if cor <= opt.cmin - 0.05:
+                        # Try with window moved back half window length
+                        coeffi, ffti = redpy.correlation.calcWindow(
+                             rtable[n]['waveform'], rtable[n]['windowStart'] +
+                             opt.winlen/2, opt)
+                        cor, lag = redpy.correlation.xcorr1x1(core['windowFFT'],
+                             ffti, core['windowCoeff'], coeffi)
+                        lag = lag - opt.winlen/2
+                        if cor > cormax:
+                            cormax = cor
+                            lagmax = lag
+                        if cor <= opt.cmin - 0.05:
+                            # Try comparing cores with window moved forward full window length
+							coeffi, ffti = redpy.correlation.calcWindow(
+								rtable[n]['waveform'], rtable[n]['windowStart'] -
+								opt.winlen, opt)
+							cor, lag = redpy.correlation.xcorr1x1(core['windowFFT'],
+								ffti, core['windowCoeff'], coeffi)
+							lag = lag + opt.winlen
+							if cor > cormax:
+								cormax = cor
+								lagmax = lag
+							if cor <= opt.cmin - 0.05:
+								# Try with window moved back full window length
+								coeffi, ffti = redpy.correlation.calcWindow(
+									 rtable[n]['waveform'], rtable[n]['windowStart'] +
+									 opt.winlen, opt)
+								cor, lag = redpy.correlation.xcorr1x1(core['windowFFT'],
+									 ffti, core['windowCoeff'], coeffi)
+								lag = lag - opt.winlen
+								if cor > cormax:
+									cormax = cor
+									lagmax = lag
                 # Adjust windowStart by lag, recalculate window
+                cor = cormax
+                lag = lagmax
                 rtable.cols.windowStart[n] = rtable.cols.windowStart[n] - lag
                 rtable.cols.windowCoeff[n], rtable.cols.windowFFT[n] = redpy.correlation.calcWindow(
                     rtable.cols.waveform[n], rtable.cols.windowStart[n], opt)
@@ -123,6 +170,8 @@ def alignAll(rtable, ctable, opt):
                     cor, lag = redpy.correlation.xcorr1x1(rtable[core1]['windowFFT'],
                         rtable[core2]['windowFFT'], rtable[core1]['windowCoeff'],
                         rtable[core2]['windowCoeff'])
+                    cormax = cor
+                    lagmax = lag
                     if cor <= opt.cmin - 0.05:
                         # Try comparing cores with window moved forward half window length
                         coeffi, ffti = redpy.correlation.calcWindow(
@@ -131,6 +180,9 @@ def alignAll(rtable, ctable, opt):
                         cor, lag = redpy.correlation.xcorr1x1(rtable[core1]['windowFFT'],
                             ffti, rtable[core1]['windowCoeff'], coeffi)
                         lag = lag + opt.winlen/2
+                        if cor > cormax:
+                            cormax = cor
+                            lagmax = lag
                         if cor <= opt.cmin - 0.05:
                             # Try with window moved back half window length
                             coeffi, ffti = redpy.correlation.calcWindow(
@@ -140,6 +192,34 @@ def alignAll(rtable, ctable, opt):
                                 rtable[core1]['windowFFT'], ffti,
                                 rtable[core1]['windowCoeff'], coeffi)
                             lag = lag - opt.winlen/2
+                            if cor > cormax:
+                                cormax = cor
+                                lagmax = lag
+                            if cor <= opt.cmin - 0.05:
+								# Try comparing cores with window moved forward full window length
+								coeffi, ffti = redpy.correlation.calcWindow(
+									rtable[core2]['waveform'], rtable[core2]['windowStart']
+									- opt.winlen, opt)
+								cor, lag = redpy.correlation.xcorr1x1(rtable[core1]['windowFFT'],
+									ffti, rtable[core1]['windowCoeff'], coeffi)
+								lag = lag + opt.winlen
+								if cor > cormax:
+									cormax = cor
+									lagmax = lag
+								if cor <= opt.cmin - 0.05:
+									# Try with window moved back half window length
+									coeffi, ffti = redpy.correlation.calcWindow(
+										rtable[core2]['waveform'], rtable[core2]['windowStart'] +
+										opt.winlen, opt)
+									cor, lag = redpy.correlation.xcorr1x1(
+										rtable[core1]['windowFFT'], ffti,
+										rtable[core1]['windowCoeff'], coeffi)
+									lag = lag - opt.winlen
+									if cor > cormax:
+										cormax = cor
+										lagmax = lag
+                    cor = cormax
+                    lag = lagmax
                     if cor > opt.cmin - 0.05:
                         f1 = rtable.get_where_list(
                             '(clusterNumber=={})'.format(rtable[core1]['clusterNumber']))
@@ -238,11 +318,7 @@ def runFullOPTICS(rtable, ctable, opt):
     Sets the order, reachability, and coreDistance columns in rtable
     """
     t = time.time()
-    
-    # May move this over to a 'cleanup' function so it isn't run every run of OPTICS    
-    #checkCores(rtable, ctable, opt)
-    #print("Time spent checking cores: {:03.2f} seconds".format(time.time()-t))
-    
+        
     C = np.zeros((len(rtable),len(rtable)))
     id1 = ctable.cols.id1[:]
     id2 = ctable.cols.id2[:]
