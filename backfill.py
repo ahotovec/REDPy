@@ -1,6 +1,8 @@
 import argparse
 import redpy
+import numpy as np
 from obspy import UTCDateTime
+import time
 
 # Added this to remove the slew of warnings obspy/numpy was throwing at me
 import warnings
@@ -57,7 +59,9 @@ if args.endtime:
 else:
     tend = UTCDateTime()
 
+t = time.time()
 n = 0
+lastr = 0
 while tstart+n*opt.nsec <= tend-opt.nsec:
 
     if args.verbose: print(tstart+n*opt.nsec)
@@ -90,6 +94,11 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
     redpy.table.clearExpiredOrphans(otable, opt, tstart+(n+1)*opt.nsec)
     if args.verbose: print("Length of Orphan table: {0}".format(len(otable)))
     
+    # At end of a day, clean up the table if new events have occurred
+    if len(rtable) > lastr and np.remainder(n,24) == 0:
+        redpy.cluster.alignAll(rtable, ctable, opt)
+        lastr = len(rtable)
+    
     # Update tend if an end date is not specified so this will run until it is fully 
     # caught up, instead of running to when the script was originally run.
     if not args.endtime:
@@ -97,7 +106,9 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
         
     n = n+1
 
-print("Caught up to: {0}".format(tstart+n*opt.nsec))
+print("Caught up to: {}".format(tstart+n*opt.nsec))
+
+print("Time spent: {} minutes".format((time.time()-t)/60))
 
 if len(rtable) > 0:
     redpy.cluster.runFullOPTICS(rtable, ctable, opt)
