@@ -99,10 +99,10 @@ def alignAll(rtable, ctable, opt):
         fam = rtable.get_where_list('(clusterNumber=={}) & (isCore==0)'.format(
             core['clusterNumber']))
         if len(fam) > 1:
+            fftj = core['windowFFT']
+            coeffj = core['windowCoeff']
             for n in fam:
                 # Correlate 1x1
-                fftj = core['windowFFT']
-                coeffj = core['windowCoeff']
                 cor, lag = redpy.correlation.xcorr1x1(fftj, rtable[n]['windowFFT'],
                     coeffj, rtable[n]['windowCoeff'])
                 cormax = cor
@@ -128,7 +128,7 @@ def alignAll(rtable, ctable, opt):
                             cormax = cor
                             lagmax = lag
                         if cor <= opt.cmin - 0.05:
-                            # Try comparing cores with window moved forward full window length
+                            # Try with window moved forward full window length
 							coeffi, ffti = redpy.correlation.calcWindow(waveform,
 							    windowStart - opt.winlen, opt)
 							cor, lag = redpy.correlation.xcorr1x1(fftj, ffti, coeffj,
@@ -163,11 +163,11 @@ def alignAll(rtable, ctable, opt):
     for core1 in cores[0:-1]:
         c = c+1
         if (rtable[core1]['isCore'] == 1):
+            coeffj = rtable[core1]['windowCoeff']
+            fftj = rtable[core1]['windowFFT']
             for core2 in cores[c:]:
                 if (rtable[core2]['isCore'] == 1):
                     # Try comparing cores with no lag
-                    coeffj = rtable[core1]['windowCoeff']
-                    fftj = rtable[core1]['windowFFT']
                     cor, lag = redpy.correlation.xcorr1x1(fftj, rtable[core2]['windowFFT'],
                         coeffj, rtable[core2]['windowCoeff'])
                     cormax = cor
@@ -195,7 +195,7 @@ def alignAll(rtable, ctable, opt):
                                 cormax = cor
                                 lagmax = lag
                             if cor <= opt.cmin - 0.05:
-								# Try comparing cores with window moved forward full window length
+								# Try with window moved forward full window length
 								coeffi, ffti = redpy.correlation.calcWindow(waveform,
 								    windowStart - opt.winlen, opt)
 								cor, lag = redpy.correlation.xcorr1x1(fftj, ffti, coeffj,
