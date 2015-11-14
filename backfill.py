@@ -67,15 +67,19 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
     if args.verbose: print(tstart+n*opt.nsec)
     
     # Download and trigger
-    st = redpy.trigger.getData(tstart+n*opt.nsec, opt)
-    alltrigs = redpy.trigger.trigger(st, rtable, opt)
-    
-    # Clean out data spikes etc.
-    trigs, junk = redpy.trigger.dataclean(alltrigs, opt, flag=1)
-    
-    # Save junk triggers in separate table for quality checking purposes
-    for i in range(len(junk)):
-        redpy.table.populateJunk(jtable,junk[i],0,opt)
+    try:
+        st = redpy.trigger.getData(tstart+n*opt.nsec, opt)
+        alltrigs = redpy.trigger.trigger(st, rtable, opt)
+        
+		# Clean out data spikes etc.
+        trigs, junk = redpy.trigger.dataclean(alltrigs, opt, flag=1)
+        
+		# Save junk triggers in separate table for quality checking purposes
+        for i in range(len(junk)):
+            redpy.table.populateJunk(jtable,junk[i],0,opt)
+    except:
+	    print('Could not download or trigger data... moving on')
+	    trigs = []
     
     if len(trigs) > 0:
         
