@@ -80,82 +80,65 @@ def setCenters(rtable, opt):
 
 
 def alignAll(rtable, ctable, opt):
-
     """
     Aligns events in the table and combines similar families that were misaligned
-    
-    rtable: Repeater table
-    ctable: Correlation matrix table
-    opt: Options object describing station/run parameters    
-    
-    Ensures all members of a family are properly aligned to the core and that all new 
-    members of a family are cross-correlated with the old members. 
+    Uses the column 'alignedTo' to guide which events are misaligned and skips events
+    which are aligned to the current core
     """
     
     print('Cleaning up...')
     t = time.time()
-    cores = rtable.where('(isCore==1)')
+    cores = rtable.get_where_list('(isCore==1)')
     for core in cores:
-        fam = rtable.get_where_list('(clusterNumber=={}) & (isCore==0)'.format(
-            core['clusterNumber']))
-        if len(fam) > 1:
-            fftj = core['windowFFT']
-            coeffj = core['windowCoeff']
-            for n in fam:
-                # Correlate 1x1
-                cor, lag = redpy.correlation.xcorr1x1(fftj, rtable[n]['windowFFT'],
-                    coeffj, rtable[n]['windowCoeff'])
-                cormax = cor
-                lagmax = lag
-                if cor <= opt.cmin - 0.05:
-                    # Try comparing cores with window moved forward half window length
-                    waveform = rtable[n]['waveform']
-                    windowStart = rtable[n]['windowStart']
-                    coeffi, ffti = redpy.correlation.calcWindow(waveform,
-                        windowStart - opt.winlen/2, opt)
-                    cor, lag = redpy.correlation.xcorr1x1(fftj, ffti, coeffj, coeffi)
-                    lag = lag + opt.winlen/2
-                    if cor > cormax:
-						cormax = cor
-						lagmax = lag
-                    if cor <= opt.cmin - 0.05:
-                        # Try with window moved back half window length
-                        coeffi, ffti = redpy.correlation.calcWindow(waveform,
-                            windowStart + opt.winlen/2, opt)
-                        cor, lag = redpy.correlation.xcorr1x1(fftj, ffti, coeffj, coeffi)
-                        lag = lag - opt.winlen/2
-                        if cor > cormax:
-                            cormax = cor
-                            lagmax = lag
-                        if cor <= opt.cmin - 0.05:
-                            # Try with window moved forward full window length
-							coeffi, ffti = redpy.correlation.calcWindow(waveform,
-							    windowStart - opt.winlen, opt)
-							cor, lag = redpy.correlation.xcorr1x1(fftj, ffti, coeffj,
-							    coeffi)
-							lag = lag + opt.winlen
-							if cor > cormax:
-								cormax = cor
-								lagmax = lag
-							if cor <= opt.cmin - 0.05:
-								# Try with window moved back full window length
-								coeffi, ffti = redpy.correlation.calcWindow(waveform,
-								    windowStart + opt.winlen, opt)
-								cor, lag = redpy.correlation.xcorr1x1(fftj, ffti, coeffj,
-								    coeffi)
-								lag = lag - opt.winlen
-								if cor > cormax:
-									cormax = cor
-									lagmax = lag
-                # Adjust windowStart by lag, recalculate window
-                cor = cormax
-                lag = lagmax
-                rtable.cols.windowStart[n] = rtable.cols.windowStart[n] - lag
-                rtable.cols.windowCoeff[n], rtable.cols.windowFFT[n] = redpy.correlation.calcWindow(
-                    rtable.cols.waveform[n], rtable.cols.windowStart[n], opt)
-                rtable.flush()
+        
+        if not rtable.get_where_list('(clusterNumber=={0}) & (alignedTo=={1})'.format(
+            rtable[core]['clusterNumber'], rtable[core]['id'])).any():
+		
+			# Change alignedTo of the core to itself
+			calignedTo = rtable[core]['alignedTo']
+			rtable.cols.alignedTo[core] = rtable[core]['id']
+			# As well as any events that share its alignedTo value
+			for f in rtable.get_where_list(
+				'(clusterNumber=={0}) & (isCore==0) & (alignedTo=={1})'.format(
+				rtable[core]['clusterNumber'], calignedTo)):
+				rtable.cols.alignedTo[f] = rtable[core]['id']
+			rtable.flush()
+		
+			# Check for any members with other alignedTo values
+			fam = rtable.get_where_list(
+				'(clusterNumber=={0}) & (isCore==0) & (alignedTo!={1})'.format(
+				rtable[core]['clusterNumber'], rtable[core]['id']))
+			if fam.any():
+				# Clean up alignedTo values that reference an id that is not itself 
+				for u in np.unique(rtable[fam]['alignedTo']):
+					unum = rtable.get_where_list('(id=={})'.format(u))[0]
+					for f in rtable.get_where_list(
+						'(clusterNumber=={0}) & (isCore==0) & (alignedTo=={1})'.format(
+						rtable[core]['clusterNumber'], u)):
+						rtable.cols.alignedTo[f] = rtable[unum]['alignedTo']
+					rtable.flush()
+			
+				# Loop over remaining unique values
+				fftj = rtable[core]['windowFFT']
+				coeffj = rtable[core]['windowCoeff']
+				for u in np.unique(rtable[fam]['alignedTo']):
+					unum = rtable.get_where_list('(id=={})'.format(u))[0]
+					# Align to core, apply same lag to other members
+					cor, lag = redpy.correlation.xcorr1x1(fftj,
+					    rtable.cols.windowFFT[unum], coeffj,
+					    rtable.cols.windowCoeff[unum])
+					# Assume these two events are probably pretty close to aligned for now
+					for f in rtable.get_where_list(
+						'(clusterNumber=={0}) & (isCore==0) & (alignedTo=={1})'.format(
+						rtable[core]['clusterNumber'], u)):
+						rtable.cols.alignedTo[f] = rtable[core]['id']
+						rtable.cols.windowStart[f] = rtable.cols.windowStart[f] - lag
+						rtable.cols.windowCoeff[f], rtable.cols.windowFFT[f] = redpy.correlation.calcWindow(
+							rtable.cols.waveform[f], rtable.cols.windowStart[f], opt)
+					rtable.flush()
     print('Time spent aligning families to their cores: {} seconds'.format(time.time()-t))
     
+    # Now check cores and see if any can be combined...
     t = time.time()
     tfill = 0
     cores = rtable.get_where_list('(isCore==1)')    
@@ -226,11 +209,13 @@ def alignAll(rtable, ctable, opt):
                             f = f2
                             ff = rtable[f1]
                             fnum = rtable[core1]['clusterNumber']
+                            falign = rtable[core1]['id']
                         else:
                             f = f1
                             ff = rtable[f2]
                             lag = -lag    
-                            fnum = rtable[core2]['clusterNumber']    
+                            fnum = rtable[core2]['clusterNumber']   
+                            falign = rtable[core2]['id'] 
                         # Shove the smaller family over, remove isCore, set clusterNumber
                         for n in f:
                             coeffn, fftn = redpy.correlation.calcWindow(
@@ -241,6 +226,7 @@ def alignAll(rtable, ctable, opt):
                             rtable.cols.windowStart[n] = rtable.cols.windowStart[n] - lag
                             rtable.cols.clusterNumber[n] = fnum
                             rtable.cols.isCore[n] = 0
+                            rtable.cols.alignedTo[n] = falign
                             rtable.flush()
                             corn, lagn = redpy.correlation.xcorr1xtable(coeffn, fftn, ff,
                                 opt)
@@ -248,6 +234,44 @@ def alignAll(rtable, ctable, opt):
                                 redpy.table.appendCorrelation(ctable, rtable[n]['id'],
                                     ff[j]['id'], corn[j], opt)
     print('Time merging families: {} seconds'.format(time.time()-t))
+    
+
+def alignAllDeep(rtable, ctable, opt):
+
+    """
+    Aligns all members of a family more closely with its core where the correlations are
+    good. Can be very slow, but should yield slightly better alignments than alignAll.
+    Uses a shorter window around the trigger time to align with.
+        
+    rtable: Repeater table
+    ctable: Correlation matrix table
+    opt: Options object describing station/run parameters    
+    
+    Runs alignAll first
+    """
+    
+    alignAll(rtable, ctable, opt)
+    
+    t = time.time()
+    cores = rtable.where('(isCore==1)')
+    for core in cores:
+        fam = rtable.get_where_list('(clusterNumber=={}) & (isCore==0)'.format(
+            core['clusterNumber']))
+        if len(fam) > 1:
+            coeffj, fftj = redpy.correlation.calcWindow(core['waveform'],
+                core['windowStart'], opt, 0.0625)
+            for n in fam:
+                # Correlate 1x1, assume events are already decently aligned
+                coeffi, ffti = redpy.correlation.calcWindow(rtable.cols.waveform[n],
+                    rtable.cols.windowStart[n], opt, 0.0625)
+                cor, lag = redpy.correlation.xcorr1x1(fftj, ffti, coeffj, coeffi)
+                # Only realign the good events, so bad events don't get shifted worse
+                if cor > opt.cmin:
+                    rtable.cols.windowStart[n] = rtable.cols.windowStart[n] - lag
+                    rtable.cols.windowCoeff[n], rtable.cols.windowFFT[n] = redpy.correlation.calcWindow(
+                        rtable.cols.waveform[n], rtable.cols.windowStart[n], opt)
+                    rtable.flush()
+    print('Time spent hard aligning families to their cores: {} seconds'.format(time.time()-t))
 
 
 def deepClean(rtable, ctable, opt):

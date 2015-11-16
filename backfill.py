@@ -61,7 +61,7 @@ else:
 
 t = time.time()
 n = 0
-lastr = 0
+lastr = len(rtable)
 while tstart+n*opt.nsec <= tend-opt.nsec:
 
     if args.verbose: print(tstart+n*opt.nsec)
@@ -77,7 +77,7 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
 		# Save junk triggers in separate table for quality checking purposes
         for i in range(len(junk)):
             redpy.table.populateJunk(jtable,junk[i],0,opt)
-    except:
+    except TypeError:
 	    print('Could not download or trigger data... moving on')
 	    trigs = []
     

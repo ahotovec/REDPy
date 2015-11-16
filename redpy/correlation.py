@@ -4,7 +4,7 @@ import redpy.table
 import redpy.cluster
 from scipy.fftpack import fft, ifft
 
-def calcWindow(waveform, windowStart, opt):
+def calcWindow(waveform, windowStart, opt, winlen=1):
 
     """
     Calculates the amplitude coefficient and FFT for a window of data.
@@ -12,6 +12,7 @@ def calcWindow(waveform, windowStart, opt):
     waveform: numpy array of waveform data
     windowStart: starting sample of window
     opt: Options object describing station/run parameters
+    winlen: Fraction of window to use (optional)
 
     Returns windowCoeff and windowFFT
     """
@@ -21,10 +22,10 @@ def calcWindow(waveform, windowStart, opt):
     waveform = trig.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax, corners=2,
         zerophase=True).data
 
-    windowCoeff = 1/np.sqrt(sum(waveform[windowStart:(windowStart + opt.winlen)] *
-        waveform[windowStart:(windowStart + opt.winlen)]))
-    windowFFT = np.reshape(fft(waveform[windowStart:(windowStart + opt.winlen)]),
-        (opt.winlen,))
+    windowCoeff = 1/np.sqrt(sum(waveform[windowStart:(windowStart + opt.winlen*winlen)] *
+        waveform[windowStart:(windowStart + opt.winlen*winlen)]))
+    windowFFT = np.reshape(fft(waveform[windowStart:(windowStart + opt.winlen*winlen)]),
+        (opt.winlen*winlen,))
 
     return windowCoeff, windowFFT
 
@@ -153,8 +154,8 @@ def compareGoodOrphans(rtable, otable, ctable, trig, id, coeffi, ffti, cor, lag,
             # Move both the orphans to the repeater table
             if written == 0:
                 redpy.table.populateRepeater(rtable, id, trig, opt,
-                    int(opt.ptrig*opt.samprate + lagmax))
-                redpy.table.moveOrphan(rtable, otable, np.argmax(cor), opt)
+                    id, int(opt.ptrig*opt.samprate + lagmax))
+                redpy.table.moveOrphan(rtable, otable, np.argmax(cor), id, opt)
                 written = 2
             # Update the table to reflect the new window, then move it
             else:
@@ -162,7 +163,7 @@ def compareGoodOrphans(rtable, otable, ctable, trig, id, coeffi, ffti, cor, lag,
                 otable.cols.windowCoeff[np.argmax(cor)] = coeffj2
                 otable.cols.windowStart[np.argmax(cor)] = int(opt.ptrig*opt.samprate +
                     lagmax - lag[np.argmax(cor)])
-                redpy.table.moveOrphan(rtable, otable, np.argmax(cor), opt)
+                redpy.table.moveOrphan(rtable, otable, np.argmax(cor), id, opt)
                 written = written+1
                 
         lag = np.delete(lag, np.argmax(cor))
@@ -223,6 +224,7 @@ def compareMultipleOrphans2Cores(rtable, ctable, written, opt):
                         lagmax2), opt)
                     rtable.cols.windowStart[i] = int(rtable.cols.windowStart[i] + lagmax2)
                     rtable.cols.clusterNumber[i] = cores[np.argmax(cor)]['clusterNumber']
+                    rtable.cols.alignedTo[i] = cores[np.argmax(cor)]['id']
                     rtable.flush()
             
             # Compare to full family, write to correlation table
@@ -287,7 +289,7 @@ def compareSingleOrphan2Cores(rtable, otable, ctable, trig, id, coeffi, ffti, op
             if written == 0:
                 # Move the orphan to the repeater table
                 redpy.table.populateRepeater(rtable, id, trig, opt,
-                    int(opt.ptrig*opt.samprate + lagmax))
+                    cores[np.argmax(cor)]['id'], int(opt.ptrig*opt.samprate + lagmax))
                 rtable.cols.clusterNumber[-1] = cores[np.argmax(cor)]['clusterNumber']
             
             # Correlate with other members of the family

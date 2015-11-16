@@ -32,7 +32,7 @@ else:
 
 h5file, rtable, otable, ctable, jtable = redpy.table.openTable(opt)
 
-redpy.cluster.alignAll(rtable, ctable, opt)
+redpy.cluster.alignAllDeep(rtable, ctable, opt)
 
 redpy.cluster.runFullOPTICS(rtable, ctable, opt)
 

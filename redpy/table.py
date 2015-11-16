@@ -35,6 +35,7 @@ def Repeaters(opt):
         "coreDistance"  : Float64Col(shape=(), pos=8),
         "clusterNumber" : Int32Col(shape=(), pos=9),
         "isCore"        : Int32Col(shape=(), pos=10),
+        "alignedTo"     : Int32Col(shape=(), pos=11)
         }
     
     return dict
@@ -176,7 +177,7 @@ def openTable(opt):
     return h5file, rtable, otable, ctable, jtable
 
     
-def populateRepeater(rtable, id, trig, opt, windowStart=-1):
+def populateRepeater(rtable, id, trig, opt, alignedTo, windowStart=-1):
 
     """
     Initially populates a new row in the 'Repeater Catalog' table.
@@ -186,6 +187,7 @@ def populateRepeater(rtable, id, trig, opt, windowStart=-1):
     id: integer id number given to this trigger, should be unique
     trig: ObsPy trace from triggering function
     opt: Options object describing station/run parameters
+    alignedTo: id number of repeater this one is aligned to (can be itself)
     windowStart: triggering time (defaults to opt.ptrig seconds)
 
     Appends this row to Repeaters table, but does not update the clustering parameters
@@ -208,6 +210,7 @@ def populateRepeater(rtable, id, trig, opt, windowStart=-1):
     trigger['coreDistance'] = -1.0
     trigger['clusterNumber'] = -1
     trigger['isCore'] = 0 # Set to zero to avoid being counted erroneously as a core
+    trigger['alignedTo'] = alignedTo
     trigger.append()  
     rtable.flush()  
 
@@ -267,7 +270,7 @@ def populateJunk(jtable, trig, isjunk, opt):
     jtable.flush()
 
 
-def moveOrphan(rtable, otable, oindex, opt):
+def moveOrphan(rtable, otable, oindex, alignedTo, opt):
     
     """
     Moves a row from the 'Orphans' table to the 'Repeater Catalog' table.
@@ -287,6 +290,7 @@ def moveOrphan(rtable, otable, oindex, opt):
     trigger['coreDistance'] = -1.0
     trigger['clusterNumber'] = -1
     trigger['isCore'] = 0 # Set to zero to avoid being counted erroneously as a core
+    trigger['alignedTo'] = alignedTo
     trigger.append()
     
     otable.remove_row(oindex)
