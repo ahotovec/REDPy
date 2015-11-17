@@ -17,7 +17,8 @@ assumed. The end time updates at the end of each time chunk processed (default: 
 set in configuration). This script can be run as a cron job that will pick up where it
 left off if a chunk is missed, but will not run until a full chunk of time has elapsed
 since the last trigger. Use -n if you are backfilling with a large amount of time, it will
-consume less time downloading the data in small chunks.
+consume less time downloading the data in small chunks if NSEC is an hour or a day instead
+of a few minutes.
 
 WARNING: Does not currently check for duplicates, do not run with any overlap of previous
 runs!
