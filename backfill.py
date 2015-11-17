@@ -16,12 +16,13 @@ assume one time chunk prior to the end time. If an end time is not specified, "n
 assumed. The end time updates at the end of each time chunk processed (default: by hour,
 set in configuration). This script can be run as a cron job that will pick up where it
 left off if a chunk is missed, but will not run until a full chunk of time has elapsed
-since the last trigger.
+since the last trigger. Use -n if you are backfilling with a large amount of time, it will
+consume less time downloading the data in small chunks.
 
 WARNING: Does not currently check for duplicates, do not run with any overlap of previous
 runs!
  
-usage: backfill.py [-h] [-v] [-s STARTTIME] [-e ENDTIME] [-c CONFIGFILE]
+usage: backfill.py [-h] [-v] [-s STARTTIME] [-e ENDTIME] [-c CONFIGFILE] [-n NSEC]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -33,6 +34,7 @@ optional arguments:
   -c CONFIGFILE, --configfile CONFIGFILE
                         use configuration file named CONFIGFILE instead of
                         default settings.cfg
+  -n NSEC, --nsec NSEC  overwrite opt.nsec from configuration file with NSEC this run only
 """
 
 parser = argparse.ArgumentParser(description=
@@ -45,6 +47,8 @@ parser.add_argument("-e", "--endtime",
     help="optional end time to end filling (YYYY-MM-DDTHH:MM:SS)")
 parser.add_argument("-c", "--configfile",
     help="use configuration file named CONFIGFILE instead of default settings.cfg")
+parser.add_argument("-n", "--nsec", type=int,
+    help="overwrite opt.nsec from configuration file with NSEC this run only")
 args = parser.parse_args()
 
 if args.configfile:
@@ -53,6 +57,9 @@ if args.configfile:
 else:
     opt = redpy.config.Options("settings.cfg")
     if args.verbose: print("Using config file: settings.cfg")
+    
+if args.nsec:
+    opt.nsec = args.nsec
 
 if args.verbose: print("Opening hdf5 table: {0}".format(opt.filename))
 h5file, rtable, otable, ctable, jtable = redpy.table.openTable(opt)
@@ -120,6 +127,7 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
     n = n+1
 
 print("Caught up to: {}".format(tstart+n*opt.nsec))
+print("End time now: {}".format(tend))
 
 print("Time spent: {} minutes".format((time.time()-t)/60))
 
