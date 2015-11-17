@@ -132,9 +132,6 @@ print("End time now: {}".format(tend))
 
 print("Time spent: {} minutes".format((time.time()-t)/60))
 
-if len(rtable) > 0:
-    redpy.cluster.runFullOPTICS(rtable, ctable, opt)
-
 if args.verbose: print("Closing table...")
 h5file.close()
 if args.verbose: print("Done")
