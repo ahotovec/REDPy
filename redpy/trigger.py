@@ -72,8 +72,13 @@ def trigger(st, rtable, opt):
         # Slice out the raw data (not filtered except for highpass to reduce long period
         # drift) and save the maximum STA/LTA ratio value for
         # use in orphan expiration
-
-        ptime = rtable.attrs.ptime
+        
+        # Convert ptime from time of last trigger to samples before start time 
+        if rtable.attrs.ptime:
+            ptime = (UTCDateTime(rtable.attrs.ptime) - t)*opt.samprate
+        else:
+            ptime = -opt.mintrig*opt.samprate
+        
         for n in range(len(pick)):
             
             ttime = pick[n]
@@ -96,16 +101,17 @@ def trigger(st, rtable, opt):
                             t + opt.atrig + ttime/opt.samprate))
                     trigs[ind].stats.maxratio = np.amax(cft[on_off[n,0]:on_off[n,1]])
                     ind = ind+1
-        
-        ptime = ptime - len(tr.data) + opt.ptrig*opt.samprate                                      
+                                                         
         if ind is 0:
-            rtable.attrs.ptime = -len(tr.data)
+            rtable.attrs.ptime = (t + len(tr.data)/opt.samprate -
+                opt.mintrig*opt.samprate).isoformat()
             return []
         else:
-            rtable.attrs.ptime = ptime
+            rtable.attrs.ptime = (t + ptime/opt.samprate).isoformat()
             return trigs
     else:
-        rtable.attrs.ptime =  -len(tr.data)
+        rtable.attrs.ptime = (t + len(tr.data)/opt.samprate -
+            opt.mintrig*opt.samprate).isoformat()
         return []
 
 

@@ -140,7 +140,7 @@ def initializeTable(opt):
     rtable.attrs.fmin = opt.fmin
     rtable.attrs.fmax = opt.fmax
     rtable.attrs.previd = 0
-    rtable.attrs.ptime = -9999
+    rtable.attrs.ptime = 0
     rtable.flush()
     
     otable = h5file.create_table(group, "orphans", Orphans(opt),

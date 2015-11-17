@@ -9,22 +9,25 @@ import warnings
 warnings.filterwarnings("ignore")
 
 """
-Run this script to fill the table with data from the past. Requires a start time in the
-format "YYYY-MM-DD" or "YYYY-MM-DDTHH:MM:SS". If an end time is not specified, "now" is
-assumed, which updates at the end of each time chunk processed (default: by hour, set in
-configuration).
+Run this script to fill the table with data from the past. If a start time is not
+specified, it will check the attributes of the repeater table to pick up where it left
+off. Additionally, if this is the first run and a start time is not specified, it will
+assume one time chunk prior to the end time. If an end time is not specified, "now" is
+assumed. The end time updates at the end of each time chunk processed (default: by hour,
+set in configuration). This script can be run as a cron job that will pick up where it
+left off if a chunk is missed, but will not run until a full chunk of time has elapsed
+since the last trigger.
 
 WARNING: Does not currently check for duplicates, do not run with any overlap of previous
 runs!
  
-usage: backfill.py [-h] [-v] [-e ENDTIME] [-c CONFIGFILE] starttime
-
-positional arguments:
-  starttime             start time to begin filling (YYYY-MM-DDTHH:MM:SS)
+usage: backfill.py [-h] [-v] [-s STARTTIME] [-e ENDTIME] [-c CONFIGFILE]
 
 optional arguments:
   -h, --help            show this help message and exit
   -v, --verbose         increase written print statements
+  -s STARTTIME, --starttime STARTTIME
+                        optional start time to begin filling (YYYY-MM-DDTHH:MM:SS)
   -e ENDTIME, --endtime ENDTIME
                         optional end time to end filling (YYYY-MM-DDTHH:MM:SS)
   -c CONFIGFILE, --configfile CONFIGFILE
@@ -34,7 +37,8 @@ optional arguments:
 
 parser = argparse.ArgumentParser(description=
     "Backfills table with data from the past")
-parser.add_argument("starttime", help="start time to begin filling (YYYY-MM-DDTHH:MM:SS)")
+parser.add_argument("-s", "--starttime",
+    help="optional start time to begin filling (YYYY-MM-DDTHH:MM:SS)")
 parser.add_argument("-v", "--verbose", action="count", default=0,
     help="increase written print statements")
 parser.add_argument("-e", "--endtime",
@@ -52,16 +56,22 @@ else:
 
 if args.verbose: print("Opening hdf5 table: {0}".format(opt.filename))
 h5file, rtable, otable, ctable, jtable = redpy.table.openTable(opt)
-
-tstart = UTCDateTime(args.starttime)
+    
 if args.endtime:
     tend = UTCDateTime(args.endtime)
 else:
     tend = UTCDateTime()
+    
+if args.starttime:
+    tstart = UTCDateTime(args.starttime)
+else:
+    if rtable.attrs.ptime:
+        tstart = UTCDateTime(rtable.attrs.ptime)
+    else:
+        tstart = tend-opt.nsec
 
 t = time.time()
 n = 0
-lastr = len(rtable)
 while tstart+n*opt.nsec <= tend-opt.nsec:
 
     if args.verbose: print(tstart+n*opt.nsec)
@@ -98,10 +108,9 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
     redpy.table.clearExpiredOrphans(otable, opt, tstart+(n+1)*opt.nsec)
     if args.verbose: print("Length of Orphan table: {0}".format(len(otable)))
     
-    # At end of a day, clean up the table if new events have occurred
-    if len(rtable) > lastr and np.remainder(n,24) == 0:
+    # Clean up the table at the end of the day
+    if UTCDateTime(tstart+n*opt.nsec).hour == 23 and len(rtable) > 1:
         redpy.cluster.alignAll(rtable, ctable, opt)
-        lastr = len(rtable)
     
     # Update tend if an end date is not specified so this will run until it is fully 
     # caught up, instead of running to when the script was originally run.
