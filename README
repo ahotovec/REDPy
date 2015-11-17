@@ -4,17 +4,14 @@ Currently, we're working on developing objects and methods to handle
 the data with a brute-force approach, then scaling it after that.
 
 Current list of major package dependencies:
-numpy | scipy | matplotlib | obspy | pytables
+numpy | scipy | matplotlib | obspy | pytables | pandas
 
 Should work with an install of Anaconda for Python 2.7 and:
 conda install -c obspy obspy
 conda install pytables
+conda install pandas
 
 Run in this order:
 initialize.py - initial set up of hdf5 table
-backfill.py - backfill table between a given start and end date
+backfill.py - backfill table between a start and end date, can be run as cron job
 makeplots.py - output plots
-
-Optional:
-single.py - fill table with last N seconds (default 3600 s, 1 hour),
-    designed to be run as a cron job every N seconds
