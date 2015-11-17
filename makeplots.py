@@ -32,16 +32,17 @@ else:
 
 h5file, rtable, otable, ctable, jtable = redpy.table.openTable(opt)
 
-redpy.cluster.alignAllDeep(rtable, ctable, opt)
-
-redpy.cluster.runFullOPTICS(rtable, ctable, opt)
+if len(rtable) > 1:
+    redpy.cluster.alignAllDeep(rtable, ctable, opt)
+    redpy.cluster.runFullOPTICS(rtable, ctable, opt)
+    redpy.plotting.createCMatrixFigure(rtable, ctable)
+    redpy.plotting.createOrderedWaveformFigure(rtable, opt)
+else:
+    print("Nothing in the repeater table to plot!")
 
 if args.verbose:
     print("Orphans saved: {0}".format(len(otable)))
     print("Number of junk triggers: {0}".format(len(jtable)))   
-
-redpy.plotting.createCMatrixFigure(rtable, ctable)
-redpy.plotting.createOrderedWaveformFigure(rtable, opt)
 
 plt.show()
 
