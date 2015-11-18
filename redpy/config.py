@@ -128,11 +128,11 @@ class Options(object):
         self.kurtwin=config.getfloat('Settings','kurtwin') if config.has_option(
             'Settings','kurtwin') else 5.
         self.winlen=config.getint('Settings','winlen') if config.has_option(
-            'Settings','winlen') else 512
+            'Settings','winlen') else 1024
         self.ptrig=config.getfloat('Settings','ptrig') if config.has_option(
-            'Settings','ptrig') else 10.
+            'Settings','ptrig') else 20.
         self.atrig=config.getfloat('Settings','atrig') if config.has_option(
-            'Settings','atrig') else 20.
+            'Settings','atrig') else 40.
         self.wshape = int((self.ptrig + self.atrig)*self.samprate) + 1
         self.fhigh=config.getfloat('Settings','fhigh') if config.has_option(
             'Settings','fhigh') else 0.25
@@ -143,6 +143,6 @@ class Options(object):
         self.cmin=config.getfloat('Settings','cmin') if config.has_option(
             'Settings','cmin') else 0.7
         self.minorph=config.getfloat('Settings','minorph') if config.has_option(
-            'Settings','minorph') else 7.
+            'Settings','minorph') else 0.05
         self.maxorph=config.getfloat('Settings','maxorph') if config.has_option(
-            'Settings','maxorph') else 30.
+            'Settings','maxorph') else 7.

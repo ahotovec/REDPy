@@ -14,4 +14,5 @@ conda install pandas
 Run in this order:
 initialize.py - initial set up of hdf5 table
 backfill.py - backfill table between a start and end date, can be run as cron job
-makeplots.py - output plots
+
+backfill.py automatically creates images saved to a folder
