@@ -349,7 +349,7 @@ def runFullOPTICS(rtable, ctable, opt):
     """
     
     leftovers = rtable.get_where_list('clusterNumber == -1')
-    if leftovers:
+    if leftovers.any():
         leftovers[::-1].sort()
         print("Removing leftovers in clustering: {0}".format(len(leftovers)))
         for l in leftovers:
