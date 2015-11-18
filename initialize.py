@@ -1,6 +1,7 @@
 import redpy.config
 import redpy.table
 import argparse
+import os
 
 """
 Run this script first to initialize the hdf5 table where everything will be stored.
@@ -35,5 +36,11 @@ else:
 if args.verbose: print("Writing hdf5 table: {0}".format(opt.filename))
 
 redpy.table.initializeTable(opt)
+
+if args.verbose: print("Creating folder to store images named '{}'".format(opt.groupName))
+try:
+    os.mkdir(opt.groupName)
+except OSError:
+    print("Folder exists.")
 
 if args.verbose: print("Done")
