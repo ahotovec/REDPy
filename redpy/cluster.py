@@ -348,13 +348,6 @@ def runFullOPTICS(rtable, ctable, opt):
     Sets the order, reachability, and coreDistance columns in rtable
     """
     
-    leftovers = rtable.get_where_list('clusterNumber == -1')
-    if leftovers.any():
-        leftovers[::-1].sort()
-        print("Removing leftovers in clustering: {0}".format(len(leftovers)))
-        for l in leftovers:
-            rtable.remove_row(l)
-    
     t = time.time()
         
     C = np.zeros((len(rtable),len(rtable)))
@@ -384,6 +377,13 @@ def runFullOPTICS(rtable, ctable, opt):
     # Update the clusters and cores, too!
     setClusters(rtable, opt)
     setCenters(rtable, opt)
+    
+    leftovers = rtable.get_where_list('clusterNumber == -1')
+    if leftovers.any():
+        leftovers[::-1].sort()
+        print("Removing leftovers in clustering: {0}".format(len(leftovers)))
+        for l in leftovers:
+            rtable.remove_row(l)
     
     print("Total time spent clustering: {:03.2f} seconds".format(time.time()-t))
     
