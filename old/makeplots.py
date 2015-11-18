@@ -33,10 +33,9 @@ else:
 h5file, rtable, otable, ctable, jtable = redpy.table.openTable(opt)
 
 if len(rtable) > 1:
-    redpy.cluster.alignAllDeep(rtable, ctable, opt)
+#     redpy.cluster.alignAll(rtable, ctable, opt)
     redpy.cluster.runFullOPTICS(rtable, ctable, opt)
-    redpy.plotting.createCMatrixFigure(rtable, ctable)
-    redpy.plotting.createOrderedWaveformFigure(rtable, opt)
+    redpy.plotting.createWigglePlot(jtable, opt)
 else:
     print("Nothing in the repeater table to plot!")
 
