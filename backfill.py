@@ -95,6 +95,7 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
 		# Save junk triggers in separate table for quality checking purposes
         for i in range(len(junk)):
             redpy.table.populateJunk(jtable,junk[i],0,opt)
+            
     except TypeError:
 	    print('Could not download or trigger data... moving on')
 	    trigs = []
@@ -115,10 +116,6 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
     
     redpy.table.clearExpiredOrphans(otable, opt, tstart+(n+1)*opt.nsec)
     if args.verbose: print("Length of Orphan table: {0}".format(len(otable)))
-    
-    # Clean up the table at the end of the day
-    if UTCDateTime(tstart+n*opt.nsec).hour == 23 and len(rtable) > 1:
-        redpy.cluster.alignAll(rtable, ctable, opt)
     
     # Update tend if an end date is not specified so this will run until it is fully 
     # caught up, instead of running to when the script was originally run.

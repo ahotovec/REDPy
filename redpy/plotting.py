@@ -1,6 +1,7 @@
 from tables import *
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 
 """
 These are very brute force plotting; should be replaced with more sophisticated functions
@@ -8,11 +9,13 @@ These are very brute force plotting; should be replaced with more sophisticated 
 
 
 def createOrderedWaveformFigure(rtable, opt):
-    data = np.zeros((len(rtable), int((opt.ptrig+opt.atrig)*opt.samprate)))
+    data = np.zeros((len(rtable), int(opt.winlen*2)))
     fig = plt.figure(figsize=(12, 6))
     n=-1
     for r in rtable.iterrows():
         n = n+1
+        
+        maxwin = max(abs(r['waveform'][r['windowStart']:(r['windowStart']+opt.winlen)]))
         
         # Determine padding        
         ppad = int(max(0, opt.ptrig*opt.samprate - r['windowStart']))
@@ -23,14 +26,14 @@ def createOrderedWaveformFigure(rtable, opt):
             r['windowStart']+int(opt.atrig*opt.samprate))]
             
         tmp = np.hstack((np.zeros(ppad), tmp, np.zeros(apad)))
-        data[n, :] = tmp/max(tmp[int((opt.ptrig-opt.winlen/2)*opt.samprate):int(
-            (opt.ptrig+opt.winlen/2)*opt.samprate)])
+        data[n, :] = tmp[(opt.ptrig*opt.samprate - opt.winlen*0.5):(opt.ptrig*opt.samprate +
+            opt.winlen*1.5)]/maxwin
     
     order = rtable.cols.order[:]
     datao = data[order, :]
     ax = fig.add_subplot(1, 1, 1)
     ax.imshow(datao, aspect='auto', vmin=-1, vmax=1, interpolation='nearest', cmap='RdBu',
-        extent=[-1*opt.ptrig, opt.atrig, n+0.5, -0.5])
+        extent=[-1*opt.winlen*0.5/opt.samprate, opt.winlen*1.5/opt.samprate, n+0.5, -0.5])
     
     clust = rtable.cols.clusterNumber[:]
     clust = clust[order]
@@ -42,9 +45,13 @@ def createOrderedWaveformFigure(rtable, opt):
     
     plt.xlabel('Time (s)')
     plt.ylabel('Ordered Event #')
+    
+    plt.savefig('{}/orderedWaveform.png'.format(opt.groupName))
+    plt.savefig('{0}/orderedWaveform_{1}.png'.format(opt.groupName,time.strftime(
+        '%Y%m%dT%H%M%S',time.gmtime())))
 
 
-def createCMatrixFigure(rtable, ctable):
+def createCMatrixFigure(rtable, ctable, opt):
     
     order = rtable.cols.order[:]
     
@@ -69,6 +76,32 @@ def createCMatrixFigure(rtable, ctable):
     ax.imshow(C, aspect='auto', vmin=0.6, vmax=1, interpolation='nearest')
     ax = fig.add_subplot(1, 2, 2)
     ax.imshow(Co, aspect='auto', vmin=0.6, vmax=1, interpolation='nearest')
+    
+    plt.savefig('{}/cmatrix.png'.format(opt.groupName))
+    plt.savefig('{0}/cmatrix_{1}.png'.format(opt.groupName,time.strftime(
+        '%Y%m%dT%H%M%S',time.gmtime())))
+
+
+def plotCores(rtable, opt):
+    #waveform wiggle plot of input waveforms
+    fig = plt.figure(figsize=(12, 6))
+    
+    cores = rtable.where('isCore==1')
+    
+    for r in cores:
+        dat=r['waveform'][(r['windowStart']-opt.winlen*0.5):(r['windowStart']+opt.winlen*1.5)]
+        maxwin = max(abs(r['waveform'][r['windowStart']:(r['windowStart']+opt.winlen)]))
+        dat=dat/maxwin
+        tvec = np.arange(-opt.winlen*0.5/opt.samprate,opt.winlen*1.5/opt.samprate,1/opt.samprate)
+        plt.plot(tvec,np.add(dat/2,-1*r['clusterNumber']),'k')
+        
+    plt.ylabel('Cluster Number')
+    plt.xlabel('Time (s)')
+    plt.autoscale(tight=True)
+    
+    plt.savefig('{}/cores.png'.format(opt.groupName))
+    plt.savefig('{0}/cores_{1}.png'.format(opt.groupName,time.strftime(
+        '%Y%m%dT%H%M%S',time.gmtime())))
 
 
 def createWigglePlot(jtable, opt):
@@ -85,4 +118,7 @@ def createWigglePlot(jtable, opt):
     plt.xlabel('time(s)')
     #plt.title('Junk triggers')
     plt.autoscale(tight=True)
-    plt.show()
+    
+    plt.savefig('{}/wiggle.png'.format(opt.groupName))
+    plt.savefig('{0}/wiggle_{1}.png'.format(opt.groupName,time.strftime(
+        '%Y%m%dT%H%M%S',time.gmtime())))

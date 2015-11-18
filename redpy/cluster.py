@@ -150,28 +150,10 @@ def alignAll(rtable, ctable, opt):
                             if cor > cormax:
                                 cormax = cor
                                 lagmax = lag
-                            if cor <= opt.cmin - 0.05:
-                                # Try with window moved forward full window length
-                                coeffi, ffti = redpy.correlation.calcWindow(waveform,
-                                    windowStart - opt.winlen, opt)
-                                cor, lag = redpy.correlation.xcorr1x1(fftj, ffti, coeffj,
-                                    coeffi)
-                                lag = lag + opt.winlen
-                                if cor > cormax:
-                                    cormax = cor
-                                    lagmax = lag
-                                if cor <= opt.cmin - 0.05:
-                                    # Try with window moved back half window length
-                                    coeffi, ffti = redpy.correlation.calcWindow(waveform,
-                                        windowStart + opt.winlen, opt)
-                                    cor, lag = redpy.correlation.xcorr1x1(fftj, ffti,
-                                        coeffj, coeffi)
-                                    lag = lag - opt.winlen
-                                    if cor > cormax:
-                                        cormax = cor
-                                        lagmax = lag
                     cor = cormax
                     lag = lagmax
+                    if cor < opt.cmin:
+                        print("Found a set that doesn't correlate well...")
                     for f in rtable.get_where_list(
                         '(clusterNumber=={0}) & (isCore==0) & (alignedTo=={1})'.format(
                         rtable[core]['clusterNumber'], u)):
@@ -221,26 +203,6 @@ def alignAll(rtable, ctable, opt):
                             if cor > cormax:
                                 cormax = cor
                                 lagmax = lag
-                            if cor <= opt.cmin - 0.05:
-                                # Try with window moved forward full window length
-                                coeffi, ffti = redpy.correlation.calcWindow(waveform,
-                                    windowStart - opt.winlen, opt)
-                                cor, lag = redpy.correlation.xcorr1x1(fftj, ffti, coeffj,
-                                    coeffi)
-                                lag = lag + opt.winlen
-                                if cor > cormax:
-                                    cormax = cor
-                                    lagmax = lag
-                                if cor <= opt.cmin - 0.05:
-                                    # Try with window moved back half window length
-                                    coeffi, ffti = redpy.correlation.calcWindow(waveform,
-                                        windowStart + opt.winlen, opt)
-                                    cor, lag = redpy.correlation.xcorr1x1(fftj, ffti,
-                                        coeffj, coeffi)
-                                    lag = lag - opt.winlen
-                                    if cor > cormax:
-                                        cormax = cor
-                                        lagmax = lag
                     cor = cormax
                     lag = lagmax
                     if cor > opt.cmin - 0.05:
@@ -292,6 +254,9 @@ def alignAllDeep(rtable, ctable, opt):
     opt: Options object describing station/run parameters    
     
     Runs alignAll first
+    
+    Really, this needs to figure out the best event to align to other than the core,
+    and that will require correlating the entire family.
     """
     
     alignAll(rtable, ctable, opt)
@@ -303,14 +268,14 @@ def alignAllDeep(rtable, ctable, opt):
             core['clusterNumber']))
         if len(fam) > 1:
             coeffj, fftj = redpy.correlation.calcWindow(core['waveform'],
-                core['windowStart'], opt, 0.0625)
+                core['windowStart']-opt.winlen/4, opt, 0.5)
             for n in fam:
                 # Correlate 1x1, assume events are already decently aligned
                 coeffi, ffti = redpy.correlation.calcWindow(rtable.cols.waveform[n],
-                    rtable.cols.windowStart[n], opt, 0.0625)
+                    rtable.cols.windowStart[n]-opt.winlen/4, opt, 0.5)
                 cor, lag = redpy.correlation.xcorr1x1(fftj, ffti, coeffj, coeffi)
                 # Only realign the good events, so bad events don't get shifted worse
-                if cor > opt.cmin:
+                if cor > opt.cmin - 0.05:
                     rtable.cols.windowStart[n] = rtable.cols.windowStart[n] - lag
                     rtable.cols.windowCoeff[n], rtable.cols.windowFFT[n] = redpy.correlation.calcWindow(
                         rtable.cols.waveform[n], rtable.cols.windowStart[n], opt)
@@ -382,6 +347,14 @@ def runFullOPTICS(rtable, ctable, opt):
     
     Sets the order, reachability, and coreDistance columns in rtable
     """
+    
+    leftovers = rtable.get_where_list('clusterNumber == -1')
+    if leftovers:
+        leftovers[::-1].sort()
+        print("Removing leftovers in clustering: {0}".format(len(leftovers)))
+        for l in leftovers:
+            rtable.remove_row(l)
+    
     t = time.time()
         
     C = np.zeros((len(rtable),len(rtable)))
@@ -414,15 +387,9 @@ def runFullOPTICS(rtable, ctable, opt):
     
     print("Total time spent clustering: {:03.2f} seconds".format(time.time()-t))
     
-    if len(rtable) > 0:
-        print("Repeaters found: {0}".format(len(rtable)))
-        print("Number of clusters: {0}".format(max(rtable.cols.clusterNumber[:])+1))
-        bigfam = 0
-        for n in range(max(rtable.cols.clusterNumber[:])+1):
-            tmp = len(rtable.get_where_list(
-                '(isCore == 0) & (clusterNumber == {})'.format(n)))
-            if tmp > bigfam:
-               bigfam = tmp
-        print("Members in largest cluster: {0}".format(bigfam+1))
-        print("Number of leftovers in clustering: {0}".format(len(rtable.get_where_list(
-            'clusterNumber == -1'))))
+    print("Creating and saving new images")
+    redpy.plotting.createCMatrixFigure(rtable, ctable, opt)
+    redpy.plotting.plotCores(rtable, opt)
+    redpy.plotting.createOrderedWaveformFigure(rtable, opt)
+
+    
