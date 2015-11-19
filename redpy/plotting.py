@@ -26,8 +26,8 @@ def createOrderedWaveformFigure(rtable, opt):
             r['windowStart']+int(opt.atrig*opt.samprate))]
             
         tmp = np.hstack((np.zeros(ppad), tmp, np.zeros(apad)))
-        data[n, :] = tmp[(opt.ptrig*opt.samprate - opt.winlen*0.5):(opt.ptrig*opt.samprate +
-            opt.winlen*1.5)]/maxwin
+        data[n, :] = tmp[int(opt.ptrig*opt.samprate - opt.winlen*0.5):int(
+            opt.ptrig*opt.samprate + opt.winlen*1.5)]/maxwin
     
     order = rtable.cols.order[:]
     datao = data[order, :]
@@ -76,6 +76,15 @@ def createCMatrixFigure(rtable, ctable, opt):
     ax.imshow(C, aspect='auto', vmin=0.6, vmax=1, interpolation='nearest')
     ax = fig.add_subplot(1, 2, 2)
     ax.imshow(Co, aspect='auto', vmin=0.6, vmax=1, interpolation='nearest')
+
+    clust = rtable.cols.clusterNumber[:]
+    clust = clust[order]
+    diffclust = np.diff(clust)
+    
+    for n in range(len(diffclust)):
+        if diffclust[n]!=0:
+            plt.axhline(y=n+0.5, color='w')
+    
     
     plt.savefig('{}/cmatrix.png'.format(opt.groupName))
     plt.savefig('{0}/cmatrix_{1}.png'.format(opt.groupName,time.strftime(
@@ -89,11 +98,15 @@ def plotCores(rtable, opt):
     cores = rtable.where('isCore==1')
     
     for r in cores:
-        dat=r['waveform'][(r['windowStart']-opt.winlen*0.5):(r['windowStart']+opt.winlen*1.5)]
+        dat=r['waveform'][int(
+            r['windowStart']-opt.winlen*0.5):int(r['windowStart']+opt.winlen*1.5)]
         maxwin = max(abs(r['waveform'][r['windowStart']:(r['windowStart']+opt.winlen)]))
         dat=dat/maxwin
-        tvec = np.arange(-opt.winlen*0.5/opt.samprate,opt.winlen*1.5/opt.samprate,1/opt.samprate)
-        plt.plot(tvec,np.add(dat/2,-1*r['clusterNumber']),'k')
+        dat[dat>1] = 1
+        dat[dat<-1] = -1
+        tvec = np.arange(
+            -opt.winlen*0.5/opt.samprate,opt.winlen*1.5/opt.samprate,1/opt.samprate)
+        plt.plot(tvec,np.add(dat/2,-1*r['clusterNumber']),'k',linewidth=0.5)
         
     plt.ylabel('Cluster Number')
     plt.xlabel('Time (s)')
@@ -102,7 +115,7 @@ def plotCores(rtable, opt):
     plt.savefig('{}/cores.png'.format(opt.groupName))
     plt.savefig('{0}/cores_{1}.png'.format(opt.groupName,time.strftime(
         '%Y%m%dT%H%M%S',time.gmtime())))
-
+    
 
 def createWigglePlot(jtable, opt):
     #waveform wiggle plot of input waveforms

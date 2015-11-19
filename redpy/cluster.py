@@ -348,6 +348,8 @@ def runFullOPTICS(rtable, ctable, opt):
     Sets the order, reachability, and coreDistance columns in rtable
     """
     
+    alignAll(rtable, ctable, opt)
+    
     t = time.time()
         
     C = np.zeros((len(rtable),len(rtable)))

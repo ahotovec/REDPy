@@ -81,7 +81,7 @@ else:
 t = time.time()
 n = 0
 while tstart+n*opt.nsec <= tend-opt.nsec:
-
+    
     if args.verbose: print(tstart+n*opt.nsec)
     
     # Download and trigger
@@ -132,8 +132,8 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
             print("Number of clusters: {}".format(max(rtable.cols.clusterNumber[:])+1))
     
     # Clean up the table at the end of the day
-    if UTCDateTime(tstart+n*opt.nsec).hour == 23 and len(rtable) > 1:
-        redpy.cluster.alignAll(rtable, ctable, opt)
+    #if UTCDateTime(tstart+n*opt.nsec).hour == 23 and len(rtable) > 1:
+    #    redpy.cluster.alignAll(rtable, ctable, opt)
     
     # Update tend if an end date is not specified so this will run until it is fully 
     # caught up, instead of running to when the script was originally run.
