@@ -115,7 +115,25 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
         rtable.attrs.previd = id + 1
     
     redpy.table.clearExpiredOrphans(otable, opt, tstart+(n+1)*opt.nsec)
-    if args.verbose: print("Length of Orphan table: {0}".format(len(otable)))
+    
+    # Deal with leftovers (currently thrown away)
+    leftovers = rtable.get_where_list('clusterNumber == -1')
+    if leftovers.any():
+        leftovers[::-1].sort()
+        print("Removing leftovers in clustering: {0}".format(len(leftovers)))
+        for l in leftovers:
+            rtable.remove_row(l)
+    
+    # Print some stats
+    if args.verbose:
+        print("Length of Orphan table: {}".format(len(otable)))
+        if len(rtable) > 1:
+            print("Number of repeaters: {}".format(len(rtable)))
+            print("Number of clusters: {}".format(max(rtable.cols.clusterNumber[:])+1))
+    
+    # Clean up the table at the end of the day
+    if UTCDateTime(tstart+n*opt.nsec).hour == 23 and len(rtable) > 1:
+        redpy.cluster.alignAll(rtable, ctable, opt)
     
     # Update tend if an end date is not specified so this will run until it is fully 
     # caught up, instead of running to when the script was originally run.

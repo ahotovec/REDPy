@@ -378,13 +378,6 @@ def runFullOPTICS(rtable, ctable, opt):
     setClusters(rtable, opt)
     setCenters(rtable, opt)
     
-    leftovers = rtable.get_where_list('clusterNumber == -1')
-    if leftovers.any():
-        leftovers[::-1].sort()
-        print("Removing leftovers in clustering: {0}".format(len(leftovers)))
-        for l in leftovers:
-            rtable.remove_row(l)
-    
     print("Total time spent clustering: {:03.2f} seconds".format(time.time()-t))
     
     print("Creating and saving new images")
