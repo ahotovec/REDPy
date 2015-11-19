@@ -1,6 +1,7 @@
 import argparse
 import redpy
 import numpy as np
+import obspy
 from obspy import UTCDateTime
 import time
 
@@ -96,7 +97,7 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
         for i in range(len(junk)):
             redpy.table.populateJunk(jtable,junk[i],0,opt)
             
-    except TypeError:
+    except (TypeError, obspy.fdsn.header.FDSNException):
 	    print('Could not download or trigger data... moving on')
 	    trigs = []
     
