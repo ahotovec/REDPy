@@ -11,17 +11,30 @@ def createTimelineFigure(rtable, ctable, opt):
     fig = plt.figure(figsize=(12, 6))
     
     dt = rtable.cols.startTimeMPL[:]
-    c = rtable.cols.clusterNumber[:]
+    cnum = rtable.cols.clusterNumber[:]
+    reach = rtable.cols.reachability[:]
+    reach[0] = 1
+    reach[reach==1] = 0
+
+    # Figure out earliest member in each family
+    mindt = np.zeros((max(cnum)+1,))
+    for clustNum in range(max(cnum)+1):
+        mindt[clustNum] = min(dt[cnum==clustNum])
     
-    for clustNum in range(max(c)+1):
-        plt.plot_date(dt[c==clustNum], c[c==clustNum], 'ko-')
+    n = 0
+    for clustNum in np.argsort(mindt):
+        if len(dt[cnum==clustNum]) > 2:
+            plt.plot_date((min(dt[cnum==clustNum]), max(dt[cnum==clustNum])), (n, n),
+                'k:', linewidth=0.5)
+            plt.scatter(dt[cnum==clustNum], n*np.ones((len(dt[cnum==clustNum]),)),
+                c=(1-reach[cnum==clustNum]), vmin=0.6, vmax=1, cmap='jet', linewidth=0.5)
+            n = n+1
     
-    #plt.plot_date(dt, c, 'ko')
     plt.margins(0.05)
     
     plt.gcf().autofmt_xdate()
     plt.xlabel('Date')
-    plt.ylabel('Cluster Number')
+    plt.ylabel('Cluster by Date (with at least 3 members)')
     
     plt.savefig('{}/timeline.png'.format(opt.groupName))
 #     plt.savefig('{0}/timeline_{1}.png'.format(opt.groupName,time.strftime(
