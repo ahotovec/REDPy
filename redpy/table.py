@@ -4,6 +4,8 @@ from obspy import UTCDateTime
 import datetime
 import numpy as np
 import redpy.correlation
+import datetime
+import matplotlib
 
 def Repeaters(opt):
 
@@ -12,6 +14,7 @@ def Repeaters(opt):
     
     id: unique ID number for the event (integer)
     startTime: UTC time of start of the waveform (string)
+    startTimeMPL: matplotlib number associated with time (float)
     waveform: Waveform data (ndarray)
     windowStart: "trigger" time, in samples from start (integer)
     windowCoeff: amplitude scaling for cross-correlation (float)
@@ -26,16 +29,17 @@ def Repeaters(opt):
     dict = {
         "id"            : Int32Col(shape=(), pos=0),
         "startTime"     : StringCol(itemsize=32, pos=1),
-        "waveform"      : Float64Col(shape=(opt.wshape,), pos=2),
-        "windowStart"   : Int32Col(shape=(), pos=3),
-        "windowCoeff"   : Float64Col(shape=(), pos=4),
-        "windowFFT"     : ComplexCol(shape=(opt.winlen,), itemsize=16, pos=5),
-        "order"         : Int32Col(shape=(), pos=6),
-        "reachability"  : Float64Col(shape=(), pos=7),
-        "coreDistance"  : Float64Col(shape=(), pos=8),
-        "clusterNumber" : Int32Col(shape=(), pos=9),
-        "isCore"        : Int32Col(shape=(), pos=10),
-        "alignedTo"     : Int32Col(shape=(), pos=11)
+        "startTimeMPL"  : Float64Col(shape=(), pos=2),
+        "waveform"      : Float64Col(shape=(opt.wshape,), pos=3),
+        "windowStart"   : Int32Col(shape=(), pos=4),
+        "windowCoeff"   : Float64Col(shape=(), pos=5),
+        "windowFFT"     : ComplexCol(shape=(opt.winlen,), itemsize=16, pos=6),
+        "order"         : Int32Col(shape=(), pos=7),
+        "reachability"  : Float64Col(shape=(), pos=8),
+        "coreDistance"  : Float64Col(shape=(), pos=9),
+        "clusterNumber" : Int32Col(shape=(), pos=10),
+        "isCore"        : Int32Col(shape=(), pos=11),
+        "alignedTo"     : Int32Col(shape=(), pos=12)
         }
     
     return dict
@@ -48,6 +52,7 @@ def Orphans(opt):
 
     id: unique ID number for the event (integer)
     startTime: UTC time of start of the waveform (string)
+    startTimeMPL: matplotlib number associated with time (float)
     waveform: Waveform data (ndarray)
     windowStart: "trigger" time, in samples from start (integer)
     windowCoeff: amplitude scaling for cross-correlation (float)
@@ -60,11 +65,12 @@ def Orphans(opt):
     dict = {
         "id"          : Int32Col(shape=(), pos=0),
         "startTime"   : StringCol(itemsize=32, pos=1),
-        "waveform"    : Float64Col(shape=(opt.wshape,), pos=2),
-        "windowStart" : Int32Col(shape=(), pos=3),
-        "windowCoeff" : Float64Col(shape=(), pos=4),
-        "windowFFT"   : ComplexCol(shape=(opt.winlen,), itemsize=16, pos=5),
-        "expires"     : StringCol(itemsize=32, pos=6)
+        "startTimeMPL": Float64Col(shape=(), pos=2),
+        "waveform"    : Float64Col(shape=(opt.wshape,), pos=3),
+        "windowStart" : Int32Col(shape=(), pos=4),
+        "windowCoeff" : Float64Col(shape=(), pos=5),
+        "windowFFT"   : ComplexCol(shape=(opt.winlen,), itemsize=16, pos=6),
+        "expires"     : StringCol(itemsize=32, pos=7)
         }
 
     return dict
@@ -201,6 +207,12 @@ def populateRepeater(rtable, id, trig, opt, alignedTo, windowStart=-1):
     
     trigger['id'] = id
     trigger['startTime'] = trig.stats.starttime.isoformat()
+    try:
+        trigger['startTimeMPL'] = matplotlib.dates.date2num(datetime.datetime.strptime(
+            trig.stats.starttime.isoformat(), '%Y-%m-%dT%H:%M:%S.%f'))
+    except ValueError:
+        trigger['startTimeMPL'] = matplotlib.dates.date2num(datetime.datetime.strptime(
+            trig.stats.starttime.isoformat(), '%Y-%m-%dT%H:%M:%S'))
     trigger['waveform'] = trig.data
     trigger['windowStart'] = windowStart
     trigger['windowCoeff'], trigger['windowFFT'] = redpy.correlation.calcWindow(
@@ -235,6 +247,12 @@ def populateOrphan(otable, id, trig, opt):
     
     trigger['id'] = id
     trigger['startTime'] = trig.stats.starttime.isoformat()
+    try:
+        trigger['startTimeMPL'] = matplotlib.dates.date2num(datetime.datetime.strptime(
+            trig.stats.starttime.isoformat(), '%Y-%m-%dT%H:%M:%S.%f'))
+    except ValueError:
+        trigger['startTimeMPL'] = matplotlib.dates.date2num(datetime.datetime.strptime(
+            trig.stats.starttime.isoformat(), '%Y-%m-%dT%H:%M:%S'))
     trigger['waveform'] = trig.data
     trigger['windowStart'] = windowStart
     trigger['windowCoeff'], trigger['windowFFT'] = redpy.correlation.calcWindow(
@@ -281,6 +299,7 @@ def moveOrphan(rtable, otable, oindex, alignedTo, opt):
     
     trigger['id'] = orow['id']
     trigger['startTime'] = orow['startTime']
+    trigger['startTimeMPL'] = orow['startTimeMPL']
     trigger['waveform'] = orow['waveform']
     trigger['windowStart'] = orow['windowStart']
     trigger['windowCoeff'] = orow['windowCoeff']
