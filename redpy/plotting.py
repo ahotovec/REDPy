@@ -24,8 +24,8 @@ def createTimelineFigure(rtable, ctable, opt):
     plt.ylabel('Cluster Number')
     
     plt.savefig('{}/timeline.png'.format(opt.groupName))
-    plt.savefig('{0}/timeline_{1}.png'.format(opt.groupName,time.strftime(
-        '%Y%m%dT%H%M%S',time.gmtime())))
+#     plt.savefig('{0}/timeline_{1}.png'.format(opt.groupName,time.strftime(
+#         '%Y%m%dT%H%M%S',time.gmtime())))
         
 
 def createOrderedWaveformFigure(rtable, opt):
@@ -67,8 +67,8 @@ def createOrderedWaveformFigure(rtable, opt):
     plt.ylabel('Ordered Event #')
     
     plt.savefig('{}/orderedWaveform.png'.format(opt.groupName))
-    plt.savefig('{0}/orderedWaveform_{1}.png'.format(opt.groupName,time.strftime(
-        '%Y%m%dT%H%M%S',time.gmtime())))
+#     plt.savefig('{0}/orderedWaveform_{1}.png'.format(opt.groupName,time.strftime(
+#         '%Y%m%dT%H%M%S',time.gmtime())))
 
 
 def createCMatrixFigure(rtable, ctable, opt):
@@ -107,8 +107,8 @@ def createCMatrixFigure(rtable, ctable, opt):
     
     
     plt.savefig('{}/cmatrix.png'.format(opt.groupName))
-    plt.savefig('{0}/cmatrix_{1}.png'.format(opt.groupName,time.strftime(
-        '%Y%m%dT%H%M%S',time.gmtime())))
+#     plt.savefig('{0}/cmatrix_{1}.png'.format(opt.groupName,time.strftime(
+#         '%Y%m%dT%H%M%S',time.gmtime())))
 
 
 def plotCores(rtable, opt):
@@ -133,8 +133,8 @@ def plotCores(rtable, opt):
     plt.autoscale(tight=True)
     
     plt.savefig('{}/cores.png'.format(opt.groupName))
-    plt.savefig('{0}/cores_{1}.png'.format(opt.groupName,time.strftime(
-        '%Y%m%dT%H%M%S',time.gmtime())))
+#     plt.savefig('{0}/cores_{1}.png'.format(opt.groupName,time.strftime(
+#         '%Y%m%dT%H%M%S',time.gmtime())))
     
 
 def createWigglePlot(jtable, opt):
@@ -153,5 +153,5 @@ def createWigglePlot(jtable, opt):
     plt.autoscale(tight=True)
     
     plt.savefig('{}/wiggle.png'.format(opt.groupName))
-    plt.savefig('{0}/wiggle_{1}.png'.format(opt.groupName,time.strftime(
-        '%Y%m%dT%H%M%S',time.gmtime())))
+#     plt.savefig('{0}/wiggle_{1}.png'.format(opt.groupName,time.strftime(
+#         '%Y%m%dT%H%M%S',time.gmtime())))
