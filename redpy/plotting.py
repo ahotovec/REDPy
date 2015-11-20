@@ -7,6 +7,26 @@ import time
 These are very brute force plotting; should be replaced with more sophisticated functions
 """
 
+def createTimelineFigure(rtable, ctable, opt):
+    fig = plt.figure(figsize=(12, 6))
+    
+    dt = rtable.cols.startTimeMPL[:]
+    c = rtable.cols.clusterNumber[:]
+    
+    for clustNum in range(max(c)+1):
+        plt.plot_date(dt[c==clustNum], c[c==clustNum], 'ko-')
+    
+    #plt.plot_date(dt, c, 'ko')
+    plt.margins(0.05)
+    
+    plt.gcf().autofmt_xdate()
+    plt.xlabel('Date')
+    plt.ylabel('Cluster Number')
+    
+    plt.savefig('{}/timeline.png'.format(opt.groupName))
+    plt.savefig('{0}/timeline_{1}.png'.format(opt.groupName,time.strftime(
+        '%Y%m%dT%H%M%S',time.gmtime())))
+        
 
 def createOrderedWaveformFigure(rtable, opt):
     data = np.zeros((len(rtable), int(opt.winlen*2)))

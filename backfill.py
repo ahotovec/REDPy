@@ -132,6 +132,9 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
             print("Number of repeaters: {}".format(len(rtable)))
             print("Number of clusters: {}".format(max(rtable.cols.clusterNumber[:])+1))
     
+    if len(rtable) > 1:
+        redpy.plotting.createTimelineFigure(rtable, ctable, opt)
+    
     # Clean up the table at the end of the day
     #if UTCDateTime(tstart+n*opt.nsec).hour == 23 and len(rtable) > 1:
     #    redpy.cluster.alignAll(rtable, ctable, opt)
