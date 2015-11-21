@@ -40,6 +40,40 @@ def getData(date, opt):
     return st
 
 
+def getCatData(date, opt):
+
+    """
+    Download data from IRIS or Earthworm waveserver with padding and filter it. This is
+    a specialized version getData() for catalog events, pulling a smaller amount of time
+    around a known event.
+
+    date: UTCDateTime of known catalog event
+    opt: Options object describing station/run parameters
+    
+    Returns ObsPy stream object
+    """    
+    
+    # Choose where data are downloaded automatically via options
+    # Download data with padding to account for triggering algorithm
+    # Make overlap symmetric
+    
+    if opt.server == "IRIS":
+        client = Client("IRIS")
+        st = client.get_waveforms(opt.network, opt.station, opt.location, opt.channel,
+            date - opt.atrig, date + 3*opt.atrig)
+    else:
+        client = EWClient(opt.server, opt.port)
+        st = client.getWaveform(opt.network, opt.station, opt.location, opt.channel,
+            date - opt.atrig, date + 3*opt.atrig)
+
+    st = st.detrend() # can create noise artifacts??
+    st = st.merge(method=1, fill_value='interpolate')
+    st = st.filter("highpass", freq=opt.fhigh, corners=2,
+            zerophase=True)
+
+    return st
+
+
 def trigger(st, rtable, opt):
 
     """
