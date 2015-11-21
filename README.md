@@ -12,13 +12,13 @@ We seek to develop an automated system for detecting and cataloging repeating ea
 REDPy runs on Python 2.7, and currently has the following major package dependencies:  
 [numpy](http://www.numpy.org/) | [scipy](http://www.scipy.org/) | [matplotlib](http://www.matplotlib.org/) | [obspy](http://www.obspy.org/) | [pytables](http://www.pytables.org/) | [pandas](http://pandas.pydata.org/)
 
-All of these dependencies can be easily installed via [Anaconda](https://www.continuum.io/) on the command line:  
-`>> conda install -c obspy obspy`  
-`>> conda install pytables`  
+All of these dependencies can be easily installed via [Anaconda](https://www.continuum.io/) on the command line:
+`>> conda install -c obspy obspy`
+`>> conda install pytables`
 `>> conda install pandas`
 
-Due to a 'feature' in numpy 1.10.0, processing runs _extremely_ slow (by at least an order of magnitude, if not two or more). Until a fix is released for this issue in numpy, we recommend downgrading numpy, scipy, and matplotlib to the following previously stable versions:  
-`>> conda install numpy=1.9.3 scipy=0.15.0 matplotlib=1.4.2`
+However, due to a 'feature' in numpy 1.10.0, processing runs _extremely_ slow (by at least an order of magnitude, if not two or more). Until a fix is released for this issue in numpy, we recommend downgrading numpy, scipy, matplotlib, and pytables to the following previously stable versions:
+`>> conda install numpy=1.9.3 scipy=0.15.0 matplotlib=1.4.2 pytables=3.2.0`
 
 ## Usage
 Once dependencies are installed and REDPy is downloaded, REDPy can be run out of the box with the following commands to test if the code is working on your computer:  
