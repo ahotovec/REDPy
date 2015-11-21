@@ -21,7 +21,7 @@ Due to a 'feature' in numpy 1.10.0, processing runs _extremely_ slow (by at leas
 `>> conda install numpy=1.9.3 scipy=0.15.0 matplotlib=1.4.2`
 
 ## Usage
-Once dependencies are installed and REDPy is downloaded, REDPy can be run out of the box with the following commands to test if the code is working on your computer:
+Once dependencies are installed and REDPy is downloaded, REDPy can be run out of the box with the following commands to test if the code is working on your computer:  
 `>> python initialize.py`  
 `>> python backfill.py -s 2004-09-22 -e 2004-09-24`
 
