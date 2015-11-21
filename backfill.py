@@ -101,19 +101,28 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
 	    print('Could not download or trigger data... moving on')
 	    trigs = []
     
-    if len(trigs) > 0:
-        
-        ostart = 0
-        if len(otable) == 0:
-            # First trigger goes to orphans table
-            redpy.table.populateOrphan(otable, 0, trigs[0], opt)
-            ostart = 1
-        
-        # Loop through remaining triggers
-        for i in range(ostart,len(trigs)):  
-            id = rtable.attrs.previd + i
-            redpy.correlation.runCorrelation(rtable, otable, ctable, trigs[i], id, opt)
-        rtable.attrs.previd = id + 1
+    if len(trigs) > 0:        
+        id = rtable.attrs.previd        
+        if len(trigs) == 1:        
+            ostart = 0
+            if len(otable) == 0:
+                # First trigger goes to orphans table
+                redpy.table.populateOrphan(otable, 0, trigs[0], opt)
+                ostart = 1
+            else:        
+                id = id + 1
+                redpy.correlation.runCorrelation(rtable, otable, ctable, trigs[0], id, opt)        
+        else:
+            ostart = 0
+            if len(otable) == 0:
+                # First trigger goes to orphans table
+                redpy.table.populateOrphan(otable, 0, trigs[0], opt)
+                ostart = 1        
+            # Loop through remaining triggers
+            for i in range(ostart,len(trigs)):  
+                id = id + 1
+                redpy.correlation.runCorrelation(rtable, otable, ctable, trigs[i], id, opt)            
+        rtable.attrs.previd = id
     
     redpy.table.clearExpiredOrphans(otable, opt, tstart+(n+1)*opt.nsec)
     
