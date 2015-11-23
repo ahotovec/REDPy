@@ -29,6 +29,7 @@ def createTimelineFigure(rtable, ctable, opt):
                 'k:', linewidth=0.5)
             plt.scatter(dt[cnum==clustNum], n*np.ones((len(dt[cnum==clustNum]),)),
                 c=(1-reach[cnum==clustNum]), vmin=0.6, vmax=1, cmap='jet', linewidth=0.5)
+            plt.text(max(dt[cnum==clustNum]), n+0.2, format(len(dt[cnum==clustNum])))
             n = n+1
     
     plt.margins(0.05)

@@ -392,5 +392,6 @@ def runFullOPTICS(rtable, ctable, opt):
     redpy.plotting.createCMatrixFigure(rtable, ctable, opt)
     redpy.plotting.plotCores(rtable, opt)
     redpy.plotting.createOrderedWaveformFigure(rtable, opt)
+    redpy.plotting.createTimelineFigure(rtable, ctable, opt)
 
     
