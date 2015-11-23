@@ -2,13 +2,14 @@ from tables import *
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import mpld3
 
 """
 These are very brute force plotting; should be replaced with more sophisticated functions
 """
 
 def createTimelineFigure(rtable, ctable, opt):
-    fig = plt.figure(figsize=(12, 6))
+    fig = plt.figure(figsize=(15, 10))
     
     dt = rtable.cols.startTimeMPL[:]
     cnum = rtable.cols.clusterNumber[:]
@@ -36,6 +37,8 @@ def createTimelineFigure(rtable, ctable, opt):
     plt.xlabel('Date')
     plt.ylabel('Cluster by Date (with at least 3 members)')
     
+    mpld3.save_html(fig, '{}/timeline.html'.format(opt.groupName))
+        
     plt.savefig('{}/timeline.png'.format(opt.groupName))
 #     plt.savefig('{0}/timeline_{1}.png'.format(opt.groupName,time.strftime(
 #         '%Y%m%dT%H%M%S',time.gmtime())))
@@ -118,7 +121,6 @@ def createCMatrixFigure(rtable, ctable, opt):
         if diffclust[n]!=0:
             plt.axhline(y=n+0.5, color='w')
     
-    
     plt.savefig('{}/cmatrix.png'.format(opt.groupName))
 #     plt.savefig('{0}/cmatrix_{1}.png'.format(opt.groupName,time.strftime(
 #         '%Y%m%dT%H%M%S',time.gmtime())))
@@ -126,7 +128,7 @@ def createCMatrixFigure(rtable, ctable, opt):
 
 def plotCores(rtable, opt):
     #waveform wiggle plot of input waveforms
-    fig = plt.figure(figsize=(12, 6))
+    fig = plt.figure(figsize=(15, 10))
     
     cores = rtable.where('isCore==1')
     
@@ -144,6 +146,8 @@ def plotCores(rtable, opt):
     plt.ylabel('Cluster Number')
     plt.xlabel('Time (s)')
     plt.autoscale(tight=True)
+    
+    mpld3.save_html(fig, '{}/cores.html'.format(opt.groupName))
     
     plt.savefig('{}/cores.png'.format(opt.groupName))
 #     plt.savefig('{0}/cores_{1}.png'.format(opt.groupName,time.strftime(
@@ -164,6 +168,8 @@ def createWigglePlot(jtable, opt):
     plt.xlabel('time(s)')
     #plt.title('Junk triggers')
     plt.autoscale(tight=True)
+    
+    mpld3.save_html(fig, '{}/wiggle.html'.format(opt.groupName))
     
     plt.savefig('{}/wiggle.png'.format(opt.groupName))
 #     plt.savefig('{0}/wiggle_{1}.png'.format(opt.groupName,time.strftime(
