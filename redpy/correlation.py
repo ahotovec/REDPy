@@ -2,6 +2,8 @@ import numpy as np
 import obspy.core.trace as trace
 import redpy.table
 import redpy.cluster
+import datetime
+import matplotlib
 from scipy.fftpack import fft, ifft
 
 def calcWindow(waveform, windowStart, opt, winlen=1):
@@ -326,19 +328,30 @@ def runCorrelation(rtable, otable, ctable, trig, id, opt):
     This is the top-level logic for processing; detailed logic is within the two compare
     functions.
     """
+    
+    # Check to ensure this isn't a duplicate in either rtable or otable
+    stime = matplotlib.dates.date2num(datetime.datetime.strptime(
+        trig.stats.starttime.isoformat(), '%Y-%m-%dT%H:%M:%S.%f'))
+    if not (rtable.get_where_list('(startTimeMPL > {0}) & (startTimeMPL < {1})'.format(
+        stime - (opt.mintrig + opt.winlen*opt.samprate)/86400, stime +
+        (opt.mintrig + opt.winlen*opt.samprate)/86400)).any() or otable.get_where_list(
+        '(startTimeMPL > {0}) & (startTimeMPL < {1})'.format(stime - opt.mintrig/86400,
+        stime + opt.mintrig/86400))).any():
 
-    coeffi, ffti = calcWindow(trig.data, int(opt.ptrig*opt.samprate), opt)
-    
-    # Correlate with the new event with all the orphans
-    cor, lag = xcorr1xtable(coeffi, ffti, otable, opt)
-    
-    # If there's a match, run the most complex function
-    if max(cor) >= opt.cmin - 0.05:
-        compareGoodOrphans(rtable, otable, ctable, trig, id, coeffi, ffti, cor, lag, opt)
-    else:
-        # Compare that orphan to the cores in the repeater table
-        if len(rtable) > 0:
-            compareSingleOrphan2Cores(rtable, otable, ctable, trig, id, coeffi, ffti, opt)
-        # Populate as an orphan if there are no repeaters yet
+        coeffi, ffti = calcWindow(trig.data, int(opt.ptrig*opt.samprate), opt)
+        
+        # Correlate with the new event with all the orphans
+        cor, lag = xcorr1xtable(coeffi, ffti, otable, opt)
+        
+        # If there's a match, run the most complex function
+        if max(cor) >= opt.cmin - 0.05:
+            compareGoodOrphans(rtable, otable, ctable, trig, id, coeffi, ffti, cor, lag,
+                opt)
         else:
-            redpy.table.populateOrphan(otable, id, trig, opt)
+            # Compare that orphan to the cores in the repeater table
+            if len(rtable) > 0:
+                compareSingleOrphan2Cores(rtable, otable, ctable, trig, id, coeffi, ffti,
+                    opt)
+            # Populate as an orphan if there are no repeaters yet
+            else:
+                redpy.table.populateOrphan(otable, id, trig, opt)
