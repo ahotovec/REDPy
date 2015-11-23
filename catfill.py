@@ -122,7 +122,6 @@ for event in eventlist[::-1]:
         redpy.plotting.createTimelineFigure(rtable, ctable, opt)
 
 # Clean things up at the end of the import
-redpy.cluster.deepClean(rtable, ctable, opt)
 redpy.cluster.runFullOPTICS(rtable, ctable, opt)
 redpy.plotting.createTimelineFigure(rtable, ctable, opt)
 
