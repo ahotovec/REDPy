@@ -81,9 +81,8 @@ def setCenters(rtable, opt):
 
 def alignAll(rtable, ctable, opt):
     """
-    Aligns events in the table and combines similar families that were misaligned
-    Uses the column 'alignedTo' to guide which events are misaligned and skips events
-    which are aligned to the current core
+    Aligns events in the table that were misaligned. Uses the column 'alignedTo' to guide
+    which events are misaligned and skips events which have already been aligned
     """
     
     print('Cleaning up...')
@@ -164,7 +163,12 @@ def alignAll(rtable, ctable, opt):
                     rtable.flush()
     print('Time spent aligning families to their cores: {} seconds'.format(time.time()-t))
     
-    # Now check cores and see if any can be combined...
+    
+def mergeFamilies(rtable, ctable, opt):
+    """
+    Cross-correlates the cores of each family and attempts to realign and merge them.
+    """
+    
     t = time.time()
     tfill = 0
     cores = rtable.get_where_list('(isCore==1)')    
@@ -256,7 +260,8 @@ def alignAllDeep(rtable, ctable, opt):
     Runs alignAll first
     
     Really, this needs to figure out the best event to align to other than the core,
-    and that will require correlating the entire family.
+    and that will require correlating the entire family. Wrote this in an attempt to
+    improve alignments enough to stack.
     """
     
     alignAll(rtable, ctable, opt)
@@ -295,7 +300,8 @@ def deepClean(rtable, ctable, opt):
     May take a VERY long time to complete! Run with extreme caution.
     """
     
-    alignAll(rtable, ctable, opt)
+    alignAllDeep(rtable, ctable, opt)
+    mergeFamilies(rtable, ctable, opt)
 
     txcorr = 0
     tstore = 0
