@@ -337,10 +337,10 @@ def runCorrelation(rtable, otable, ctable, trig, id, opt):
         stime = matplotlib.dates.date2num(datetime.datetime.strptime(
             trig.stats.starttime.isoformat(), '%Y-%m-%dT%H:%M:%S'))
     
-    if not ((rtable.get_where_list('(startTimeMPL > {0}) & (startTimeMPL < {1})'.format(
-        stime - opt.mintrig/86400, stime + opt.mintrig/86400)).any() or
-        otable.get_where_list('(startTimeMPL > {0}) & (startTimeMPL < {1})'.format(
-        stime - opt.mintrig/86400, stime + opt.mintrig/86400))).any()):
+    if not (len(otable.get_where_list('(startTimeMPL > {0}) & (startTimeMPL < {1})'.format(
+        stime - opt.mintrig/86400, stime + opt.mintrig/86400))) or
+        len(rtable.get_where_list('(startTimeMPL > {0}) & (startTimeMPL < {1})'.format(
+        stime - opt.mintrig/86400, stime + opt.mintrig/86400)))):
 
         coeffi, ffti = calcWindow(trig.data, int(opt.ptrig*opt.samprate), opt)
         
