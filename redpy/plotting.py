@@ -48,7 +48,7 @@ def createOrderedWaveformFigure(rtable, opt):
     for r in rtable.iterrows():
         n = n+1
         
-        maxwin = max(abs(r['waveform'][r['windowStart']:(r['windowStart']+opt.winlen)]))
+        maxwin = max(abs(r['waveform'][r['windowStart']:(r['windowStart']+opt.winlen/2)]))
         
         # Determine padding        
         ppad = int(max(0, opt.ptrig*opt.samprate - r['windowStart']))
@@ -133,7 +133,7 @@ def plotCores(rtable, opt):
     for r in cores:
         dat=r['waveform'][int(
             r['windowStart']-opt.winlen*0.5):int(r['windowStart']+opt.winlen*1.5)]
-        maxwin = max(abs(r['waveform'][r['windowStart']:(r['windowStart']+opt.winlen)]))
+        maxwin = max(abs(r['waveform'][r['windowStart']:(r['windowStart']+opt.winlen/2)]))
         dat=dat/maxwin
         dat[dat>1] = 1
         dat[dat<-1] = -1
