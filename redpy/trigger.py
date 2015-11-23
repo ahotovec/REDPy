@@ -126,14 +126,14 @@ def trigger(st, rtable, opt):
                     # Slice and save as first trace              
                     trigs = st.slice(t - opt.ptrig + ttime/opt.samprate,
                                      t + opt.atrig + ttime/opt.samprate)
-                    trigs[ind].stats.maxratio = np.amax(cft[on_off[n,0]:on_off[n,1]])
+                    trigs[ind].stats.maxratio = np.amax(cft[on_off[n,0]:(on_off[n,1]+1)])
                     ind = ind+1
                 else:
                     # Slice and append to previous traces
                     trigs = trigs.append(tr.slice(
                             t - opt.ptrig + ttime/opt.samprate,
                             t + opt.atrig + ttime/opt.samprate))
-                    trigs[ind].stats.maxratio = np.amax(cft[on_off[n,0]:on_off[n,1]])
+                    trigs[ind].stats.maxratio = np.amax(cft[on_off[n,0]:(on_off[n,1]+1)])
                     ind = ind+1
                                                          
         if ind is 0:
