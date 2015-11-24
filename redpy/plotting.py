@@ -1,8 +1,10 @@
 from tables import *
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
 import time
 import mpld3
+from bokeh.plotting import figure, output_file, save
 
 """
 These are very brute force plotting; should be replaced with more sophisticated functions
@@ -44,6 +46,61 @@ def createTimelineFigure(rtable, ctable, opt):
 #     plt.savefig('{0}/timeline_{1}.png'.format(opt.groupName,time.strftime(
 #         '%Y%m%dT%H%M%S',time.gmtime())))
         
+        
+def createBokehTimelineFigure(rtable, ctable, opt):
+
+    output_file('{}/timelineBokeh.html'.format(opt.groupName),
+        title='{} Timeline'.format(opt.title))
+
+    dt = rtable.cols.startTimeMPL[:]
+    cnum = rtable.cols.clusterNumber[:]
+    reach = rtable.cols.reachability[:]
+    
+    # Fix some values of reach
+    reach[0] = 0.3
+    reach[reach==1] = 0
+    reach[reach==-1] = 0.3
+    reach[reach>0.3] = 0.3
+    
+    # Figure out earliest member in each family
+    mindt = np.zeros((max(cnum)+1,))
+    for clustNum in range(max(cnum)+1):
+        mindt[clustNum] = min(dt[cnum==clustNum])
+     
+    TOOLS = "pan,box_zoom,reset,resize,save"
+    p = figure(tools=TOOLS, plot_width=1250, plot_height=700, x_axis_type='datetime')
+    p.title = 'Occurrence Timeline'
+    p.grid.grid_line_alpha = 0.3
+    p.xaxis.axis_label = 'Date'
+    p.yaxis.axis_label = 'Cluster by Date (with at least 3 members)'
+    
+    # Steal colormap from matplotlib
+    colormap = matplotlib.cm.get_cmap('Spectral')
+    bokehpalette = [matplotlib.colors.rgb2hex(m) for m in colormap(
+        np.arange(colormap.N))[::-1]]
+        
+    n = 0
+    for clustNum in np.argsort(mindt):
+        if len(dt[cnum==clustNum]) > 2:
+        
+            # Date is required as datenum
+            p.line((matplotlib.dates.num2date(min(dt[cnum==clustNum])),
+                matplotlib.dates.num2date(max(dt[cnum==clustNum]))), (n, n),
+                color='black')            
+            ind = [int(255*((1-reach[i])-0.7)/(0.3)) for i in np.where(cnum==clustNum)[0]]
+            colors = [bokehpalette[i] for i in ind]               
+            p.circle(matplotlib.dates.num2date(dt[cnum==clustNum]), n,
+                color=colors, size=8, line_color='black', fill_alpha=1.0)
+            
+            # Text doesn't understand datetimes, need to convert to a number
+            p.text(time.mktime(matplotlib.dates.num2date(
+                 max(dt[cnum==clustNum])).timetuple())*1000, n, text=[' {}'.format(
+                 len(dt[cnum==clustNum]))], text_font_size='9pt', text_baseline='middle')
+            
+            n = n+1
+        
+    save(p)     
+
 
 def createOrderedWaveformFigure(rtable, opt):
     data = np.zeros((len(rtable), int(opt.winlen*2)))

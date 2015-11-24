@@ -160,6 +160,8 @@ print("End time now: {}".format(tend))
 
 print("Time spent: {} minutes".format((time.time()-t)/60))
 
+redpy.plotting.createBokehTimelineFigure(rtable, ctable, opt)
+
 if args.verbose: print("Closing table...")
 h5file.close()
 if args.verbose: print("Done")
