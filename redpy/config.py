@@ -74,6 +74,9 @@ class Options(object):
             (corresponds to trigon) (default 7 days)
         maxorph: maximum amount of time (days) to keep the largest orphans alive
             (corresponds to trigon+7) (default 30 days)
+            
+        PLOTTING PARAMETERS
+        minplot: minimum number of members required in order to be plotted to timeline
     
         This list will likely expand.       
         """
@@ -146,3 +149,5 @@ class Options(object):
             'Settings','minorph') else 0.05
         self.maxorph=config.getfloat('Settings','maxorph') if config.has_option(
             'Settings','maxorph') else 7.
+        self.minplot=config.getint('Settings','minplot') if config.has_option(
+            'Settings','minplot') else 3
