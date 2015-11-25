@@ -132,21 +132,22 @@ def createBokehTimelineFigure(rtable, ctable, opt):
             
             n = n+1
     
-    # Patches allow hovering for image of core and cluster number
-    source = ColumnDataSource(data=dict(xs=xs, ys=ys, famnum=famnum))
-    p.patches(xs=xs, ys=ys, source=source, name="patch", alpha=0)
+    if n > 0:
+        # Patches allow hovering for image of core and cluster number
+        source = ColumnDataSource(data=dict(xs=xs, ys=ys, famnum=famnum))
+        p.patches(xs=xs, ys=ys, source=source, name="patch", alpha=0)
+        
+        # Tapping on one of the patches will open a window to a file with more information
+        # on the cluster in question. Temporarily, it leads to only the image, but could
+        # lead to an HTML file instead. Need to render those files, of course.
+        url = "./clusters/@famnum.png"
+        renderer = p.select(name="patch")[0]
+        renderer.nonselection_glyph=renderer.glyph.clone()
+        taptool = p.select(dict(type=TapTool))[0]
+        taptool.names.append("patch")
+        taptool.callback = OpenURL(url=url)
     
-    # Tapping on one of the patches will open a window to a file with more information on
-    # the cluster in question. Temporarily, it leads to only the image, but could lead to
-    # an HTML file instead. Need to render those files, of course.
-    url = "./clusters/@famnum.png"
-    renderer = p.select(name="patch")[0]
-    renderer.nonselection_glyph=renderer.glyph.clone()
-    taptool = p.select(dict(type=TapTool))[0]
-    taptool.names.append("patch")
-    taptool.callback = OpenURL(url=url)
-    
-    save(p)     
+        save(p) 
 
 
 def createOrderedWaveformFigure(rtable, opt):
