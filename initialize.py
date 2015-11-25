@@ -42,5 +42,12 @@ try:
     os.mkdir(opt.groupName)
 except OSError:
     print("Folder exists.")
+    
+if args.verbose: print("Creating folder to store core images named '{}'/clusters".format(
+    opt.groupName))
+try:
+    os.mkdir('{}/clusters'.format(opt.groupName))
+except OSError:
+    print("Folder exists.")
 
 if args.verbose: print("Done")
