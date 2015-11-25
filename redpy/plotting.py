@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import matplotlib
 import time
 import mpld3
-from bokeh.plotting import figure, output_file, save
+from bokeh.plotting import figure, output_file, save, ColumnDataSource
+from bokeh.models import HoverTool
 
 """
 These are very brute force plotting; should be replaced with more sophisticated functions
@@ -26,7 +27,7 @@ def createTimelineFigure(rtable, ctable, opt):
     
     n = 0
     for clustNum in np.argsort(mindt):
-        if len(dt[cnum==clustNum]) > 2:
+        if len(dt[cnum==clustNum]) >= opt.minplot:
             plt.plot_date((min(dt[cnum==clustNum]), max(dt[cnum==clustNum])), (n, n),
                 'k:', linewidth=0.5)
             plt.scatter(dt[cnum==clustNum], n*np.ones((len(dt[cnum==clustNum]),)),
@@ -38,7 +39,7 @@ def createTimelineFigure(rtable, ctable, opt):
     
     plt.gcf().autofmt_xdate()
     plt.xlabel('Date')
-    plt.ylabel('Cluster by Date (with at least 3 members)')
+    plt.ylabel('Cluster by Date (with at least {} members)'.format(opt.minplot))
     
     mpld3.save_html(fig, '{}/timeline.html'.format(opt.groupName))
         
@@ -54,13 +55,15 @@ def createBokehTimelineFigure(rtable, ctable, opt):
 
     dt = rtable.cols.startTimeMPL[:]
     cnum = rtable.cols.clusterNumber[:]
-    reach = rtable.cols.reachability[:]
+#     reach = rtable.cols.reachability[:]
+#     
+#     # Fix some values of reach
+#     reach[0] = 0.3
+#     reach[reach==1] = 0
+#     reach[reach==-1] = 0.3
+#     reach[reach>0.3] = 0.3
     
-    # Fix some values of reach
-    reach[0] = 0.3
-    reach[reach==1] = 0
-    reach[reach==-1] = 0.3
-    reach[reach>0.3] = 0.3
+    amp = np.log10(rtable.cols.windowAmp[:])
     
     # Figure out earliest member in each family
     mindt = np.zeros((max(cnum)+1,))
@@ -69,33 +72,44 @@ def createBokehTimelineFigure(rtable, ctable, opt):
      
     TOOLS = "pan,box_zoom,reset,resize,save"
     p = figure(tools=TOOLS, plot_width=1250, plot_height=700, x_axis_type='datetime')
-    p.title = 'Occurrence Timeline'
+    p.title = 'Occurrence Timeline (Color by log10(Amplitude) within Family)'
     p.grid.grid_line_alpha = 0.3
     p.xaxis.axis_label = 'Date'
-    p.yaxis.axis_label = 'Cluster by Date (with at least 3 members)'
+    p.yaxis.axis_label = 'Cluster by Date - {}+ Members'.format(opt.minplot)
     
     # Steal colormap from matplotlib
-    colormap = matplotlib.cm.get_cmap('Spectral')
+    colormap = matplotlib.cm.get_cmap('YlOrRd')
     bokehpalette = [matplotlib.colors.rgb2hex(m) for m in colormap(
-        np.arange(colormap.N))[::-1]]
+        np.arange(colormap.N))]
         
     n = 0
     for clustNum in np.argsort(mindt):
-        if len(dt[cnum==clustNum]) > 2:
+        if len(dt[cnum==clustNum]) >= opt.minplot:
         
             # Date is required as datenum
             p.line((matplotlib.dates.num2date(min(dt[cnum==clustNum])),
                 matplotlib.dates.num2date(max(dt[cnum==clustNum]))), (n, n),
                 color='black')            
-            ind = [int(255*((1-reach[i])-0.7)/(0.3)) for i in np.where(cnum==clustNum)[0]]
-            colors = [bokehpalette[i] for i in ind]               
-            p.circle(matplotlib.dates.num2date(dt[cnum==clustNum]), n,
-                color=colors, size=8, line_color='black', fill_alpha=1.0)
+#             ind = [int(255*((1-reach[i])-0.7)/(0.3)) for i in np.where(cnum==clustNum)[0]]
+
+            minamp = min(amp[cnum==clustNum])
+            maxamp = max(amp[cnum==clustNum])
+            ind = [int(255*((amp[i]-minamp)/(maxamp-minamp))) for i in np.where(
+                cnum==clustNum)[0]]
+            colors = [bokehpalette[i] for i in ind]
+               
+            d = matplotlib.dates.num2date(dt[cnum==clustNum])                        
+            p.circle(d, n, color=colors, size=8, line_color='black', line_width=0.5,
+                fill_alpha=1.0)
             
-            # Text doesn't understand datetimes, need to convert to a number
+            # Text doesn't understand datetimes, need to convert to a number and subtract
+            # about 8 hours
             p.text(time.mktime(matplotlib.dates.num2date(
-                 max(dt[cnum==clustNum])).timetuple())*1000, n, text=[' {}'.format(
-                 len(dt[cnum==clustNum]))], text_font_size='9pt', text_baseline='middle')
+                 max(dt[cnum==clustNum])).timetuple())*1000 - 28799000, n,
+                 text=['   {}'.format(len(dt[cnum==clustNum]))], text_font_size='9pt',
+                 text_baseline='middle')
+            
+            
             
             n = n+1
         
@@ -109,8 +123,6 @@ def createOrderedWaveformFigure(rtable, opt):
     for r in rtable.iterrows():
         n = n+1
         
-        maxwin = max(abs(r['waveform'][r['windowStart']:(r['windowStart']+opt.winlen/2)]))
-        
         # Determine padding        
         ppad = int(max(0, opt.ptrig*opt.samprate - r['windowStart']))
         apad = int(max(0, r['windowStart'] - opt.ptrig*opt.samprate - 1))
@@ -121,7 +133,7 @@ def createOrderedWaveformFigure(rtable, opt):
             
         tmp = np.hstack((np.zeros(ppad), tmp, np.zeros(apad)))
         data[n, :] = tmp[int(opt.ptrig*opt.samprate - opt.winlen*0.5):int(
-            opt.ptrig*opt.samprate + opt.winlen*1.5)]/maxwin
+            opt.ptrig*opt.samprate + opt.winlen*1.5)]/r['windowAmp']
     
     order = rtable.cols.order[:]
     datao = data[order, :]
@@ -193,8 +205,7 @@ def plotCores(rtable, opt):
     for r in cores:
         dat=r['waveform'][int(
             r['windowStart']-opt.winlen*0.5):int(r['windowStart']+opt.winlen*1.5)]
-        maxwin = max(abs(r['waveform'][r['windowStart']:(r['windowStart']+opt.winlen/2)]))
-        dat=dat/maxwin
+        dat=dat/r['windowAmp']
         dat[dat>1] = 1
         dat[dat<-1] = -1
         tvec = np.arange(

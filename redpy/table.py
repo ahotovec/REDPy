@@ -34,12 +34,13 @@ def Repeaters(opt):
         "windowStart"   : Int32Col(shape=(), pos=4),
         "windowCoeff"   : Float64Col(shape=(), pos=5),
         "windowFFT"     : ComplexCol(shape=(opt.winlen,), itemsize=16, pos=6),
-        "order"         : Int32Col(shape=(), pos=7),
-        "reachability"  : Float64Col(shape=(), pos=8),
-        "coreDistance"  : Float64Col(shape=(), pos=9),
-        "clusterNumber" : Int32Col(shape=(), pos=10),
-        "isCore"        : Int32Col(shape=(), pos=11),
-        "alignedTo"     : Int32Col(shape=(), pos=12)
+        "windowAmp"     : Float64Col(shape=(), pos=7),
+        "order"         : Int32Col(shape=(), pos=8),
+        "reachability"  : Float64Col(shape=(), pos=9),
+        "coreDistance"  : Float64Col(shape=(), pos=10),
+        "clusterNumber" : Int32Col(shape=(), pos=11),
+        "isCore"        : Int32Col(shape=(), pos=12),
+        "alignedTo"     : Int32Col(shape=(), pos=13)
         }
     
     return dict
@@ -70,7 +71,8 @@ def Orphans(opt):
         "windowStart" : Int32Col(shape=(), pos=4),
         "windowCoeff" : Float64Col(shape=(), pos=5),
         "windowFFT"   : ComplexCol(shape=(opt.winlen,), itemsize=16, pos=6),
-        "expires"     : StringCol(itemsize=32, pos=7)
+        "windowAmp"   : Float64Col(shape=(), pos=7),
+        "expires"     : StringCol(itemsize=32, pos=8)
         }
 
     return dict
@@ -217,6 +219,7 @@ def populateRepeater(rtable, id, trig, opt, alignedTo, windowStart=-1):
     trigger['windowStart'] = windowStart
     trigger['windowCoeff'], trigger['windowFFT'] = redpy.correlation.calcWindow(
         trig.data, windowStart, opt)
+    trigger['windowAmp'] = max(abs(trig.data[windowStart:int(windowStart+opt.winlen/2)]))
     trigger['order'] = -1
     trigger['reachability'] = -1.0
     trigger['coreDistance'] = -1.0
@@ -257,6 +260,7 @@ def populateOrphan(otable, id, trig, opt):
     trigger['windowStart'] = windowStart
     trigger['windowCoeff'], trigger['windowFFT'] = redpy.correlation.calcWindow(
         trig.data, windowStart, opt)
+    trigger['windowAmp'] = max(abs(trig.data[windowStart:int(windowStart+opt.winlen/2)]))
 
     adddays = ((opt.maxorph-opt.minorph)/7.)*(trig.stats.maxratio-opt.trigon)+opt.minorph
     trigger['expires'] = (trig.stats.starttime+adddays*86400).isoformat()
@@ -304,6 +308,7 @@ def moveOrphan(rtable, otable, oindex, alignedTo, opt):
     trigger['windowStart'] = orow['windowStart']
     trigger['windowCoeff'] = orow['windowCoeff']
     trigger['windowFFT'] = orow['windowFFT']
+    trigger['windowAmp'] = orow['windowAmp']
     trigger['order'] = -1
     trigger['reachability'] = -1.0
     trigger['coreDistance'] = -1.0
