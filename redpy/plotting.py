@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import matplotlib
 import time
 import mpld3
-from bokeh.plotting import figure, output_file, save, ColumnDataSource
-from bokeh.models import HoverTool
+from bokeh.plotting import figure, output_file, save
+from bokeh.models import HoverTool, ColumnDataSource, OpenURL, TapTool
 
 """
 These are very brute force plotting; should be replaced with more sophisticated functions
@@ -54,34 +54,40 @@ def createBokehTimelineFigure(rtable, ctable, opt):
         title='{} Timeline'.format(opt.title))
 
     dt = rtable.cols.startTimeMPL[:]
-    cnum = rtable.cols.clusterNumber[:]
-#     reach = rtable.cols.reachability[:]
-#     
-#     # Fix some values of reach
-#     reach[0] = 0.3
-#     reach[reach==1] = 0
-#     reach[reach==-1] = 0.3
-#     reach[reach>0.3] = 0.3
-    
+    cnum = rtable.cols.clusterNumber[:]    
     amp = np.log10(rtable.cols.windowAmp[:])
+        
+    # Build hover to show an image of the cluster core
+    hover = HoverTool(
+        tooltips="""
+        <div>
+        <div>
+            <img src="./clusters/@famnum.png" style="height: 100px; width: 500px;
+                vertical-align: middle;" />
+            <span style="font-size: 9px; font-family: Helvetica;">Cluster ID: </span>
+            <span style="font-size: 12px; font-family: Helvetica;">@famnum</span>
+        </div>
+        </div>
+        """, names=["patch"])
+    
+    TOOLS = [hover,'pan,box_zoom,reset,resize,save,tap']
+    p = figure(tools=TOOLS, plot_width=1250, plot_height=700, x_axis_type='datetime')
+    p.title = 'Occurrence Timeline (Color by log10(Amplitude) within Family)'
+    p.grid.grid_line_alpha = 0.3
+    p.xaxis.axis_label = 'Date'
+    p.yaxis.axis_label = 'Cluster by Date ({}+ Members)'.format(opt.minplot)
+    
+    # Steal YlOrRd (len=256) colormap from matplotlib
+    colormap = matplotlib.cm.get_cmap('YlOrRd')
+    bokehpalette = [matplotlib.colors.rgb2hex(m) for m in colormap(
+        np.arange(colormap.N))]
     
     # Figure out earliest member in each family
     mindt = np.zeros((max(cnum)+1,))
     for clustNum in range(max(cnum)+1):
         mindt[clustNum] = min(dt[cnum==clustNum])
-     
-    TOOLS = "pan,box_zoom,reset,resize,save"
-    p = figure(tools=TOOLS, plot_width=1250, plot_height=700, x_axis_type='datetime')
-    p.title = 'Occurrence Timeline (Color by log10(Amplitude) within Family)'
-    p.grid.grid_line_alpha = 0.3
-    p.xaxis.axis_label = 'Date'
-    p.yaxis.axis_label = 'Cluster by Date - {}+ Members'.format(opt.minplot)
     
-    # Steal colormap from matplotlib
-    colormap = matplotlib.cm.get_cmap('YlOrRd')
-    bokehpalette = [matplotlib.colors.rgb2hex(m) for m in colormap(
-        np.arange(colormap.N))]
-        
+    # Build the lists and dictionaries    
     n = 0
     for clustNum in np.argsort(mindt):
         if len(dt[cnum==clustNum]) >= opt.minplot:
@@ -90,7 +96,6 @@ def createBokehTimelineFigure(rtable, ctable, opt):
             p.line((matplotlib.dates.num2date(min(dt[cnum==clustNum])),
                 matplotlib.dates.num2date(max(dt[cnum==clustNum]))), (n, n),
                 color='black')            
-#             ind = [int(255*((1-reach[i])-0.7)/(0.3)) for i in np.where(cnum==clustNum)[0]]
 
             minamp = min(amp[cnum==clustNum])
             maxamp = max(amp[cnum==clustNum])
@@ -108,11 +113,39 @@ def createBokehTimelineFigure(rtable, ctable, opt):
                  max(dt[cnum==clustNum])).timetuple())*1000 - 28799000, n,
                  text=['   {}'.format(len(dt[cnum==clustNum]))], text_font_size='9pt',
                  text_baseline='middle')
-            
-            
+                 
+            # Build source for hover patches
+            if n == 0:
+                xs=[[matplotlib.dates.num2date(min(dt[cnum==clustNum])),
+                    matplotlib.dates.num2date(min(dt[cnum==clustNum])),
+                    matplotlib.dates.num2date(max(dt[cnum==clustNum])),
+                    matplotlib.dates.num2date(max(dt[cnum==clustNum]))]]
+                ys=[[n-0.5, n+0.5, n+0.5, n-0.5]]
+                famnum=[clustNum]
+            else:
+                xs.append([matplotlib.dates.num2date(min(dt[cnum==clustNum])),
+                           matplotlib.dates.num2date(min(dt[cnum==clustNum])),
+                           matplotlib.dates.num2date(max(dt[cnum==clustNum])),
+                           matplotlib.dates.num2date(max(dt[cnum==clustNum]))])
+                ys.append([n-0.5, n+0.5, n+0.5, n-0.5])
+                famnum.append([clustNum])
             
             n = n+1
-        
+    
+    # Patches allow hovering for image of core and cluster number
+    source = ColumnDataSource(data=dict(xs=xs, ys=ys, famnum=famnum))
+    p.patches(xs=xs, ys=ys, source=source, name="patch", alpha=0)
+    
+    # Tapping on one of the patches will open a window to a file with more information on
+    # the cluster in question. Temporarily, it leads to only the image, but could lead to
+    # an HTML file instead. Need to render those files, of course.
+    url = "./clusters/@famnum.png"
+    renderer = p.select(name="patch")[0]
+    renderer.nonselection_glyph=renderer.glyph.clone()
+    taptool = p.select(dict(type=TapTool))[0]
+    taptool.names.append("patch")
+    taptool.callback = OpenURL(url=url)
+    
     save(p)     
 
 
@@ -218,9 +251,27 @@ def plotCores(rtable, opt):
     
     mpld3.save_html(fig, '{}/cores.html'.format(opt.groupName))
     
-    plt.savefig('{}/cores.png'.format(opt.groupName))
+    plt.savefig('{}/cores.png'.format(opt.groupName))       
 #     plt.savefig('{0}/cores_{1}.png'.format(opt.groupName,time.strftime(
 #         '%Y%m%dT%H%M%S',time.gmtime())))
+    
+    # Save cores individually in clusters for timeline hover
+    cores = rtable.where('isCore==1')
+    for r in cores:
+        fig = plt.figure(figsize=(5, 1))
+        ax = plt.Axes(fig, [0., 0., 1., 1.])
+        ax.set_axis_off()
+        fig.add_axes(ax)
+        dat=r['waveform'][int(
+            r['windowStart']-opt.winlen*0.5):int(r['windowStart']+opt.winlen*1.5)]
+        dat=dat/r['windowAmp']
+        dat[dat>1] = 1
+        dat[dat<-1] = -1
+        tvec = np.arange(
+            -opt.winlen*0.5/opt.samprate,opt.winlen*1.5/opt.samprate,1/opt.samprate)
+        ax.plot(tvec,dat,'k',linewidth=0.25)
+        plt.autoscale(tight=True)
+        plt.savefig('{0}/clusters/{1}.png'.format(opt.groupName,r['clusterNumber']))
     
 
 def createWigglePlot(jtable, opt):
