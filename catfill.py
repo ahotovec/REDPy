@@ -120,11 +120,12 @@ for event in eventlist[::-1]:
     
     if len(rtable) > 1:
         redpy.plotting.createTimelineFigure(rtable, ctable, opt)
+        redpy.plotting.createBokehTimelineFigure(rtable, ctable, opt)
 
 # Clean things up at the end of the import
 redpy.cluster.runFullOPTICS(rtable, ctable, opt)
 redpy.plotting.createTimelineFigure(rtable, ctable, opt)
-
+redpy.plotting.createBokehTimelineFigure(rtable, ctable, opt)
 print("Time spent: {} minutes".format((time.time()-t)/60))
 
 if args.verbose: print("Closing table...")

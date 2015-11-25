@@ -143,6 +143,7 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
     
     if len(rtable) > 1:
         redpy.plotting.createTimelineFigure(rtable, ctable, opt)
+        redpy.plotting.createBokehTimelineFigure(rtable, ctable, opt)
     
     # Clean up the table at the end of the day
     #if UTCDateTime(tstart+n*opt.nsec).hour == 23 and len(rtable) > 1:
@@ -161,6 +162,7 @@ print("End time now: {}".format(tend))
 print("Time spent: {} minutes".format((time.time()-t)/60))
 
 redpy.plotting.createBokehTimelineFigure(rtable, ctable, opt)
+redpy.plotting.createTimelineFigure(rtable, ctable, opt)
 
 if args.verbose: print("Closing table...")
 h5file.close()
