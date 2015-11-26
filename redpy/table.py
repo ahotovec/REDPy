@@ -361,7 +361,7 @@ def appendCorrelation(ctable, id1, id2, ccc, opt):
     Only appends if the value is greater than the minimum defined in opt
     """
     
-    if ccc >= opt.cmin:
+    if (ccc >= opt.cmin) and (id1!=id2):
         corr = ctable.row
         corr['id1'] = min(id1, id2)
         corr['id2'] = max(id1, id2)
