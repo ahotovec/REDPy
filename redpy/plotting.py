@@ -3,54 +3,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 import time
-import mpld3
 from bokeh.plotting import figure, output_file, save
 from bokeh.models import HoverTool, ColumnDataSource, OpenURL, TapTool
 
 """
 These are very brute force plotting; should be replaced with more sophisticated functions
 """
-
-def createTimelineFigure(rtable, ctable, opt):
-    fig = plt.figure(figsize=(15, 10))
-    
-    dt = rtable.cols.startTimeMPL[:]
-    cnum = rtable.cols.clusterNumber[:]
-    reach = rtable.cols.reachability[:]
-    reach[0] = 1
-    reach[reach==1] = 0
-
-    # Figure out earliest member in each family
-    mindt = np.zeros((max(cnum)+1,))
-    for clustNum in range(max(cnum)+1):
-        mindt[clustNum] = min(dt[cnum==clustNum])
-    
-    n = 0
-    for clustNum in np.argsort(mindt):
-        if len(dt[cnum==clustNum]) >= opt.minplot:
-            plt.plot_date((min(dt[cnum==clustNum]), max(dt[cnum==clustNum])), (n, n),
-                'k:', linewidth=0.5)
-            plt.scatter(dt[cnum==clustNum], n*np.ones((len(dt[cnum==clustNum]),)),
-                c=(1-reach[cnum==clustNum]), vmin=0.6, vmax=1, cmap='jet', linewidth=0.5)
-            plt.text(max(dt[cnum==clustNum]), n+0.2, format(len(dt[cnum==clustNum])))
-            n = n+1
-    
-    plt.margins(0.05)
-    
-    plt.gcf().autofmt_xdate()
-    plt.xlabel('Date')
-    plt.ylabel('Cluster by Date (with at least {} members)'.format(opt.minplot))
-    
-    mpld3.save_html(fig, '{}/timeline.html'.format(opt.groupName))
-        
-    plt.savefig('{}/timeline.png'.format(opt.groupName))
-#     plt.savefig('{0}/timeline_{1}.png'.format(opt.groupName,time.strftime(
-#         '%Y%m%dT%H%M%S',time.gmtime())))
-        
         
 def createBokehTimelineFigure(rtable, ctable, opt):
+    
+    # Run plotCores to ensure thumbnails are up to date
+    plotCores(rtable, opt)
 
-    output_file('{}/timelineBokeh.html'.format(opt.groupName),
+    output_file('{}/timeline.html'.format(opt.groupName),
         title='{} Timeline'.format(opt.title))
 
     dt = rtable.cols.startTimeMPL[:]
@@ -149,7 +114,28 @@ def createBokehTimelineFigure(rtable, ctable, opt):
     
         save(p) 
 
+def plotCores(rtable, opt):
+    # Save cores individually in clusters for timeline hover
+    cores = rtable.where('isCore==1')
+    for r in cores:
+        fig = plt.figure(figsize=(5, 1))
+        ax = plt.Axes(fig, [0., 0., 1., 1.])
+        ax.set_axis_off()
+        fig.add_axes(ax)
+        dat=r['waveform'][int(
+            r['windowStart']-opt.winlen*0.5):int(r['windowStart']+opt.winlen*1.5)]
+        dat=dat/r['windowAmp']
+        dat[dat>1] = 1
+        dat[dat<-1] = -1
+        tvec = np.arange(
+            -opt.winlen*0.5/opt.samprate,opt.winlen*1.5/opt.samprate,1/opt.samprate)
+        ax.plot(tvec,dat,'k',linewidth=0.25)
+        plt.autoscale(tight=True)
+        plt.savefig('{0}/clusters/{1}.png'.format(opt.groupName,r['clusterNumber']))
 
+
+
+# These are old...
 def createOrderedWaveformFigure(rtable, opt):
     data = np.zeros((len(rtable), int(opt.winlen*2)))
     fig = plt.figure(figsize=(12, 6))
@@ -187,8 +173,6 @@ def createOrderedWaveformFigure(rtable, opt):
     plt.ylabel('Ordered Event #')
     
     plt.savefig('{}/orderedWaveform.png'.format(opt.groupName))
-#     plt.savefig('{0}/orderedWaveform_{1}.png'.format(opt.groupName,time.strftime(
-#         '%Y%m%dT%H%M%S',time.gmtime())))
 
 
 def createCMatrixFigure(rtable, ctable, opt):
@@ -226,53 +210,6 @@ def createCMatrixFigure(rtable, ctable, opt):
             plt.axhline(y=n+0.5, color='w')
     
     plt.savefig('{}/cmatrix.png'.format(opt.groupName))
-#     plt.savefig('{0}/cmatrix_{1}.png'.format(opt.groupName,time.strftime(
-#         '%Y%m%dT%H%M%S',time.gmtime())))
-
-
-def plotCores(rtable, opt):
-    #waveform wiggle plot of input waveforms
-    fig = plt.figure(figsize=(15, 10))
-    
-    cores = rtable.where('isCore==1')
-    
-    for r in cores:
-        dat=r['waveform'][int(
-            r['windowStart']-opt.winlen*0.5):int(r['windowStart']+opt.winlen*1.5)]
-        dat=dat/r['windowAmp']
-        dat[dat>1] = 1
-        dat[dat<-1] = -1
-        tvec = np.arange(
-            -opt.winlen*0.5/opt.samprate,opt.winlen*1.5/opt.samprate,1/opt.samprate)
-        plt.plot(tvec,np.add(dat/2,-1*r['clusterNumber']),'k',linewidth=0.5)
-        
-    plt.ylabel('Cluster Number')
-    plt.xlabel('Time (s)')
-    plt.autoscale(tight=True)
-    
-    mpld3.save_html(fig, '{}/cores.html'.format(opt.groupName))
-    
-    plt.savefig('{}/cores.png'.format(opt.groupName))       
-#     plt.savefig('{0}/cores_{1}.png'.format(opt.groupName,time.strftime(
-#         '%Y%m%dT%H%M%S',time.gmtime())))
-    
-    # Save cores individually in clusters for timeline hover
-    cores = rtable.where('isCore==1')
-    for r in cores:
-        fig = plt.figure(figsize=(5, 1))
-        ax = plt.Axes(fig, [0., 0., 1., 1.])
-        ax.set_axis_off()
-        fig.add_axes(ax)
-        dat=r['waveform'][int(
-            r['windowStart']-opt.winlen*0.5):int(r['windowStart']+opt.winlen*1.5)]
-        dat=dat/r['windowAmp']
-        dat[dat>1] = 1
-        dat[dat<-1] = -1
-        tvec = np.arange(
-            -opt.winlen*0.5/opt.samprate,opt.winlen*1.5/opt.samprate,1/opt.samprate)
-        ax.plot(tvec,dat,'k',linewidth=0.25)
-        plt.autoscale(tight=True)
-        plt.savefig('{0}/clusters/{1}.png'.format(opt.groupName,r['clusterNumber']))
     
 
 def createWigglePlot(jtable, opt):
@@ -290,8 +227,41 @@ def createWigglePlot(jtable, opt):
     #plt.title('Junk triggers')
     plt.autoscale(tight=True)
     
-    mpld3.save_html(fig, '{}/wiggle.html'.format(opt.groupName))
+    # mpld3.save_html(fig, '{}/wiggle.html'.format(opt.groupName))
     
     plt.savefig('{}/wiggle.png'.format(opt.groupName))
-#     plt.savefig('{0}/wiggle_{1}.png'.format(opt.groupName,time.strftime(
-#         '%Y%m%dT%H%M%S',time.gmtime())))
+
+
+def createTimelineFigure(rtable, ctable, opt):
+    fig = plt.figure(figsize=(15, 10))
+    
+    dt = rtable.cols.startTimeMPL[:]
+    cnum = rtable.cols.clusterNumber[:]
+    reach = rtable.cols.reachability[:]
+    reach[0] = 1
+    reach[reach==1] = 0
+
+    # Figure out earliest member in each family
+    mindt = np.zeros((max(cnum)+1,))
+    for clustNum in range(max(cnum)+1):
+        mindt[clustNum] = min(dt[cnum==clustNum])
+    
+    n = 0
+    for clustNum in np.argsort(mindt):
+        if len(dt[cnum==clustNum]) >= opt.minplot:
+            plt.plot_date((min(dt[cnum==clustNum]), max(dt[cnum==clustNum])), (n, n),
+                'k:', linewidth=0.5)
+            plt.scatter(dt[cnum==clustNum], n*np.ones((len(dt[cnum==clustNum]),)),
+                c=(1-reach[cnum==clustNum]), vmin=0.6, vmax=1, cmap='jet', linewidth=0.5)
+            plt.text(max(dt[cnum==clustNum]), n+0.2, format(len(dt[cnum==clustNum])))
+            n = n+1
+    
+    plt.margins(0.05)
+    
+    plt.gcf().autofmt_xdate()
+    plt.xlabel('Date')
+    plt.ylabel('Cluster by Date (with at least {} members)'.format(opt.minplot))
+    
+    # mpld3.save_html(fig, '{}/timeline.html'.format(opt.groupName))
+        
+    plt.savefig('{}/timeline.png'.format(opt.groupName))

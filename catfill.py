@@ -77,6 +77,7 @@ for event in eventlist[::-1]:
 	    print('Could not download or trigger data... moving on')
 	    trigs = []
     
+    # Check number of clusters before adding new triggers
     if len(rtable) > 1:
         maxclust = max(rtable.cols.clusterNumber[:])
     else:
@@ -114,12 +115,12 @@ for event in eventlist[::-1]:
             redpy.cluster.mergeFamilies(rtable, ctable, opt)
             redpy.cluster.runFullOPTICS(rtable, ctable, opt)
     
-    # Deal with leftovers (currently thrown away)
+    # Deal with leftovers (currently thrown away...)
     leftovers = rtable.get_where_list('clusterNumber == -1')
     if leftovers.any():
         leftovers[::-1].sort()
-        print("Removing leftovers in clustering: {0}".format(len(leftovers)))
-        # for l in leftovers:
+        print("Leftovers in clustering: {0}".format(len(leftovers)))
+#         for l in leftovers:
 #             rtable.remove_row(l)
     
     # Print some stats
@@ -128,16 +129,15 @@ for event in eventlist[::-1]:
         if len(rtable) > 1:
             print("Number of repeaters: {}".format(len(rtable)))
             print("Number of clusters: {}".format(max(rtable.cols.clusterNumber[:])+1))
-    
-    if len(rtable) > 1:
-        redpy.plotting.createTimelineFigure(rtable, ctable, opt)
-        redpy.plotting.createBokehTimelineFigure(rtable, ctable, opt)
 
-# Clean things up at the end of the import
-redpy.cluster.runFullOPTICS(rtable, ctable, opt)
-redpy.plotting.createTimelineFigure(rtable, ctable, opt)
-redpy.plotting.createBokehTimelineFigure(rtable, ctable, opt)
 print("Time spent: {} minutes".format((time.time()-t)/60))
+
+if len(rtable) > 1:
+    if args.verbose: print("Creating plots...")
+    redpy.cluster.runFullOPTICS(rtable, ctable, opt)
+    redpy.plotting.createBokehTimelineFigure(rtable, ctable, opt)
+else:
+    print("No repeaters to plot.")
 
 if args.verbose: print("Closing table...")
 h5file.close()

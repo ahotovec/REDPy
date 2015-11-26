@@ -398,11 +398,5 @@ def runFullOPTICS(rtable, ctable, opt):
     setCenters(rtable, opt)
     
     print("Total time spent clustering: {:03.2f} seconds".format(time.time()-t))
-    
-    print("Creating and saving new images")
-    redpy.plotting.createCMatrixFigure(rtable, ctable, opt)
-    redpy.plotting.plotCores(rtable, opt)
-    redpy.plotting.createOrderedWaveformFigure(rtable, opt)
-    redpy.plotting.createTimelineFigure(rtable, ctable, opt)
 
     

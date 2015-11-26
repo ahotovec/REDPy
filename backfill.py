@@ -81,6 +81,7 @@ else:
 
 t = time.time()
 n = 0
+rlen = len(rtable)
 while tstart+n*opt.nsec <= tend-opt.nsec:
     
     if args.verbose: print(tstart+n*opt.nsec)
@@ -101,6 +102,7 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
 	    print('Could not download or trigger data... moving on')
 	    trigs = []
     
+    # Check number of clusters before adding new triggers
     if len(rtable) > 1:
         maxclust = max(rtable.cols.clusterNumber[:])
     else:
@@ -131,7 +133,7 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
     
     redpy.table.clearExpiredOrphans(otable, opt, tstart+(n+1)*opt.nsec)
     
-    # Attempt to merge families when a new cluster is born
+    # Attempt to merge families if a new cluster is born
     if len(rtable) > 1:
         if max(rtable.cols.clusterNumber[:]) > maxclust:
             redpy.cluster.mergeFamilies(rtable, ctable, opt)
@@ -152,14 +154,6 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
             print("Number of repeaters: {}".format(len(rtable)))
             print("Number of clusters: {}".format(max(rtable.cols.clusterNumber[:])+1))
     
-    if len(rtable) > 1:
-        redpy.plotting.createTimelineFigure(rtable, ctable, opt)
-        redpy.plotting.createBokehTimelineFigure(rtable, ctable, opt)
-    
-    # Clean up the table at the end of the day
-    #if UTCDateTime(tstart+n*opt.nsec).hour == 23 and len(rtable) > 1:
-    #    redpy.cluster.alignAll(rtable, ctable, opt)
-    
     # Update tend if an end date is not specified so this will run until it is fully 
     # caught up, instead of running to when the script was originally run.
     if not args.endtime:
@@ -172,8 +166,12 @@ print("End time now: {}".format(tend))
 
 print("Time spent: {} minutes".format((time.time()-t)/60))
 
-redpy.plotting.createBokehTimelineFigure(rtable, ctable, opt)
-redpy.plotting.createTimelineFigure(rtable, ctable, opt)
+if len(rtable) > rlen:
+    if args.verbose: print("Creating plots...")
+    redpy.cluster.runFullOPTICS(rtable, ctable, opt)
+    redpy.plotting.createBokehTimelineFigure(rtable, ctable, opt)
+else:
+    print("No new repeaters to plot.")
 
 if args.verbose: print("Closing table...")
 h5file.close()
