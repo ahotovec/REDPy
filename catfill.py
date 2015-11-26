@@ -77,6 +77,11 @@ for event in eventlist[::-1]:
 	    print('Could not download or trigger data... moving on')
 	    trigs = []
     
+    if len(rtable) > 1:
+        maxclust = max(rtable.cols.clusterNumber[:])
+    else:
+        maxclust = -1
+    
     if len(trigs) > 0:        
         id = rtable.attrs.previd        
         if len(trigs) == 1:        
@@ -103,13 +108,19 @@ for event in eventlist[::-1]:
     # Don't expire orphans yet while testing
     # redpy.table.clearExpiredOrphans(otable, opt, tstart+(n+1)*opt.nsec)
     
+    # Attempt to merge families when a new cluster is born
+    if len(rtable) > 1:
+        if max(rtable.cols.clusterNumber[:]) > maxclust:
+            redpy.cluster.mergeFamilies(rtable, ctable, opt)
+            redpy.cluster.runFullOPTICS(rtable, ctable, opt)
+    
     # Deal with leftovers (currently thrown away)
     leftovers = rtable.get_where_list('clusterNumber == -1')
     if leftovers.any():
         leftovers[::-1].sort()
         print("Removing leftovers in clustering: {0}".format(len(leftovers)))
-        for l in leftovers:
-            rtable.remove_row(l)
+        # for l in leftovers:
+#             rtable.remove_row(l)
     
     # Print some stats
     if args.verbose:
