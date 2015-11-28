@@ -109,19 +109,19 @@ for event in eventlist[::-1]:
     # Don't expire orphans yet while testing
     # redpy.table.clearExpiredOrphans(otable, opt, tstart+(n+1)*opt.nsec)
     
-    # Attempt to merge families when a new cluster is born
-    if len(rtable) > 1:
-        if max(rtable.cols.clusterNumber[:]) > maxclust:
-            redpy.cluster.mergeFamilies(rtable, ctable, opt)
-            redpy.cluster.runFullOPTICS(rtable, ctable, opt)
+#     # Attempt to merge families when a new cluster is born (broken-ish)
+#     if len(rtable) > 1:
+#         if max(rtable.cols.clusterNumber[:]) > maxclust:
+#             redpy.cluster.mergeFamilies(rtable, ctable, opt)
+#             redpy.cluster.runFullOPTICS(rtable, ctable, opt)
     
     # Deal with leftovers (currently thrown away...)
     leftovers = rtable.get_where_list('clusterNumber == -1')
     if leftovers.any():
         leftovers[::-1].sort()
-        print("Leftovers in clustering: {0}".format(len(leftovers)))
-#         for l in leftovers:
-#             rtable.remove_row(l)
+        if args.verbose: print("Leftovers in clustering: {0}".format(len(leftovers)))
+        for l in leftovers:
+            rtable.remove_row(l)
     
     # Print some stats
     if args.verbose:
@@ -129,8 +129,6 @@ for event in eventlist[::-1]:
         if len(rtable) > 1:
             print("Number of repeaters: {}".format(len(rtable)))
             print("Number of clusters: {}".format(max(rtable.cols.clusterNumber[:])+1))
-
-print("Time spent: {} minutes".format((time.time()-t)/60))
 
 if len(rtable) > 1:
     if args.verbose: print("Creating plots...")
@@ -141,4 +139,6 @@ else:
 
 if args.verbose: print("Closing table...")
 h5file.close()
+
+if args.verbose: print("Total time spent: {} minutes".format((time.time()-t)/60))
 if args.verbose: print("Done")

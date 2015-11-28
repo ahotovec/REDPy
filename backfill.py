@@ -84,6 +84,7 @@ n = 0
 rlen = len(rtable)
 while tstart+n*opt.nsec <= tend-opt.nsec:
     
+    ti = time.time()
     if args.verbose: print(tstart+n*opt.nsec)
     
     # Download and trigger
@@ -133,19 +134,19 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
     
     redpy.table.clearExpiredOrphans(otable, opt, tstart+(n+1)*opt.nsec)
     
-    # Attempt to merge families if a new cluster is born
-    if len(rtable) > 1:
-        if max(rtable.cols.clusterNumber[:]) > maxclust:
-            redpy.cluster.mergeFamilies(rtable, ctable, opt)
-            redpy.cluster.runFullOPTICS(rtable, ctable, opt)
+#     # Attempt to merge families if a new cluster is born (broken-ish)
+#     if len(rtable) > 1:
+#         if max(rtable.cols.clusterNumber[:]) > maxclust:
+#             redpy.cluster.mergeFamilies(rtable, ctable, opt)
+#             redpy.cluster.runFullOPTICS(rtable, ctable, opt)
     
     # Deal with leftovers (currently thrown away...)
     leftovers = rtable.get_where_list('clusterNumber == -1')
     if leftovers.any():
         leftovers[::-1].sort()
-        print("Leftovers in clustering: {0}".format(len(leftovers)))
-#         for l in leftovers:
-#             rtable.remove_row(l)
+        if args.verbose: print("Leftovers in clustering: {0}".format(len(leftovers)))
+        for l in leftovers:
+            rtable.remove_row(l)
     
     # Print some stats
     if args.verbose:
@@ -160,19 +161,22 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
         tend = UTCDateTime()
         
     n = n+1
+    
+    if args.verbose: print("Time spent this iteration: {} minutes".format(
+        (time.time()-ti)/60))
 
 print("Caught up to: {}".format(tstart+n*opt.nsec))
 print("End time now: {}".format(tend))
-
-print("Time spent: {} minutes".format((time.time()-t)/60))
 
 if len(rtable) > rlen:
     if args.verbose: print("Creating plots...")
     redpy.cluster.runFullOPTICS(rtable, ctable, opt)
     redpy.plotting.createBokehTimelineFigure(rtable, ctable, opt)
 else:
-    print("No new repeaters to plot.")
+    if args.verbose: print("No new repeaters to plot.")
 
 if args.verbose: print("Closing table...")
 h5file.close()
+
+if args.verbose: print("Total time spent: {} minutes".format((time.time()-t)/60))
 if args.verbose: print("Done")
