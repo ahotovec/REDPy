@@ -14,6 +14,7 @@ def createBokehTimelineFigure(rtable, ctable, opt):
     
     # Run plotCores to ensure thumbnails are up to date
     plotCores(rtable, opt)
+    plotFamilies(rtable, ctable, opt)
 
     output_file('{}/timeline.html'.format(opt.groupName),
         title='{} Timeline'.format(opt.title))
@@ -105,7 +106,7 @@ def createBokehTimelineFigure(rtable, ctable, opt):
         # Tapping on one of the patches will open a window to a file with more information
         # on the cluster in question. Temporarily, it leads to only the image, but could
         # lead to an HTML file instead. Need to render those files, of course.
-        url = "./clusters/@famnum.png"
+        url = "./clusters/fam@famnum.png"
         renderer = p.select(name="patch")[0]
         renderer.nonselection_glyph=renderer.glyph.clone()
         taptool = p.select(dict(type=TapTool))[0]
@@ -113,6 +114,7 @@ def createBokehTimelineFigure(rtable, ctable, opt):
         taptool.callback = OpenURL(url=url)
     
         save(p) 
+
 
 def plotCores(rtable, opt):
     # Save cores individually in clusters for timeline hover
@@ -132,6 +134,104 @@ def plotCores(rtable, opt):
         ax.plot(tvec,dat,'k',linewidth=0.25)
         plt.autoscale(tight=True)
         plt.savefig('{0}/clusters/{1}.png'.format(opt.groupName,r['clusterNumber']))
+
+
+def plotFamilies(rtable, ctable, opt):
+    # Save ordered waveforms and correlation matrix for each family, as well as a timeline
+    
+    # Adjust the font face
+    matplotlib.rcParams['font.family'] = 'sans-serif'
+    matplotlib.rcParams['font.sans-serif'] = ['Arial']
+    matplotlib.rcParams['font.size'] = 8.0
+    
+    # Get full correlation matrix, sort by order
+    order = rtable.cols.order[:]
+    
+    C = np.zeros((len(rtable),len(rtable)))
+    id1 = ctable.cols.id1[:]
+    id2 = ctable.cols.id2[:]
+    
+    # Convert id to row
+    rtable_ids = rtable.cols.id[:]
+    r = np.zeros((max(rtable_ids)+1,)).astype('int')
+    r[rtable_ids] = range(len(rtable_ids))
+    C[r[id1], r[id2]] = ctable.cols.ccc[:]
+    C = C + C.T + np.eye(len(C))
+    Co = C[order, :]
+    Co = Co[:, order]
+    
+    # Get waveform data, sort by order
+    n=-1
+    data = np.zeros((len(rtable), int(opt.winlen*2)))
+    for r in rtable.iterrows():
+        n = n+1
+        
+        # Determine padding        
+        ppad = int(max(0, opt.ptrig*opt.samprate - r['windowStart']))
+        apad = int(max(0, r['windowStart'] - opt.ptrig*opt.samprate - 1))
+        
+        tmp = r['waveform'][max(0, r['windowStart']-int(
+            opt.ptrig*opt.samprate)):min(len(r['waveform']),
+            r['windowStart']+int(opt.atrig*opt.samprate))]
+            
+        tmp = np.hstack((np.zeros(ppad), tmp, np.zeros(apad)))
+        data[n, :] = tmp[int(opt.ptrig*opt.samprate - opt.winlen*0.5):int(
+            opt.ptrig*opt.samprate + opt.winlen*1.5)]/r['windowAmp']
+
+    datao = data[order, :]
+    
+    q = 0
+    for cnum in range(max(rtable.cols.clusterNumber[:])+1):
+        
+        fam = rtable.get_where_list('clusterNumber == {}'.format(cnum))
+        
+        fig = plt.figure(figsize=(10, 8))
+        
+        # Plot waveforms
+        ax1 = fig.add_subplot(2, 3, (1,2))
+        if len(fam) > 12:
+            ax1.imshow(datao[q:q+len(fam)], aspect='auto', vmin=-1, vmax=1, cmap='RdBu',
+                interpolation='nearest', extent=[-1*opt.winlen*0.5/opt.samprate,
+                opt.winlen*1.5/opt.samprate, n + 0.5, -0.5])
+            ax1.get_yaxis().set_visible(False)
+        else:
+            for o in range(0, len(fam)):
+                dat=datao[o+q,:]
+                dat[dat>1] = 1
+                dat[dat<-1] = -1
+                tvec = np.arange(-opt.winlen*0.5/opt.samprate,opt.winlen*1.5/opt.samprate,
+                    1/opt.samprate)
+                ax1.plot(tvec,dat/2-o,'k',linewidth=0.25)
+                ax1.get_yaxis().set_visible(False)
+                ax1.autoscale(tight=True)
+        ax1.set_xlabel('Time Relative to Trigger (sec)')
+        
+        # Plot correlation
+        ax2 = fig.add_subplot(2, 3, 3)
+        ax2.imshow(Co[q:q+len(fam), q:q+len(fam)],
+            cmap='jet', aspect='auto', vmin=0.6, vmax=1, interpolation='nearest')
+        ax2.get_yaxis().set_visible(False)
+        ax2.set_xlabel('Ordered Event')
+        if len(fam) < 5:
+            ax2.set_xticks(range(0, len(fam)))
+        q = q+len(fam)
+        
+        # Plot timeline
+        ax3 = fig.add_subplot(2, 3, (4,6))
+        ax3.plot_date(rtable[fam]['startTimeMPL'], rtable[fam]['windowAmp'],
+                'ko')
+        myFmt = matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M')
+        ax3.xaxis.set_major_formatter(myFmt)
+        ax3.set_ylim(1, max(rtable.cols.windowAmp[:])+500)
+        #plt.setp(plt.xticks()[1], rotation=90, ha='right')
+        ax3.margins(0.05)
+        ax3.set_ylabel('Amplitude (Counts)')
+        ax3.set_xlabel('Date')
+        ax3.set_yscale('log')
+        
+        plt.tight_layout()
+        plt.savefig('{0}/clusters/fam{1}.png'.format(opt.groupName,cnum))
+
 
 
 
