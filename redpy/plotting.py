@@ -188,10 +188,10 @@ def plotFamilies(rtable, ctable, opt):
         core = rtable.get_where_list(
             '(clusterNumber == {}) & (isCore == 1)'.format(cnum))[0]
         
-        fig = plt.figure(figsize=(10, 8))
+        fig = plt.figure(figsize=(10, 11))
         
         # Plot waveforms
-        ax1 = fig.add_subplot(2, 3, (1,2))
+        ax1 = fig.add_subplot(3, 3, (1,2))
         if len(fam) > 12:
             ax1.imshow(datao[q:q+len(fam)], aspect='auto', vmin=-1, vmax=1, cmap='RdBu',
                 interpolation='nearest', extent=[-1*opt.winlen*0.5/opt.samprate,
@@ -210,7 +210,7 @@ def plotFamilies(rtable, ctable, opt):
         ax1.set_xlabel('Time Relative to Trigger (sec)')
         
         # Plot correlation
-        ax2 = fig.add_subplot(2, 3, 3)
+        ax2 = fig.add_subplot(3, 3, 3)
         ax2.imshow(Co[q:q+len(fam), q:q+len(fam)],
             cmap='jet', aspect='auto', vmin=0.6, vmax=1, interpolation='nearest')
         ax2.get_yaxis().set_visible(False)
@@ -219,30 +219,42 @@ def plotFamilies(rtable, ctable, opt):
             ax2.set_xticks(range(0, len(fam)))
         q = q+len(fam)
         
-        # Plot timeline
-        ax3 = fig.add_subplot(2, 3, (4,6))
+        # Plot amplitude timeline
+        ax3 = fig.add_subplot(3, 3, (4,6))
         ax3.plot_date(rtable[fam]['startTimeMPL'], rtable[fam]['windowAmp'],
-                'ko')
+                'ro', alpha=0.5, markeredgecolor='r', markeredgewidth=0.5)
         myFmt = matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M')
         ax3.xaxis.set_major_formatter(myFmt)
         ax3.set_ylim(1, max(rtable.cols.windowAmp[:])+500)
-        #plt.setp(plt.xticks()[1], rotation=90, ha='right')
         ax3.margins(0.05)
         ax3.set_ylabel('Amplitude (Counts)')
-        ax3.set_xlabel('Date')
         ax3.set_yscale('log')
         
-        plt.tight_layout()
-        plt.savefig('{0}/clusters/fam{1}.png'.format(opt.groupName,cnum))
-        
         # Prep catalog
-        catalog = np.sort(rtable[fam]['startTimeMPL'] + 
-            rtable[fam]['windowStart']/(86400*opt.samprate))
+        catalog = np.sort(rtable[fam]['startTimeMPL'])
         longevity = catalog[-1] - catalog[0]
         spacing = np.diff(catalog)*24
         utcatalog = [UTCDateTime(rtable[fam]['startTime'][i]) +
             rtable[fam]['windowStart'][i]/opt.samprate for i in
             np.argsort(rtable[fam]['startTimeMPL'])]
+        
+        # Plot spacing timeline
+        ax4 = fig.add_subplot(3, 3, (7,9)) 
+        ax4.plot_date(catalog[1:], spacing, 'ro', alpha=0.5, markeredgecolor='r',
+            markeredgewidth=0.5)
+        myFmt = matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M')
+        ax4.xaxis.set_major_formatter(myFmt)
+        ax4.set_xlim(ax3.get_xlim())
+        ax4.set_ylim(1e-3, max(spacing)*2)
+        ax4.margins(0.05)
+        ax4.set_ylabel('Time since previous event (hours)')
+        ax4.set_xlabel('Date')
+        ax4.set_yscale('log')
+        
+        plt.tight_layout()
+        plt.savefig('{0}/clusters/fam{1}.png'.format(opt.groupName,cnum))
+        
+        
         
         # Now write a simple HTML file to show image and catalog
         with open('{0}/clusters/{1}.html'.format(opt.groupName, cnum), 'w') as f:
