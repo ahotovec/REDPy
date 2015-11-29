@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 import time
+from obspy import UTCDateTime
 from bokeh.plotting import figure, output_file, save
 from bokeh.models import HoverTool, ColumnDataSource, OpenURL, TapTool
 
@@ -106,7 +107,7 @@ def createBokehTimelineFigure(rtable, ctable, opt):
         # Tapping on one of the patches will open a window to a file with more information
         # on the cluster in question. Temporarily, it leads to only the image, but could
         # lead to an HTML file instead. Need to render those files, of course.
-        url = "./clusters/fam@famnum.png"
+        url = "./clusters/@famnum.html"
         renderer = p.select(name="patch")[0]
         renderer.nonselection_glyph=renderer.glyph.clone()
         taptool = p.select(dict(type=TapTool))[0]
@@ -184,6 +185,8 @@ def plotFamilies(rtable, ctable, opt):
     for cnum in range(max(rtable.cols.clusterNumber[:])+1):
         
         fam = rtable.get_where_list('clusterNumber == {}'.format(cnum))
+        core = rtable.get_where_list(
+            '(clusterNumber == {}) & (isCore == 1)'.format(cnum))[0]
         
         fig = plt.figure(figsize=(10, 8))
         
@@ -231,6 +234,49 @@ def plotFamilies(rtable, ctable, opt):
         
         plt.tight_layout()
         plt.savefig('{0}/clusters/fam{1}.png'.format(opt.groupName,cnum))
+        
+        # Prep catalog
+        catalog = np.sort(rtable[fam]['startTimeMPL'] + 
+            rtable[fam]['windowStart']/(86400*opt.samprate))
+        longevity = catalog[-1] - catalog[0]
+        spacing = np.diff(catalog)*24
+        utcatalog = [UTCDateTime(rtable[fam]['startTime'][i]) +
+            rtable[fam]['windowStart'][i]/opt.samprate for i in
+            np.argsort(rtable[fam]['startTimeMPL'])]
+        
+        # Now write a simple HTML file to show image and catalog
+        with open('{0}/clusters/{1}.html'.format(opt.groupName, cnum), 'w') as f:
+            f.write("""
+            <html><head><title>{1} - Cluster {0}</title>
+            </head>
+            <body><center>
+            <span style="font-size: 20px; font-weight: bold; font-family: Helvetica;">
+                Cluster {0}</span></br></br>
+            <img src="{0}.png"></br></br>
+            <span style="font-size: 12px; font-family: Helvetica;">
+                Number of events: {2}</br>
+                Longevity: {5:.2f} days</br>
+                Mean event spacing: {7:.2f} hours</br>
+                Median event spacing: {8:.2f} hours</br></br>
+                First event: {3}</br>
+                Core event: {6}</br>
+                Last event: {4}</br>
+                </span> 
+            <img src="fam{0}.png"></br></br>
+            <span style="font-size: 16px; font-weight: bold; font-family: Helvetica;">
+            Aligned Catalog Times</br></br></span>
+            <span style="font-size: 12px; font-family: Helvetica;">
+            """.format(cnum, opt.title, len(fam), utcatalog[0].isoformat(),
+                utcatalog[-1].isoformat(), longevity, (UTCDateTime(
+                rtable[core]['startTime']) +
+                rtable[core]['windowStart']/opt.samprate).isoformat(), np.mean(spacing),
+                np.median(spacing)))
+            for u in utcatalog:
+                f.write("{}</br>".format(u.isoformat()))
+            f.write("""
+            </br></span></center></body></html>
+            """)
+        
 
 
 
