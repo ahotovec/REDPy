@@ -19,9 +19,12 @@ def Repeaters(opt):
     windowStart: "trigger" time, in samples from start (integer)
     windowCoeff: amplitude scaling for cross-correlation (float)
     windowFFT: Fourier transform of window (complex ndarray)
+    windowAmp: amplitude in first half of window (float)
     order: Order in the cluster ordering (integer)
     reachability: Reachability in the cluster ordering (float)
     coreDistance: Core distance in the cluster ordering (float)
+    isCore: 1 if core, else 0 (integer)
+    alignedTo: ID of event this one is aligned to (integer)
 
     Returns a dictionary defining the table
     """
@@ -58,6 +61,7 @@ def Orphans(opt):
     windowStart: "trigger" time, in samples from start (integer)
     windowCoeff: amplitude scaling for cross-correlation (float)
     windowFFT: Fourier transform of window (complex ndarray)
+    windowAmp: amplitude in first half of window (float)
     expires: UTC time of when orphan should no longer be considered (string)
     
     Returns a dictionary defining the table
@@ -73,6 +77,37 @@ def Orphans(opt):
         "windowFFT"   : ComplexCol(shape=(opt.winlen,), itemsize=16, pos=6),
         "windowAmp"   : Float64Col(shape=(), pos=7),
         "expires"     : StringCol(itemsize=32, pos=8)
+        }
+
+    return dict
+
+
+def Deleted(opt):
+
+    """
+    Defines the columns in the 'Deleted' table based on the Options in opt
+
+    id: unique ID number for the event (integer)
+    startTime: UTC time of start of the waveform (string)
+    startTimeMPL: matplotlib number associated with time (float)
+    waveform: Waveform data (ndarray)
+    windowStart: "trigger" time, in samples from start (integer)
+    windowCoeff: amplitude scaling for cross-correlation (float)
+    windowFFT: Fourier transform of window (complex ndarray)
+    windowAmp: amplitude in first half of window (float)
+    
+    Returns a dictionary defining the table
+    """
+    
+    dict = {
+        "id"          : Int32Col(shape=(), pos=0),
+        "startTime"   : StringCol(itemsize=32, pos=1),
+        "startTimeMPL": Float64Col(shape=(), pos=2),
+        "waveform"    : Float64Col(shape=(opt.wshape,), pos=3),
+        "windowStart" : Int32Col(shape=(), pos=4),
+        "windowCoeff" : Float64Col(shape=(), pos=5),
+        "windowFFT"   : ComplexCol(shape=(opt.winlen,), itemsize=16, pos=6),
+        "windowAmp"   : Float64Col(shape=(), pos=7)
         }
 
     return dict
@@ -157,6 +192,10 @@ def initializeTable(opt):
     
     jtable = h5file.create_table(group, "junk", Junk(opt), "Junk Catalog")
     jtable.flush()
+    
+    dtable = h5file.create_table(group, "deleted", Deleted(opt),
+        "Manually Deleted Events")
+    dtable.flush()
 
     ctable = h5file.create_table(group, "correlation", Correlation(opt),
         "Correlation Matrix")
@@ -181,8 +220,9 @@ def openTable(opt):
     otable = eval('h5file.root.'+ opt.groupName + '.orphans')
     ctable = eval('h5file.root.'+ opt.groupName + '.correlation')
     jtable = eval('h5file.root.'+ opt.groupName + '.junk')
+    dtable = eval('h5file.root.'+ opt.groupName + '.deleted')
     
-    return h5file, rtable, otable, ctable, jtable
+    return h5file, rtable, otable, ctable, jtable, dtable
 
     
 def populateRepeater(rtable, id, trig, opt, alignedTo, windowStart=-1):
@@ -321,6 +361,35 @@ def moveOrphan(rtable, otable, oindex, alignedTo, opt):
     
     otable.flush()  
     rtable.flush()
+
+
+def removeFamily(rtable, dtable, cnum, opt):
+
+    """
+    Moves the core of a family into the dtable, deletes the rest of the members.
+    """
+    
+    trigger = dtable.row
+    
+    members = rtable.get_where_list('(clusterNumber=={})'.format(cnum))
+    idx = rtable.get_where_list('(clusterNumber=={}) & (isCore==1)'.format(cnum))
+    core = rtable[idx]
+    
+    trigger['id'] = core['id']
+    trigger['startTime'] = core['startTime'][0]
+    trigger['startTimeMPL'] = core['startTimeMPL']
+    trigger['waveform'] = core['waveform']
+    trigger['windowStart'] = core['windowStart']
+    trigger['windowCoeff'] = core['windowCoeff']
+    trigger['windowFFT'] = core['windowFFT']
+    trigger['windowAmp'] = core['windowAmp']
+    trigger.append()
+    
+    for m in members[::-1]:
+        rtable.remove_row(m)
+    
+    rtable.flush()
+    dtable.flush()
 
 
 def clearExpiredOrphans(otable, opt, tend):

@@ -44,7 +44,7 @@ else:
     if args.verbose: print("Using config file: settings.cfg")
 
 if args.verbose: print("Opening hdf5 table: {0}".format(opt.filename))
-h5file, rtable, otable, ctable, jtable = redpy.table.openTable(opt)
+h5file, rtable, otable, ctable, jtable, dtable = redpy.table.openTable(opt)
     
 
 t = time.time()
@@ -73,15 +73,13 @@ for event in eventlist[::-1]:
         for i in range(len(junk)):
             redpy.table.populateJunk(jtable,junk[i],0,opt)
             
+        # Check triggers against deleted events
+        if len(dtable) > 0:
+            trigs = redpy.correlation.compareDeleted(trigs, dtable, opt)
+            
     except (TypeError, obspy.fdsn.header.FDSNException):
 	    print('Could not download or trigger data... moving on')
 	    trigs = []
-    
-    # Check number of clusters before adding new triggers
-    if len(rtable) > 1:
-        maxclust = max(rtable.cols.clusterNumber[:])
-    else:
-        maxclust = -1
     
     if len(trigs) > 0:        
         id = rtable.attrs.previd        
@@ -109,18 +107,12 @@ for event in eventlist[::-1]:
     # Don't expire orphans yet while testing
     # redpy.table.clearExpiredOrphans(otable, opt, tstart+(n+1)*opt.nsec)
     
-#     # Attempt to merge families when a new cluster is born (broken-ish)
-#     if len(rtable) > 1:
-#         if max(rtable.cols.clusterNumber[:]) > maxclust:
-#             redpy.cluster.mergeFamilies(rtable, ctable, opt)
-#             redpy.cluster.runFullOPTICS(rtable, ctable, opt)
-    
     # Deal with leftovers (currently thrown away...)
     leftovers = rtable.get_where_list('clusterNumber == -1')
     if leftovers.any():
-        leftovers[::-1].sort()
+        leftovers.sort()
         if args.verbose: print("Leftovers in clustering: {0}".format(len(leftovers)))
-        for l in leftovers:
+        for l in leftovers[::-1]:
             rtable.remove_row(l)
     
     # Print some stats

@@ -118,6 +118,29 @@ def compare2Family(rtable, ctable, rnumber, cnum, opt):
             famtable[j]['id'], cor[j], opt)
 
 
+def compareDeleted(trigs, dtable, opt):
+
+    """
+    Compares trigger against deleted events
+    
+    trigs: Triggers to be checked
+    dtable: Deleted table (manually removed from rtable)
+    opt: Options object describing station/run parameters
+    
+    Returns trigs that do not match deleted events
+    """
+    
+    for t in trigs:
+    
+        coeffi, ffti = calcWindow(t.data, int(opt.ptrig*opt.samprate), opt)  
+        cor, lag = xcorr1xtable(coeffi, ffti, dtable, opt)
+        
+        if np.where(cor >= opt.cmin - 0.05)[0].any():
+            trigs.remove(t)
+    
+    return trigs
+
+
 def compareGoodOrphans(rtable, otable, ctable, trig, id, coeffi, ffti, cor, lag, opt):
 
     """
