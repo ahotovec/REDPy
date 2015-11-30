@@ -135,6 +135,7 @@ def plotCores(rtable, opt):
         ax.plot(tvec,dat,'k',linewidth=0.25)
         plt.autoscale(tight=True)
         plt.savefig('{0}/clusters/{1}.png'.format(opt.groupName,r['clusterNumber']))
+        plt.close(fig)
 
 
 def plotFamilies(rtable, ctable, opt):
@@ -253,7 +254,7 @@ def plotFamilies(rtable, ctable, opt):
         
         plt.tight_layout()
         plt.savefig('{0}/clusters/fam{1}.png'.format(opt.groupName,cnum))
-        
+        plt.close(fig)
         
         
         # Now write a simple HTML file to show image and catalog
