@@ -130,9 +130,7 @@ def plotCores(rtable, opt):
         dat=dat/r['windowAmp']
         dat[dat>1] = 1
         dat[dat<-1] = -1
-        tvec = np.arange(
-            -opt.winlen*0.5/opt.samprate,opt.winlen*1.5/opt.samprate,1/opt.samprate)
-        ax.plot(tvec,dat,'k',linewidth=0.25)
+        ax.plot(dat,'k',linewidth=0.25)
         plt.autoscale(tight=True)
         plt.savefig('{0}/clusters/{1}.png'.format(opt.groupName,r['clusterNumber']))
         plt.close(fig)
