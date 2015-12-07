@@ -77,7 +77,7 @@ for event in eventlist[::-1]:
         if len(dtable) > 0:
             trigs = redpy.correlation.compareDeleted(trigs, dtable, opt)
             
-    except (TypeError, obspy.fdsn.header.FDSNException):
+    except (TypeError, obspy.fdsn.header.FDSNException, Exception):
 	    print('Could not download or trigger data... moving on')
 	    trigs = []
     
