@@ -346,8 +346,16 @@ def moveOrphan(rtable, otable, oindex, alignedTo, opt):
     trigger['startTimeMPL'] = orow['startTimeMPL']
     trigger['waveform'] = orow['waveform']
     trigger['windowStart'] = orow['windowStart']
-    trigger['windowCoeff'] = orow['windowCoeff']
-    trigger['windowFFT'] = orow['windowFFT']
+    if len(otable) > 1:
+        trigger['windowCoeff'] = orow['windowCoeff']
+        trigger['windowFFT'] = orow['windowFFT']
+    else:
+        coeff, fft = redpy.correlation.calcWindow(orow['waveform'], orow['windowStart'],
+            opt)
+        trigger['windowCoeff'] = coeff
+        trigger['windowFFT'] = fft
+        otable.cols.windowCoeff[oindex] = 0
+        otable.cols.expires[oindex] = (UTCDateTime(orow['startTime'])-86400).isoformat()
     trigger['windowAmp'] = orow['windowAmp']
     trigger['order'] = -1
     trigger['reachability'] = -1.0
@@ -356,11 +364,13 @@ def moveOrphan(rtable, otable, oindex, alignedTo, opt):
     trigger['isCore'] = 0 # Set to zero to avoid being counted erroneously as a core
     trigger['alignedTo'] = alignedTo
     trigger.append()
+        
+    if len(otable) > 1:
+        otable.remove_row(oindex)
     
-    otable.remove_row(oindex)
-    
+    rtable.flush()   
     otable.flush()  
-    rtable.flush()
+    
 
 
 def removeFamily(rtable, dtable, cnum, opt):
@@ -402,14 +412,21 @@ def clearExpiredOrphans(otable, opt, tend):
     opt: Options object describing station/run parameters
     tend: Time to remove orphans older than, corresponds usually to end of run increment
     
-    Removes orphans from table, prints how many were removed
+    Removes orphans from table, prints how many were removed. Checks to make sure there
+    is always at least one orphan in the table.
     """
-
+    
     index = np.where(otable.cols.expires[:] < tend.isoformat())
-    for n in range(len(index[0])-1,-1,-1):
-        otable.remove_row(index[0][n])
+    if len(index) != len(otable):
+        for n in range(len(index[0])-1,-1,-1):
+            otable.remove_row(index[0][n])
+        print '%i Orphans aged out of the system' % len(index[0])
+    else:
+        for n in range(len(index[0])-1,0,-1):
+            otable.remove_row(index[0][n])
+        print '%i Orphans aged out of the system, 1 left' % len(index[0])-1
     otable.flush()
-    print '%i Orphans aged out of the system' % len(index[0])
+    
 
 
 def appendCorrelation(ctable, id1, id2, ccc, opt):
