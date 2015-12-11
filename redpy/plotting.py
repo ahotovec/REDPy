@@ -125,11 +125,17 @@ def plotCores(rtable, opt):
         ax = plt.Axes(fig, [0., 0., 1., 1.])
         ax.set_axis_off()
         fig.add_axes(ax)
-        dat=r['waveform'][int(
-            r['windowStart']-opt.winlen*0.5):int(r['windowStart']+opt.winlen*1.5)]
-        dat=dat/r['windowAmp']
+        
+        ppad = int(max(0, opt.ptrig*opt.samprate - r['windowStart']))
+        apad = int(max(0, r['windowStart'] - opt.ptrig*opt.samprate - 1))
+        tmp = r['waveform'][max(0, r['windowStart']-int(
+            opt.ptrig*opt.samprate)):min(len(r['waveform']),
+            r['windowStart']+int(opt.atrig*opt.samprate))]
+        dat = tmp[int(opt.ptrig*opt.samprate - opt.winlen*0.5):int(
+            opt.ptrig*opt.samprate + opt.winlen*1.5)]/r['windowAmp']        
         dat[dat>1] = 1
         dat[dat<-1] = -1
+        
         ax.plot(dat,'k',linewidth=0.25)
         plt.autoscale(tight=True)
         plt.savefig('{0}/clusters/{1}.png'.format(opt.groupName,r['clusterNumber']))
@@ -181,6 +187,8 @@ def plotFamilies(rtable, ctable, opt):
     datao = data[order, :]
     
     q = 0
+    cmap = matplotlib.cm.get_cmap('YlOrRd')
+    cmap.set_under('k')
     for cnum in range(max(rtable.cols.clusterNumber[:])+1):
         
         fam = rtable.get_where_list('clusterNumber == {}'.format(cnum))
@@ -195,6 +203,8 @@ def plotFamilies(rtable, ctable, opt):
             ax1.imshow(datao[q:q+len(fam)], aspect='auto', vmin=-1, vmax=1, cmap='RdBu',
                 interpolation='nearest', extent=[-1*opt.winlen*0.5/opt.samprate,
                 opt.winlen*1.5/opt.samprate, n + 0.5, -0.5])
+            ax1.axvline(x=-0.1*opt.winlen/opt.samprate, color='k', ls='dotted')
+            ax1.axvline(x=0.9*opt.winlen/opt.samprate, color='k', ls='dotted')
             ax1.get_yaxis().set_visible(False)
         else:
             for o in range(0, len(fam)):
@@ -204,14 +214,16 @@ def plotFamilies(rtable, ctable, opt):
                 tvec = np.arange(-opt.winlen*0.5/opt.samprate,opt.winlen*1.5/opt.samprate,
                     1/opt.samprate)
                 ax1.plot(tvec,dat/2-o,'k',linewidth=0.25)
+                ax1.axvline(x=-0.1*opt.winlen/opt.samprate, color='k', ls='dotted')
+                ax1.axvline(x=0.9*opt.winlen/opt.samprate, color='k', ls='dotted')
                 ax1.get_yaxis().set_visible(False)
                 ax1.autoscale(tight=True)
         ax1.set_xlabel('Time Relative to Trigger (sec)')
         
         # Plot correlation
         ax2 = fig.add_subplot(3, 3, 3)
-        ax2.imshow(Co[q:q+len(fam), q:q+len(fam)],
-            cmap='jet', aspect='auto', vmin=0.6, vmax=1, interpolation='nearest')
+        ax2.imshow(Co[q:q+len(fam), q:q+len(fam)], cmap=cmap, aspect='auto',
+            vmin=opt.cmin, vmax=1, interpolation='nearest')
         ax2.get_yaxis().set_visible(False)
         ax2.set_xlabel('Ordered Event')
         if len(fam) < 5:
