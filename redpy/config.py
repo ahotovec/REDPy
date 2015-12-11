@@ -62,9 +62,8 @@ class Options(object):
             of samples that will be cut based on ptrig and atrig
     
         FILTERING PARAMETERS:
-        fhigh: Highpass filter to reduce microseism in "raw" waveforms (default 0.25 Hz)
-        fmin: Lower band of bandpass filter for triggering and xcorr (default 1.0 Hz)
-        fmax: Upper band of bandpass filter for triggering and xcorr (default 10.0 Hz)
+        fmin: Lower band of bandpass filter (default 1.0 Hz)
+        fmax: Upper band of bandpass filter (default 10.0 Hz)
         
         CLUSTERING PARAMETERS:
         cmin: Minimum correlation to be considered a repeater (default 0.7)
@@ -137,8 +136,6 @@ class Options(object):
         self.atrig=config.getfloat('Settings','atrig') if config.has_option(
             'Settings','atrig') else 40.
         self.wshape = int((self.ptrig + self.atrig)*self.samprate) + 1
-        self.fhigh=config.getfloat('Settings','fhigh') if config.has_option(
-            'Settings','fhigh') else 0.25
         self.fmin=config.getfloat('Settings','fmin') if config.has_option(
             'Settings','fmin') else 1.
         self.fmax=config.getfloat('Settings','fmax') if config.has_option(

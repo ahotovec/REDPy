@@ -68,8 +68,6 @@ def getCatData(date, opt):
 
     st = st.detrend() # can create noise artifacts??
     st = st.merge(method=1, fill_value='interpolate')
-    st = st.filter("highpass", freq=opt.fhigh, corners=2,
-            zerophase=True)
 
     return st
 
@@ -87,15 +85,12 @@ def trigger(st, rtable, opt):
     """
 
     # Filter the data for triggering
-
-    st_f = st.copy()
-    st_f = st_f.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax, corners=2,
+    st = st.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax, corners=2,
                zerophase=True)
     tr = st[0]
-    tr_f = st_f[0]
     t = tr.stats.starttime
 
-    cft = classicSTALTA(tr_f.data, opt.swin*opt.samprate, opt.lwin*opt.samprate)
+    cft = classicSTALTA(tr.data, opt.swin*opt.samprate, opt.lwin*opt.samprate)
     on_off = triggerOnset(cft, opt.trigon, opt.trigoff)
     
     if len(on_off) > 0:
@@ -103,8 +98,7 @@ def trigger(st, rtable, opt):
         pick = on_off[:,0]    
         ind = 0
         
-        # Slice out the raw data (not filtered except for highpass to reduce long period
-        # drift) and save the maximum STA/LTA ratio value for
+        # Slice out the data and save the maximum STA/LTA ratio value for
         # use in orphan expiration
         
         # Convert ptime from time of last trigger to samples before start time 

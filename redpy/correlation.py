@@ -22,11 +22,6 @@ def calcWindow(waveform, windowStart, opt, winlen=1):
     # Testing: shift window left by 10% of winlen
     windowStart = windowStart - opt.winlen/10
     
-    # Calculate filtered version of data for use in cross correlation
-    trig = trace.Trace(waveform, {"sampling_rate":opt.samprate})
-    waveform = trig.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax, corners=2,
-        zerophase=True).data
-
     windowCoeff = 1/np.sqrt(sum(waveform[windowStart:(windowStart + opt.winlen*winlen)] *
         waveform[windowStart:(windowStart + opt.winlen*winlen)]))
     windowFFT = np.reshape(fft(waveform[windowStart:(windowStart + opt.winlen*winlen)]),
