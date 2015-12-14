@@ -123,8 +123,8 @@ for event in eventlist[::-1]:
             print("Number of clusters: {}".format(max(rtable.cols.clusterNumber[:])+1))
 
 if len(rtable) > 1:
-    if args.verbose: print("Creating plots...")
     redpy.cluster.runFullOPTICS(rtable, ctable, opt)
+    if args.verbose: print("Creating plots...")
     redpy.plotting.createBokehTimelineFigure(rtable, ctable, opt)
 else:
     print("No repeaters to plot.")

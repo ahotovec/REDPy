@@ -161,8 +161,8 @@ print("Caught up to: {}".format(tstart+n*opt.nsec))
 print("End time now: {}".format(tend))
 
 if len(rtable) > rlen:
-    if args.verbose: print("Creating plots...")
     redpy.cluster.runFullOPTICS(rtable, ctable, opt)
+    if args.verbose: print("Creating plots...")
     redpy.plotting.createBokehTimelineFigure(rtable, ctable, opt)
 else:
     if args.verbose: print("No new repeaters to plot.")
