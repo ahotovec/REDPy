@@ -63,12 +63,16 @@ def createBokehTimelineFigure(rtable, ctable, opt):
             p.line((matplotlib.dates.num2date(min(dt[cnum==clustNum])),
                 matplotlib.dates.num2date(max(dt[cnum==clustNum]))), (n, n),
                 color='black')            
-
+            
             minamp = min(amp[cnum==clustNum])
             maxamp = max(amp[cnum==clustNum])
-            ind = [int(255*((amp[i]-minamp)/(maxamp-minamp))) for i in np.where(
-                cnum==clustNum)[0]]
-            colors = [bokehpalette[i] for i in ind]
+            
+            if minamp==maxamp:
+                colors = [bokehpalette[-1] for i in range(len(amp[cnum==clustNum])+1)]
+            else:
+                ind = [int(255*((amp[i]-minamp)/(maxamp-minamp))) for i in np.where(
+                    cnum==clustNum)[0]]
+                colors = [bokehpalette[i] for i in ind]
                
             d = matplotlib.dates.num2date(dt[cnum==clustNum])                        
             p.circle(d, n, color=colors, size=8, line_color='black', line_width=0.5,
