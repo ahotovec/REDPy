@@ -34,8 +34,6 @@ def getData(date, opt):
 
     st = st.detrend() # can create noise artifacts??
     st = st.merge(method=1, fill_value='interpolate')
-    st = st.filter("highpass", freq=opt.fhigh, corners=2,
-            zerophase=True)
 
     return st
 
