@@ -81,6 +81,10 @@ def trigger(st, rtable, opt):
 
     Returns triggered traces as OBSPy trace object updates ptime for next run 
     """
+    
+    if st[0].stats.sampling_rate != opt.samprate:
+        print('Warning: Resampling to match configuration...')
+        st = st.resample(opt.samprate)
 
     # Filter the data for triggering
     st = st.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax, corners=2,
