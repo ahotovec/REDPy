@@ -38,7 +38,8 @@ def createBokehTimelineFigure(rtable, ctable, opt):
         """, names=["patch"])
     
     TOOLS = [hover,'pan,box_zoom,reset,resize,save,tap']
-    p = figure(tools=TOOLS, plot_width=1250, plot_height=700, x_axis_type='datetime')
+    p = figure(tools=TOOLS, plot_width=1250, plot_height=int(max(
+        rtable.cols.clusterNumber[:])*20/opt.minplot), x_axis_type='datetime')
     p.title = 'Occurrence Timeline (Color by log10(Amplitude) within Family)'
     p.grid.grid_line_alpha = 0.3
     p.xaxis.axis_label = 'Date'
