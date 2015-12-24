@@ -373,7 +373,7 @@ def moveOrphan(rtable, otable, oindex, alignedTo, opt):
     
 
 
-def removeFamily(rtable, dtable, cnum, opt):
+def removeFamily(rtable, ctable, dtable, cnum, opt):
 
     """
     Moves the core of a family into the dtable, deletes the rest of the members.
@@ -396,6 +396,10 @@ def removeFamily(rtable, dtable, cnum, opt):
     trigger.append()
     
     for m in members[::-1]:
+        id = rtable.cols.id[m]
+        idxc = ctable.get_where_list('(id1=={0}) | (id2=={0})'.format(id))
+        for c in idxc[::-1]:
+            ctable.remove_row(c)
         rtable.remove_row(m)
     
     rtable.flush()
