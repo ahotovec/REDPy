@@ -365,15 +365,19 @@ def runCorrelation(rtable, otable, ctable, trig, id, opt):
         # Correlate with the new event with all the orphans
         cor, lag = xcorr1xtable(coeffi, ffti, otable, opt)
         
-        # If there's a match, run the most complex function
-        if max(cor) >= opt.cmin - 0.05:
-            compareGoodOrphans(rtable, otable, ctable, trig, id, coeffi, ffti, cor, lag,
-                opt)
-        else:
-            # Compare that orphan to the cores in the repeater table
-            if len(rtable) > 0:
-                compareSingleOrphan2Cores(rtable, otable, ctable, trig, id, coeffi, ffti,
-                    opt)
-            # Populate as an orphan if there are no repeaters yet
+        try:
+            # If there's a match, run the most complex function
+            if max(cor) >= opt.cmin - 0.05:
+                compareGoodOrphans(rtable, otable, ctable, trig, id, coeffi, ffti, cor,
+                    lag, opt)
             else:
-                redpy.table.populateOrphan(otable, id, trig, opt)
+                # Compare that orphan to the cores in the repeater table
+                if len(rtable) > 0:
+                    compareSingleOrphan2Cores(rtable, otable, ctable, trig, id, coeffi,
+                        ffti, opt)
+                # Populate as an orphan if there are no repeaters yet
+                else:
+                    redpy.table.populateOrphan(otable, id, trig, opt)
+        except ValueError:
+            print('Could not properly correlate, moving on...')
+            redpy.table.populateOrphan(otable, id, trig, opt)
