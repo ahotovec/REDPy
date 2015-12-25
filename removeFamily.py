@@ -48,7 +48,6 @@ for f in args.famnum:
     redpy.table.removeFamily(rtable, ctable, dtable, f, opt)
 
 if args.verbose: print("Creating plots...")
-redpy.cluster.runFullOPTICS(rtable, ctable, opt)
 redpy.plotting.createBokehTimelineFigure(rtable, ctable, opt)
 
 if args.verbose: print("Closing table...")

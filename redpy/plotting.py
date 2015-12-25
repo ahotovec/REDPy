@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 import time
+import redpy.cluster
 from obspy import UTCDateTime
 from bokeh.plotting import figure, output_file, save
 from bokeh.models import HoverTool, ColumnDataSource, OpenURL, TapTool
@@ -13,15 +14,23 @@ These are very brute force plotting; should be replaced with more sophisticated 
         
 def createBokehTimelineFigure(rtable, ctable, opt):
     
+    # Run OPTICS to ensure everything is up to date
+    redpy.cluster.runFullOPTICS(rtable, ctable, opt)
+    
     # Run plotCores to ensure thumbnails are up to date
     plotCores(rtable, opt)
     plotFamilies(rtable, ctable, opt)
+    
+    # Update lastClust column
+    rtable.cols.lastClust[:] = rtable.cols.plotClust[:]
+    rtable.flush()
 
     output_file('{}/timeline.html'.format(opt.groupName),
         title='{} Timeline'.format(opt.title))
 
     dt = rtable.cols.startTimeMPL[:]
-    cnum = rtable.cols.clusterNumber[:]    
+    cnum = rtable.cols.clusterNumber[:]
+    fnums = rtable.cols.plotClust[:]    
     amp = np.log10(rtable.cols.windowAmp[:])
         
     # Build hover to show an image of the cluster core
@@ -38,8 +47,8 @@ def createBokehTimelineFigure(rtable, ctable, opt):
         """, names=["patch"])
     
     TOOLS = [hover,'pan,box_zoom,reset,resize,save,tap']
-    p = figure(tools=TOOLS, plot_width=1250, plot_height=int(max(
-        rtable.cols.clusterNumber[:])*20/opt.minplot), x_axis_type='datetime')
+    p = figure(tools=TOOLS, plot_width=1250, plot_height=int(max(500,max(
+        rtable.cols.clusterNumber[:])*20/opt.minplot)), x_axis_type='datetime')
     p.title = 'Occurrence Timeline (Color by log10(Amplitude) within Family)'
     p.grid.grid_line_alpha = 0.3
     p.xaxis.axis_label = 'Date'
@@ -87,20 +96,21 @@ def createBokehTimelineFigure(rtable, ctable, opt):
                  text_baseline='middle')
                  
             # Build source for hover patches
+            fnum = fnums[cnum==clustNum][0]
             if n == 0:
                 xs=[[matplotlib.dates.num2date(min(dt[cnum==clustNum])),
                     matplotlib.dates.num2date(min(dt[cnum==clustNum])),
                     matplotlib.dates.num2date(max(dt[cnum==clustNum])),
                     matplotlib.dates.num2date(max(dt[cnum==clustNum]))]]
                 ys=[[n-0.5, n+0.5, n+0.5, n-0.5]]
-                famnum=[clustNum]
+                famnum=[fnum]
             else:
                 xs.append([matplotlib.dates.num2date(min(dt[cnum==clustNum])),
                            matplotlib.dates.num2date(min(dt[cnum==clustNum])),
                            matplotlib.dates.num2date(max(dt[cnum==clustNum])),
                            matplotlib.dates.num2date(max(dt[cnum==clustNum]))])
                 ys.append([n-0.5, n+0.5, n+0.5, n-0.5])
-                famnum.append([clustNum])
+                famnum.append([fnum])
             
             n = n+1
     
@@ -126,25 +136,26 @@ def plotCores(rtable, opt):
     # Save cores individually in clusters for timeline hover
     cores = rtable.where('isCore==1')
     for r in cores:
-        fig = plt.figure(figsize=(5, 1))
-        ax = plt.Axes(fig, [0., 0., 1., 1.])
-        ax.set_axis_off()
-        fig.add_axes(ax)
+        if r['lastClust'] != r['plotClust']:
+            fig = plt.figure(figsize=(5, 1))
+            ax = plt.Axes(fig, [0., 0., 1., 1.])
+            ax.set_axis_off()
+            fig.add_axes(ax)
         
-        ppad = int(max(0, opt.ptrig*opt.samprate - r['windowStart']))
-        apad = int(max(0, r['windowStart'] - opt.ptrig*opt.samprate - 1))
-        tmp = r['waveform'][max(0, r['windowStart']-int(
-            opt.ptrig*opt.samprate)):min(len(r['waveform']),
-            r['windowStart']+int(opt.atrig*opt.samprate))]
-        dat = tmp[int(opt.ptrig*opt.samprate - opt.winlen*0.5):int(
-            opt.ptrig*opt.samprate + opt.winlen*1.5)]/r['windowAmp']        
-        dat[dat>1] = 1
-        dat[dat<-1] = -1
+            ppad = int(max(0, opt.ptrig*opt.samprate - r['windowStart']))
+            apad = int(max(0, r['windowStart'] - opt.ptrig*opt.samprate - 1))
+            tmp = r['waveform'][max(0, r['windowStart']-int(
+                opt.ptrig*opt.samprate)):min(len(r['waveform']),
+                r['windowStart']+int(opt.atrig*opt.samprate))]
+            dat = tmp[int(opt.ptrig*opt.samprate - opt.winlen*0.5):int(
+                opt.ptrig*opt.samprate + opt.winlen*1.5)]/r['windowAmp']        
+            dat[dat>1] = 1
+            dat[dat<-1] = -1
         
-        ax.plot(dat,'k',linewidth=0.25)
-        plt.autoscale(tight=True)
-        plt.savefig('{0}/clusters/{1}.png'.format(opt.groupName,r['clusterNumber']))
-        plt.close(fig)
+            ax.plot(dat,'k',linewidth=0.25)
+            plt.autoscale(tight=True)
+            plt.savefig('{0}/clusters/{1}.png'.format(opt.groupName,r['plotClust']))
+            plt.close(fig)
 
 
 def plotFamilies(rtable, ctable, opt):
@@ -197,113 +208,119 @@ def plotFamilies(rtable, ctable, opt):
     for cnum in range(max(rtable.cols.clusterNumber[:])+1):
         
         fam = rtable.get_where_list('clusterNumber == {}'.format(cnum))
-        core = rtable.get_where_list(
-            '(clusterNumber == {}) & (isCore == 1)'.format(cnum))[0]
         
-        fig = plt.figure(figsize=(10, 11))
+        if sum(rtable[fam]['plotClust'] - rtable[fam]['lastClust']) != 0:
+            core = rtable.get_where_list(
+                '(clusterNumber == {}) & (isCore == 1)'.format(cnum))[0]
         
-        # Plot waveforms
-        ax1 = fig.add_subplot(3, 3, (1,2))
-        if len(fam) > 12:
-            ax1.imshow(datao[q:q+len(fam)], aspect='auto', vmin=-1, vmax=1, cmap='RdBu',
-                interpolation='nearest', extent=[-1*opt.winlen*0.5/opt.samprate,
-                opt.winlen*1.5/opt.samprate, n + 0.5, -0.5])
-            ax1.axvline(x=-0.1*opt.winlen/opt.samprate, color='k', ls='dotted')
-            ax1.axvline(x=0.9*opt.winlen/opt.samprate, color='k', ls='dotted')
-            ax1.get_yaxis().set_visible(False)
-        else:
-            for o in range(0, len(fam)):
-                dat=datao[o+q,:]
-                dat[dat>1] = 1
-                dat[dat<-1] = -1
-                tvec = np.arange(-opt.winlen*0.5/opt.samprate,opt.winlen*1.5/opt.samprate,
-                    1/opt.samprate)
-                ax1.plot(tvec,dat/2-o,'k',linewidth=0.25)
+            fig = plt.figure(figsize=(10, 11))
+        
+            # Plot waveforms
+            ax1 = fig.add_subplot(3, 3, (1,2))
+            if len(fam) > 12:
+                ax1.imshow(datao[q:q+len(fam)], aspect='auto', vmin=-1, vmax=1, cmap='RdBu',
+                    interpolation='nearest', extent=[-1*opt.winlen*0.5/opt.samprate,
+                    opt.winlen*1.5/opt.samprate, n + 0.5, -0.5])
                 ax1.axvline(x=-0.1*opt.winlen/opt.samprate, color='k', ls='dotted')
                 ax1.axvline(x=0.9*opt.winlen/opt.samprate, color='k', ls='dotted')
                 ax1.get_yaxis().set_visible(False)
-                ax1.autoscale(tight=True)
-        ax1.set_xlabel('Time Relative to Trigger (sec)')
+            else:
+                for o in range(0, len(fam)):
+                    dat=datao[o+q,:]
+                    dat[dat>1] = 1
+                    dat[dat<-1] = -1
+                    tvec = np.arange(-opt.winlen*0.5/opt.samprate,opt.winlen*1.5/opt.samprate,
+                        1/opt.samprate)
+                    ax1.plot(tvec,dat/2-o,'k',linewidth=0.25)
+                    ax1.axvline(x=-0.1*opt.winlen/opt.samprate, color='k', ls='dotted')
+                    ax1.axvline(x=0.9*opt.winlen/opt.samprate, color='k', ls='dotted')
+                    ax1.get_yaxis().set_visible(False)
+                    ax1.autoscale(tight=True)
+            ax1.set_xlabel('Time Relative to Trigger (sec)')
         
-        # Plot correlation
-        ax2 = fig.add_subplot(3, 3, 3)
-        ax2.imshow(Co[q:q+len(fam), q:q+len(fam)], cmap=cmap, aspect='auto',
-            vmin=opt.cmin, vmax=1, interpolation='nearest')
-        ax2.get_yaxis().set_visible(False)
-        ax2.set_xlabel('Ordered Event')
-        if len(fam) < 5:
-            ax2.set_xticks(range(0, len(fam)))
-        q = q+len(fam)
+            # Plot correlation
+            ax2 = fig.add_subplot(3, 3, 3)
+            ax2.imshow(Co[q:q+len(fam), q:q+len(fam)], cmap=cmap, aspect='auto',
+                vmin=opt.cmin, vmax=1, interpolation='nearest')
+            ax2.get_yaxis().set_visible(False)
+            ax2.set_xlabel('Ordered Event')
+            if len(fam) < 5:
+                ax2.set_xticks(range(0, len(fam)))
+            q = q+len(fam)
         
-        # Plot amplitude timeline
-        ax3 = fig.add_subplot(3, 3, (4,6))
-        ax3.plot_date(rtable[fam]['startTimeMPL'], rtable[fam]['windowAmp'],
-                'ro', alpha=0.5, markeredgecolor='r', markeredgewidth=0.5)
-        myFmt = matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M')
-        ax3.xaxis.set_major_formatter(myFmt)
-        ax3.set_ylim(1, max(rtable.cols.windowAmp[:])+500)
-        ax3.margins(0.05)
-        ax3.set_ylabel('Amplitude (Counts)')
-        ax3.set_yscale('log')
+            # Plot amplitude timeline
+            ax3 = fig.add_subplot(3, 3, (4,6))
+            ax3.plot_date(rtable[fam]['startTimeMPL'], rtable[fam]['windowAmp'],
+                    'ro', alpha=0.5, markeredgecolor='r', markeredgewidth=0.5)
+            myFmt = matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M')
+            ax3.xaxis.set_major_formatter(myFmt)
+            ax3.set_ylim(1, max(rtable.cols.windowAmp[:])+500)
+            ax3.margins(0.05)
+            ax3.set_ylabel('Amplitude (Counts)')
+            ax3.set_yscale('log')
         
-        # Prep catalog
-        catalog = np.sort(rtable[fam]['startTimeMPL'])
-        longevity = catalog[-1] - catalog[0]
-        spacing = np.diff(catalog)*24
-        utcatalog = [UTCDateTime(rtable[fam]['startTime'][i]) +
-            rtable[fam]['windowStart'][i]/opt.samprate for i in
-            np.argsort(rtable[fam]['startTimeMPL'])]
+            # Prep catalog
+            catalog = np.sort(rtable[fam]['startTimeMPL'])
+            longevity = catalog[-1] - catalog[0]
+            spacing = np.diff(catalog)*24
+            utcatalog = [UTCDateTime(rtable[fam]['startTime'][i]) +
+                rtable[fam]['windowStart'][i]/opt.samprate for i in
+                np.argsort(rtable[fam]['startTimeMPL'])]
         
-        # Plot spacing timeline
-        ax4 = fig.add_subplot(3, 3, (7,9)) 
-        ax4.plot_date(catalog[1:], spacing, 'ro', alpha=0.5, markeredgecolor='r',
-            markeredgewidth=0.5)
-        myFmt = matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M')
-        ax4.xaxis.set_major_formatter(myFmt)
-        ax4.set_xlim(ax3.get_xlim())
-        ax4.set_ylim(1e-3, max(spacing)*2)
-        ax4.margins(0.05)
-        ax4.set_ylabel('Time since previous event (hours)')
-        ax4.set_xlabel('Date')
-        ax4.set_yscale('log')
+            # Plot spacing timeline
+            ax4 = fig.add_subplot(3, 3, (7,9)) 
+            ax4.plot_date(catalog[1:], spacing, 'ro', alpha=0.5, markeredgecolor='r',
+                markeredgewidth=0.5)
+            myFmt = matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M')
+            ax4.xaxis.set_major_formatter(myFmt)
+            ax4.set_xlim(ax3.get_xlim())
+            ax4.set_ylim(1e-3, max(spacing)*2)
+            ax4.margins(0.05)
+            ax4.set_ylabel('Time since previous event (hours)')
+            ax4.set_xlabel('Date')
+            ax4.set_yscale('log')
         
-        plt.tight_layout()
-        plt.savefig('{0}/clusters/fam{1}.png'.format(opt.groupName,cnum))
-        plt.close(fig)
+            plt.tight_layout()
+            plt.savefig('{0}/clusters/fam{1}.png'.format(opt.groupName,
+                rtable.cols.plotClust[core]))
+            plt.close(fig)
         
         
-        # Now write a simple HTML file to show image and catalog
-        with open('{0}/clusters/{1}.html'.format(opt.groupName, cnum), 'w') as f:
-            f.write("""
-            <html><head><title>{1} - Cluster {0}</title>
-            </head>
-            <body><center>
-            <span style="font-size: 20px; font-weight: bold; font-family: Helvetica;">
-                Cluster {0}</span></br></br>
-            <img src="{0}.png"></br></br>
-            <span style="font-size: 12px; font-family: Helvetica;">
-                Number of events: {2}</br>
-                Longevity: {5:.2f} days</br>
-                Mean event spacing: {7:.2f} hours</br>
-                Median event spacing: {8:.2f} hours</br></br>
-                First event: {3}</br>
-                Core event: {6}</br>
-                Last event: {4}</br>
-                </span> 
-            <img src="fam{0}.png"></br></br>
-            <span style="font-size: 16px; font-weight: bold; font-family: Helvetica;">
-            Aligned Catalog Times</br></br></span>
-            <span style="font-size: 12px; font-family: Helvetica;">
-            """.format(cnum, opt.title, len(fam), utcatalog[0].isoformat(),
-                utcatalog[-1].isoformat(), longevity, (UTCDateTime(
-                rtable[core]['startTime']) +
-                rtable[core]['windowStart']/opt.samprate).isoformat(), np.mean(spacing),
-                np.median(spacing)))
-            for u in utcatalog:
-                f.write("{}</br>".format(u.isoformat()))
-            f.write("""
-            </br></span></center></body></html>
-            """)
+            # Now write a simple HTML file to show image and catalog
+            with open('{0}/clusters/{1}.html'.format(opt.groupName,
+                rtable.cols.plotClust[core]), 'w') as f:
+                f.write("""
+                <html><head><title>{1} - Cluster {0}</title>
+                </head>
+                <body><center>
+                <span style="font-size: 20px; font-weight: bold; font-family: Helvetica;">
+                    Cluster {0}</span></br></br>
+                <img src="{0}.png"></br></br>
+                <span style="font-size: 12px; font-family: Helvetica;">
+                    Number of events: {2}</br>
+                    Longevity: {5:.2f} days</br>
+                    Mean event spacing: {7:.2f} hours</br>
+                    Median event spacing: {8:.2f} hours</br></br>
+                    First event: {3}</br>
+                    Core event: {6}</br>
+                    Last event: {4}</br>
+                    </span> 
+                <img src="fam{0}.png"></br></br>
+                <span style="font-size: 16px; font-weight: bold; font-family: Helvetica;">
+                Aligned Catalog Times</br></br></span>
+                <span style="font-size: 12px; font-family: Helvetica;">
+                """.format(rtable.cols.plotClust[core], opt.title, len(fam), utcatalog[0].isoformat(),
+                    utcatalog[-1].isoformat(), longevity, (UTCDateTime(
+                    rtable[core]['startTime']) +
+                    rtable[core]['windowStart']/opt.samprate).isoformat(), np.mean(spacing),
+                    np.median(spacing)))
+                for u in utcatalog:
+                    f.write("{}</br>".format(u.isoformat()))
+                f.write("""
+                </br></span></center></body></html>
+                """)
+        else:
+                q = q+len(fam)
         
 
 

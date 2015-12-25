@@ -14,7 +14,8 @@ def setClusters(rtable, opt):
     rtable: Repeater table, with cluster ordering in columns 6 - 8
     opt: Options object describing station/run parameters
 
-    Sets cluster numbers in column 9 of the repeater table
+    Sets cluster numbers in column 9 of the repeater table, ordered by first event in
+    each cluster
     """
     
     cutoff = opt.cmin
@@ -37,10 +38,23 @@ def setClusters(rtable, opt):
         else:
             oclust[x] = cluster_id
 
+    cnum = np.zeros((len(oreach),))
+    cnum[order] = oclust
+    
+    # Figure out earliest member in each family
+    dt = rtable.cols.startTimeMPL[:]
+    mindt = np.zeros((max(cnum)+1,))
+    for clustNum in range(int(max(cnum)+1)):
+        mindt[clustNum] = min(dt[cnum==clustNum])
+    
+    n = 0
     clust = np.zeros((len(oreach),))
-    clust[order] = oclust
-
-    rtable.cols.clusterNumber[:] = clust
+    for clustNum in np.argsort(mindt):
+        clust[cnum==clustNum] = n
+        n = n+1
+        
+    rtable.cols.plotClust[:] = clust
+    rtable.cols.clusterNumber[:] = cnum
     rtable.flush()
 
     
@@ -136,6 +150,7 @@ def alignAll(rtable, ctable, opt):
                         rtable[core]['clusterNumber'], u))
                         
                     cormax = 0
+                    id1 = -1
                     for t in tmp:
                         for f in utmp:
                             clist = ctable.get_where_list(
@@ -147,7 +162,7 @@ def alignAll(rtable, ctable, opt):
                                     cormax = ctable[clist[0]]['ccc']
                                     id1 = f
                                     id2 = t
-                    if id1:
+                    if id1 != -1:
                         cor1, lag1 = redpy.correlation.xcorr1x1(
                             rtable.cols.windowFFT[id2], rtable.cols.windowFFT[id1],
                             rtable.cols.windowCoeff[id2],

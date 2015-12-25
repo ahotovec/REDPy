@@ -23,9 +23,12 @@ def Repeaters(opt):
     order: Order in the cluster ordering (integer)
     reachability: Reachability in the cluster ordering (float)
     coreDistance: Core distance in the cluster ordering (float)
+    clusterNumber: ID of flat cluster (integer)
     isCore: 1 if core, else 0 (integer)
     alignedTo: ID of event this one is aligned to (integer)
-
+    plotClust: ID of flat cluster ordered by time (integer)
+    lastClust: ID of flat cluster when last plotted (integer)
+    
     Returns a dictionary defining the table
     """
     
@@ -43,7 +46,9 @@ def Repeaters(opt):
         "coreDistance"  : Float64Col(shape=(), pos=10),
         "clusterNumber" : Int32Col(shape=(), pos=11),
         "isCore"        : Int32Col(shape=(), pos=12),
-        "alignedTo"     : Int32Col(shape=(), pos=13)
+        "alignedTo"     : Int32Col(shape=(), pos=13),
+        "plotClust"     : Int32Col(shape=(), pos=14),
+        "lastClust"     : Int32Col(shape=(), pos=15)
         }
     
     return dict
@@ -264,6 +269,8 @@ def populateRepeater(rtable, id, trig, opt, alignedTo, windowStart=-1):
     trigger['reachability'] = -1.0
     trigger['coreDistance'] = -1.0
     trigger['clusterNumber'] = -1
+    trigger['plotClust'] = -1
+    trigger['lastClust'] = -1
     trigger['isCore'] = 0 # Set to zero to avoid being counted erroneously as a core
     trigger['alignedTo'] = alignedTo
     trigger.append()  
@@ -361,6 +368,8 @@ def moveOrphan(rtable, otable, oindex, alignedTo, opt):
     trigger['reachability'] = -1.0
     trigger['coreDistance'] = -1.0
     trigger['clusterNumber'] = -1
+    trigger['plotClust'] = -1
+    trigger['lastClust'] = -1
     trigger['isCore'] = 0 # Set to zero to avoid being counted erroneously as a core
     trigger['alignedTo'] = alignedTo
     trigger.append()
@@ -381,8 +390,8 @@ def removeFamily(rtable, ctable, dtable, cnum, opt):
     
     trigger = dtable.row
     
-    members = rtable.get_where_list('(clusterNumber=={})'.format(cnum))
-    idx = rtable.get_where_list('(clusterNumber=={}) & (isCore==1)'.format(cnum))
+    members = rtable.get_where_list('(plotClust=={})'.format(cnum))
+    idx = rtable.get_where_list('(plotClust=={}) & (isCore==1)'.format(cnum))
     core = rtable[idx]
     
     trigger['id'] = core['id']
