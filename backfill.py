@@ -79,6 +79,15 @@ else:
     else:
         tstart = tend-opt.nsec
 
+if len(otable) > 0:
+    otimes = otable.cols.startTimeMPL[:]
+else:
+    otimes = 0
+if len(rtable) > 0:
+    rtimes = rtable.cols.startTimeMPL[:]
+else:
+    rtimes = 0
+
 t = time.time()
 n = 0
 rlen = len(rtable)
@@ -117,7 +126,8 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
                 ostart = 1
             else:        
                 id = id + 1
-                redpy.correlation.runCorrelation(rtable, otable, ctable, trigs[0], id, opt)        
+                redpy.correlation.runCorrelation(rtable, otable, ctable, otimes, rtimes,
+                    trigs[0], id, opt)
         else:
             ostart = 0
             if len(otable) == 0:
@@ -127,7 +137,8 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
             # Loop through remaining triggers
             for i in range(ostart,len(trigs)):  
                 id = id + 1
-                redpy.correlation.runCorrelation(rtable, otable, ctable, trigs[i], id, opt)            
+                redpy.correlation.runCorrelation(rtable, otable, ctable, otimes, rtimes,
+                    trigs[i], id, opt)            
         rtable.attrs.previd = id
     
     redpy.table.clearExpiredOrphans(otable, opt, tstart+(n+1)*opt.nsec)
@@ -139,6 +150,7 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
         if args.verbose: print("Leftovers in clustering: {0}".format(len(leftovers)))
         for l in leftovers[::-1]:
             rtable.remove_row(l)
+        rtable.attrs.cores = rtable.get_where_list('isCore == 1')
     
     # Print some stats
     if args.verbose:

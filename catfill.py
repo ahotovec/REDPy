@@ -82,7 +82,7 @@ for event in eventlist[::-1]:
 	    trigs = []
     
     if len(trigs) > 0:        
-        id = rtable.attrs.previd        
+        id = rtable.attrs.previd
         if len(trigs) == 1:        
             ostart = 0
             if len(otable) == 0:
@@ -91,7 +91,9 @@ for event in eventlist[::-1]:
                 ostart = 1
             else:        
                 id = id + 1
-                redpy.correlation.runCorrelation(rtable, otable, ctable, trigs[0], id, opt)        
+                redpy.correlation.runCorrelation(rtable, otable, ctable,
+                    otable.cols.startTimeMPL[:], rtable.cols.startTimeMPL[:], trigs[0],
+                    id, opt)
         else:
             ostart = 0
             if len(otable) == 0:
@@ -101,7 +103,9 @@ for event in eventlist[::-1]:
             # Loop through remaining triggers
             for i in range(ostart,len(trigs)):  
                 id = id + 1
-                redpy.correlation.runCorrelation(rtable, otable, ctable, trigs[i], id, opt)            
+                redpy.correlation.runCorrelation(rtable, otable, ctable,
+                    otable.cols.startTimeMPL[:], rtable.cols.startTimeMPL[:], trigs[i],
+                    id, opt)
         rtable.attrs.previd = id        
     
     # Don't expire orphans yet while testing
@@ -114,6 +118,7 @@ for event in eventlist[::-1]:
         if args.verbose: print("Leftovers in clustering: {0}".format(len(leftovers)))
         for l in leftovers[::-1]:
             rtable.remove_row(l)
+        rtable.attrs.cores = rtable.get_where_list('isCore == 1')
     
     # Print some stats
     if args.verbose:

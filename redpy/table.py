@@ -189,6 +189,7 @@ def initializeTable(opt):
     rtable.attrs.fmax = opt.fmax
     rtable.attrs.previd = 0
     rtable.attrs.ptime = 0
+    rtable.attrs.cores = []
     rtable.flush()
     
     otable = h5file.create_table(group, "orphans", Orphans(opt),
@@ -410,6 +411,8 @@ def removeFamily(rtable, ctable, dtable, cnum, opt):
         for c in idxc[::-1]:
             ctable.remove_row(c)
         rtable.remove_row(m)
+    
+    rtable.attrs.cores = rtable.get_where_list('(isCore == 1)')
     
     rtable.flush()
     dtable.flush()

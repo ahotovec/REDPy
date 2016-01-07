@@ -91,72 +91,63 @@ def setCenters(rtable, opt):
     cores[orphans] = -1*np.ones((len(orphans),)).astype(int)
     
     rtable.cols.isCore[:] = cores
+    rtable.attrs.cores = sorted(centers) # Sort is somehow important?
     rtable.flush()
-
-
+              
+   
 def alignAll(rtable, ctable, opt):
     """
     Aligns events in the table that were misaligned. Uses the column 'alignedTo' to guide
     which events are misaligned and skips events which have already been aligned
     """
     
-    cores = rtable.get_where_list('(isCore==1)')
+    cores = rtable.attrs.cores
+    id = rtable.cols.id[:]
+    clusterNumber = rtable.cols.clusterNumber[:]
+    alignedTo = rtable.cols.alignedTo[:]
+    
     for core in cores:
+        members = np.where(clusterNumber == clusterNumber[core])
         
-        # Change alignedTo of the core to itself
-        calignedTo = copy.copy(rtable[core]['alignedTo'])
-        rtable.cols.alignedTo[core] = rtable[core]['id']
+        # Change alignedTo of the core to itself, as well as any events that share its
+        # former alignedTo value
+        calignedTo = copy.copy(alignedTo[core])
+        for f in np.intersect1d(members, np.where(alignedTo == calignedTo)):
+            alignedTo[f] = id[core]
             
-        # As well as any events that share its alignedTo value
-        for f in rtable.get_where_list(
-            '(clusterNumber=={0}) & (isCore==0) & (alignedTo=={1})'.format(
-            rtable[core]['clusterNumber'], calignedTo)):
-            rtable.cols.alignedTo[f] = rtable[core]['id']
-        rtable.flush()
-        
         # Check for any members with other alignedTo values
-        fam = rtable.get_where_list(
-            '(clusterNumber=={0}) & (isCore==0) & (alignedTo!={1})'.format(
-            rtable[core]['clusterNumber'], rtable[core]['id']))
+        fam = np.intersect1d(members, np.where(alignedTo != id[core]))
         if fam.any():
-            # Clean up alignedTo values that reference an id that is not itself 
-            for u in np.unique(rtable[fam]['alignedTo']):
-                unum = rtable.get_where_list('(id=={})'.format(u))[0]
-                for f in rtable.get_where_list(
-                    '(clusterNumber=={0}) & (isCore==0) & (alignedTo=={1})'.format(
-                    rtable[core]['clusterNumber'], u)):
-                    rtable.cols.alignedTo[f] = rtable[unum]['alignedTo']
-                rtable.flush()
+            # Clean up alignedTo values that reference an id that is not itself
+            for u in np.unique(alignedTo[fam]):
+                unum = np.where(id == u)[0][0]
+                for f in np.intersect1d(members, np.where(alignedTo == u)):
+                    alignedTo[f] = rtable[unum]['alignedTo']
             
             # Loop over remaining unique values
             fftj = rtable[core]['windowFFT']
             coeffj = rtable[core]['windowCoeff']
-            for u in np.unique(rtable[fam]['alignedTo']):
-
+            
+            for u in np.unique(alignedTo[fam]):
                 # Align to core, apply same lag to other members
-                unum = rtable.get_where_list('(id=={})'.format(u))[0]
-                cor, lag = redpy.correlation.xcorr1x1(fftj,
-                    rtable.cols.windowFFT[unum], coeffj,
-                    rtable.cols.windowCoeff[unum])
+                unum = np.where(id == u)[0][0]
+                cor, lag = redpy.correlation.xcorr1x1(fftj, rtable[unum]['windowFFT'],
+                    coeffj, rtable[unum]['windowCoeff'])
                         
                 # If doesn't correlate well, try a better event
                 if cor < opt.cmin + 0.05:
-                        
-                    tmp = rtable.get_where_list(
-                        '(clusterNumber=={0}) & (alignedTo!={1})'.format(
-                        rtable[core]['clusterNumber'], u))
-                    utmp = rtable.get_where_list(
-                        '(clusterNumber=={0}) & (alignedTo=={1})'.format(
-                        rtable[core]['clusterNumber'], u))
+                    tmp = np.intersect1d(members, np.where(alignedTo != u))
+                    utmp = np.intersect1d(members, np.where(alignedTo == u))
                         
                     cormax = 0
                     id1 = -1
+                    cid1 = ctable.cols.id1[:]
+                    cid2 = ctable.cols.id2[:]
                     for t in tmp:
                         for f in utmp:
-                            clist = ctable.get_where_list(
-                                '(id1=={0}) & (id2=={1})'.format(
-                                min(rtable[f]['id'],rtable[t]['id']),
-                                max(rtable[f]['id'],rtable[t]['id'])))
+                            clist = np.intersect1d(np.where(cid1 == min(rtable[f]['id'],
+                                rtable[t]['id'])), np.where(cid2 == max(rtable[f]['id'],
+                                rtable[t]['id'])))
                             if clist.any():
                                 if ctable[clist[0]]['ccc'] > cormax:
                                     cormax = ctable[clist[0]]['ccc']
@@ -164,27 +155,24 @@ def alignAll(rtable, ctable, opt):
                                     id2 = t
                     if id1 != -1:
                         cor1, lag1 = redpy.correlation.xcorr1x1(
-                            rtable.cols.windowFFT[id2], rtable.cols.windowFFT[id1],
-                            rtable.cols.windowCoeff[id2],
-                            rtable.cols.windowCoeff[id1])
+                            rtable[id2]['windowFFT'], rtable[id1]['windowFFT'],
+                            rtable[id2]['windowCoeff'], rtable[id1]['windowCoeff'])
                         cor2, lag2 = redpy.correlation.xcorr1x1(
-                            rtable.cols.windowFFT[core], rtable.cols.windowFFT[id2],
-                            rtable.cols.windowCoeff[core],
-                            rtable.cols.windowCoeff[id2])
+                            rtable[core]['windowFFT'], rtable[id2]['windowFFT'],
+                            rtable[core]['windowCoeff'], rtable[id2]['windowCoeff'])
                         lag = lag1 + lag2
-                    else:
-                        print("Couldn't find good event to realign with...")
-                    
-                for f in rtable.get_where_list(
-                    '(clusterNumber=={0}) & (isCore==0) & (alignedTo=={1})'.format(
-                    rtable[core]['clusterNumber'], u)):
-                    rtable.cols.alignedTo[f] = rtable[core]['id']
+                
+                for f in np.intersect1d(members, np.where(alignedTo == u)):
+                    alignedTo[f] = id[core]
                     rtable.cols.windowStart[f] = rtable.cols.windowStart[f] - lag
                     rtable.cols.windowCoeff[f], rtable.cols.windowFFT[f] = redpy.correlation.calcWindow(
                         rtable.cols.waveform[f], rtable.cols.windowStart[f], opt)
                 rtable.flush()
     
-    
+    rtable.cols.alignedTo[:] = alignedTo
+    rtable.flush()
+ 
+                 
 def mergeFamilies(rtable, ctable, opt):
     """
     Cross-correlates the cores of each family and attempts to realign and merge them.

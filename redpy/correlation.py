@@ -219,8 +219,8 @@ def compareMultipleOrphans2Cores(rtable, ctable, written, opt):
     """
     
     # Compare 'key' orphan to cores
-    centers = rtable.get_where_list('isCore != 0')
-    cores = rtable[centers]
+    cores = rtable[rtable.attrs.cores]
+    
     coeffi = rtable.cols.windowCoeff[-written]
     ffti = rtable.cols.windowFFT[-written]
     cor, lag = xcorr1xtable(coeffi, ffti, cores, opt)
@@ -290,9 +290,8 @@ def compareSingleOrphan2Cores(rtable, otable, ctable, trig, id, coeffi, ffti, op
     ffti: FFT of trigger
     opt: Options object describing station/run parameters
     """
-    
-    centers = rtable.get_where_list('isCore != 0')
-    cores = rtable[centers]
+        
+    cores = rtable[rtable.attrs.cores]
     cor, lag = xcorr1xtable(coeffi, ffti, cores, opt)
     
     written = 0
@@ -331,7 +330,7 @@ def compareSingleOrphan2Cores(rtable, otable, ctable, trig, id, coeffi, ffti, op
         redpy.table.populateOrphan(otable, id, trig, opt)
 
 
-def runCorrelation(rtable, otable, ctable, trig, id, opt):
+def runCorrelation(rtable, otable, ctable, otimes, rtimes, trig, id, opt):
 
     """
     Adds a new trigger to the correct table, runs the correlations and clustering
@@ -355,10 +354,10 @@ def runCorrelation(rtable, otable, ctable, trig, id, opt):
         stime = matplotlib.dates.date2num(datetime.datetime.strptime(
             trig.stats.starttime.isoformat(), '%Y-%m-%dT%H:%M:%S'))
     
-    if not (len(otable.get_where_list('(startTimeMPL > {0}) & (startTimeMPL < {1})'.format(
-        stime - opt.mintrig/86400, stime + opt.mintrig/86400))) or
-        len(rtable.get_where_list('(startTimeMPL > {0}) & (startTimeMPL < {1})'.format(
-        stime - opt.mintrig/86400, stime + opt.mintrig/86400)))):
+    if not (len(np.intersect1d(np.where(otimes > stime - opt.mintrig/86400), np.where(
+        otimes < stime + opt.mintrig/86400))) or len(np.intersect1d(np.where(
+        rtimes > stime - opt.mintrig/86400), np.where(
+        rtimes < stime + opt.mintrig/86400)))):
 
         coeffi, ffti = calcWindow(trig.data, int(opt.ptrig*opt.samprate), opt)
         

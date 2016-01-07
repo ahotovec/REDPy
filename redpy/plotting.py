@@ -16,7 +16,7 @@ def createBokehTimelineFigure(rtable, ctable, opt):
     
     # Run OPTICS to ensure everything is up to date
     redpy.cluster.runFullOPTICS(rtable, ctable, opt)
-    
+        
     # Run plotCores to ensure thumbnails are up to date
     plotCores(rtable, opt)
     plotFamilies(rtable, ctable, opt)
@@ -134,7 +134,7 @@ def createBokehTimelineFigure(rtable, ctable, opt):
 
 def plotCores(rtable, opt):
     # Save cores individually in clusters for timeline hover
-    cores = rtable.where('isCore==1')
+    cores = rtable[rtable.attrs.cores]
     for r in cores:
         if r['lastClust'] != r['plotClust']:
             fig = plt.figure(figsize=(5, 1))
