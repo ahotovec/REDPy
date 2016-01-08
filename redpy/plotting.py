@@ -38,7 +38,7 @@ def createBokehTimelineFigure(rtable, ctable, opt):
         tooltips="""
         <div>
         <div>
-            <img src="./clusters/@famnum.png" style="height: 100px; width: 500px;
+            <img src="./clusters/@famnum.gif" style="height: 100px; width: 500px;
                 vertical-align: middle;" />
             <span style="font-size: 9px; font-family: Helvetica;">Cluster ID: </span>
             <span style="font-size: 12px; font-family: Helvetica;">@famnum</span>

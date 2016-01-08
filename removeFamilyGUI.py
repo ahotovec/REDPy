@@ -104,7 +104,7 @@ imgobj = []
 check = []
 var = []
 for n in fams:
-    imgobj.append(tk.PhotoImage(file='default/clusters/{}.gif'.format(n)))
+    imgobj.append(tk.PhotoImage(file='{0}/clusters/{1}.gif'.format(opt.groupName,n)))
     var.append(tk.IntVar())
     check.append(tk.Checkbutton(frame, image=imgobj[n], variable = var[n]).grid(
         column=c, row=r, sticky='N'))
