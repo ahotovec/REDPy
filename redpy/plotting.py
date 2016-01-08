@@ -154,7 +154,7 @@ def plotCores(rtable, opt):
         
             ax.plot(dat,'k',linewidth=0.25)
             plt.autoscale(tight=True)
-            plt.savefig('{0}/clusters/{1}.png'.format(opt.groupName,r['plotClust']))
+            plt.savefig('{0}/clusters/{1}.gif'.format(opt.groupName,r['plotClust']))
             plt.close(fig)
 
 
@@ -295,7 +295,7 @@ def plotFamilies(rtable, ctable, opt):
                 <body><center>
                 <span style="font-size: 20px; font-weight: bold; font-family: Helvetica;">
                     Cluster {0}</span></br></br>
-                <img src="{0}.png"></br></br>
+                <img src="{0}.gif"></br></br>
                 <span style="font-size: 12px; font-family: Helvetica;">
                     Number of events: {2}</br>
                     Longevity: {5:.2f} days</br>
