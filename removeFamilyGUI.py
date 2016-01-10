@@ -19,6 +19,8 @@ optional arguments:
   -c CONFIGFILE, --configfile CONFIGFILE
                         use configuration file named CONFIGFILE instead of
                         default settings.cfg
+  -n NCOLS, --ncols NCOLS
+                        adjust number of columns in layout (default 3)
 """
 
 
@@ -69,6 +71,8 @@ parser.add_argument("-v", "--verbose", action="count", default=0,
     help="increase written print statements")
 parser.add_argument("-c", "--configfile",
     help="use configuration file named CONFIGFILE instead of default settings.cfg")
+parser.add_argument("-n", "--ncols", default=3, type=int,
+    help="adjust number of columns in layout (default 3)")
 args = parser.parse_args()
 
 if args.configfile:
@@ -109,15 +113,15 @@ for n in fams:
     check.append(tk.Checkbutton(frame, image=imgobj[n], variable = var[n]).grid(
         column=c, row=r, sticky='N'))
     c = c+1
-    if c == 4:
+    if c == args.ncols+1:
         c = 1
         r = r+1
 
 # Add buttons
 tk.Button(frame, text="Remove Checked", background="#ffffff", command=remove).grid(
-    column=2, row=r+1, sticky='N')
+    column=1, row=r+1, columnspan=args.ncols, sticky='N')
 tk.Button(frame, text="Cancel", background="#ffffff", command=close).grid(
-    column=2, row=r+2, sticky='S')
+    column=1, row=r+2, columnspan=args.ncols, sticky='S')
 
 # Bind MouseWheel, Return, Escape keys to be more useful
 root.bind_all("<MouseWheel>", mouse_wheel)
