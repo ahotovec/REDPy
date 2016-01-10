@@ -137,7 +137,7 @@ def plotCores(rtable, opt):
     cores = rtable[rtable.attrs.cores]
     for r in cores:
         if r['lastClust'] != r['plotClust']:
-            fig = plt.figure(figsize=(5, 1))
+            fig = plt.figure(figsize=(2.5, 0.5))
             ax = plt.Axes(fig, [0., 0., 1., 1.])
             ax.set_axis_off()
             fig.add_axes(ax)
