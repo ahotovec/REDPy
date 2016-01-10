@@ -63,8 +63,8 @@ for event in eventlist[::-1]:
     
     # Download and trigger
     try:
-        st = redpy.trigger.getCatData(etime, opt)
-        alltrigs = redpy.trigger.trigger(st, rtable, opt)
+        st, stC = redpy.trigger.getCatData(etime, opt)
+        alltrigs = redpy.trigger.trigger(st, stC, rtable, opt)
         
 		# Clean out data spikes etc.
         trigs, junk = redpy.trigger.dataclean(alltrigs, opt, flag=1)

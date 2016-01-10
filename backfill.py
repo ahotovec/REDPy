@@ -98,8 +98,8 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
     
     # Download and trigger
     try:
-        st = redpy.trigger.getData(tstart+n*opt.nsec, opt)
-        alltrigs = redpy.trigger.trigger(st, rtable, opt)
+        st, stC = redpy.trigger.getData(tstart+n*opt.nsec, opt)
+        alltrigs = redpy.trigger.trigger(st, stC, rtable, opt)
         
 		# Clean out data spikes etc.
         trigs, junk = redpy.trigger.dataclean(alltrigs, opt, flag=1)

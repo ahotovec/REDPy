@@ -148,3 +148,15 @@ class Options(object):
             'Settings','maxorph') else 7.
         self.minplot=config.getint('Settings','minplot') if config.has_option(
             'Settings','minplot') else 3
+        self.useCoincidence=config.getint('Settings','useCoincidence') if config.has_option(
+            'Settings','useCoincidence') else 1
+        self.nsta=config.getint('Settings','nsta') if config.has_option(
+            'Settings','nsta') else 2
+        self.stationC=config.get('Settings','stationC') if config.has_option(
+            'Settings','stationC') else 'HSR,SHW,YEL'
+        self.channelC=config.get('Settings','channelC') if config.has_option(
+            'Settings','channelC') else 'EHZ'
+        self.networkC=config.get('Settings','networkC') if config.has_option(
+            'Settings','networkC') else 'UW'
+        self.locationC=config.get('Settings','locationC') if config.has_option(
+            'Settings','locationC') else '--'

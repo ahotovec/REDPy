@@ -3,7 +3,7 @@ from obspy.fdsn import Client
 from obspy.earthworm import Client as EWClient
 from obspy.core.trace import Trace
 from obspy.core.stream import Stream
-from obspy.signal.trigger import classicSTALTA, triggerOnset
+from obspy.signal.trigger import coincidenceTrigger
 import numpy as np
 from scipy import stats
 from scipy.fftpack import fft
@@ -16,7 +16,7 @@ def getData(date, opt):
     date: UTCDateTime of beginning of period of interest
     opt: Options object describing station/run parameters
     
-    Returns ObsPy stream object
+    Returns ObsPy stream objects, one for cutting and the other for triggering
     """    
     
     # Choose where data are downloaded automatically via options
@@ -27,15 +27,26 @@ def getData(date, opt):
         client = Client("IRIS")
         st = client.get_waveforms(opt.network, opt.station, opt.location, opt.channel,
             date - opt.atrig, date + opt.nsec + opt.atrig)
+        if opt.useCoincidence:
+            stC = client.get_waveforms(opt.networkC, opt.stationC, opt.locationC,
+                opt.channelC, date - opt.atrig, date + opt.nsec + opt.atrig)
     else:
         client = EWClient(opt.server, opt.port)
         st = client.getWaveform(opt.network, opt.station, opt.location, opt.channel,
             date - opt.atrig, date + opt.nsec + opt.atrig)
+        if opt.useCoincidence:
+            stC = client.getWaveform(opt.networkC, opt.stationC, opt.locationC,
+                opt.channelC, date - opt.atrig, date + opt.nsec + opt.atrig)
 
     st = st.detrend() # can create noise artifacts??
     st = st.merge(method=1, fill_value='interpolate')
-
-    return st
+    if opt.useCoincidence:
+        stC = stC.detrend()
+        stC = stC.merge(method=1, fill_value='interpolate')
+    else:
+        stC = st
+    
+    return st, stC
 
 
 def getCatData(date, opt):
@@ -48,7 +59,7 @@ def getCatData(date, opt):
     date: UTCDateTime of known catalog event
     opt: Options object describing station/run parameters
     
-    Returns ObsPy stream object
+    Returns ObsPy stream objects, one for cutting and the other for triggering
     """    
     
     # Choose where data are downloaded automatically via options
@@ -59,18 +70,29 @@ def getCatData(date, opt):
         client = Client("IRIS")
         st = client.get_waveforms(opt.network, opt.station, opt.location, opt.channel,
             date - opt.atrig, date + 3*opt.atrig)
+        if opt.useCoincidence:
+            stC = client.get_waveforms(opt.networkC, opt.stationC, opt.locationC,
+                opt.channelC, date - opt.atrig, date + 3*opt.atrig)
     else:
         client = EWClient(opt.server, opt.port)
         st = client.getWaveform(opt.network, opt.station, opt.location, opt.channel,
             date - opt.atrig, date + 3*opt.atrig)
+        if opt.useCoincidence:
+            stC = client.getWaveform(opt.networkC, opt.stationC, opt.locationC,
+                opt.channelC, date - opt.atrig, date + 3*opt.atrig)
 
     st = st.detrend() # can create noise artifacts??
     st = st.merge(method=1, fill_value='interpolate')
+    if opt.useCoincidence:
+        stC = stC.detrend()
+        stC = stC.merge(method=1, fill_value='interpolate')
+    else:
+        stC = st.copy()
 
-    return st
+    return st, stC
 
 
-def trigger(st, rtable, opt):
+def trigger(st, stC, rtable, opt):
 
     """
     Run triggering algorithm on a stream of data.
@@ -89,59 +111,60 @@ def trigger(st, rtable, opt):
     # Filter the data for triggering
     st = st.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax, corners=2,
                zerophase=True)
+    stC = stC.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax, corners=2,
+               zerophase=True)
+    
     tr = st[0]
     t = tr.stats.starttime
-
-    cft = classicSTALTA(tr.data, opt.swin*opt.samprate, opt.lwin*opt.samprate)
-    on_off = triggerOnset(cft, opt.trigon, opt.trigoff)
     
-    if len(on_off) > 0:
+    if opt.useCoincidence:
+        nsta = opt.nsta
+    else:
+        nsta = 1
     
-        pick = on_off[:,0]    
+    cft = coincidenceTrigger("classicstalta", opt.trigon, opt.trigoff, stC, nsta,
+        sta=opt.swin, lta=opt.lwin, details=True)
+    if len(cft) > 0:
+        
         ind = 0
         
-        # Slice out the data and save the maximum STA/LTA ratio value for
+        # Slice out the data from st and save the maximum STA/LTA ratio value for
         # use in orphan expiration
         
-        # Convert ptime from time of last trigger to samples before start time 
+        # Convert ptime from time of last trigger to seconds before start time
         if rtable.attrs.ptime:
-            ptime = (UTCDateTime(rtable.attrs.ptime) - t)*opt.samprate
+            ptime = (UTCDateTime(rtable.attrs.ptime) - t)
         else:
-            ptime = -opt.mintrig*opt.samprate
+            ptime = -opt.mintrig
         
-        for n in range(len(pick)):
+        for n in range(len(cft)):
+                    
+            ttime = cft[n]['time'] # This is a UTCDateTime, not samples
             
-            ttime = pick[n]
-            
-            if (ttime >= opt.atrig*opt.samprate) and (ttime >= ptime +
-                opt.mintrig*opt.samprate) and (ttime < len(tr.data) -
-                2*opt.atrig*opt.samprate):
+            if (ttime >= t + opt.atrig) and (ttime >= t + ptime +
+                opt.mintrig) and (ttime < t + len(tr.data)/opt.samprate -
+                2*opt.atrig):
                 
-                ptime = ttime
+                ptime = ttime - t
                 if ind is 0:
                     # Slice and save as first trace              
-                    trigs = st.slice(t - opt.ptrig + ttime/opt.samprate,
-                                     t + opt.atrig + ttime/opt.samprate)
-                    trigs[ind].stats.maxratio = np.amax(cft[on_off[n,0]:(on_off[n,1]+1)])
+                    trigs = st.slice(ttime - opt.ptrig, ttime + opt.atrig)
+                    trigs[ind].stats.maxratio = np.max(cft[n]['cft_peaks'])
                     ind = ind+1
                 else:
                     # Slice and append to previous traces
-                    trigs = trigs.append(tr.slice(
-                            t - opt.ptrig + ttime/opt.samprate,
-                            t + opt.atrig + ttime/opt.samprate))
-                    trigs[ind].stats.maxratio = np.amax(cft[on_off[n,0]:(on_off[n,1]+1)])
+                    trigs = trigs.append(tr.slice(ttime - opt.ptrig, ttime + opt.atrig))
+                    trigs[ind].stats.maxratio =  np.max(cft[n]['cft_peaks'])
                     ind = ind+1
                                                          
         if ind is 0:
-            rtable.attrs.ptime = (t + len(tr.data)/opt.samprate -
-                opt.mintrig*opt.samprate).isoformat()
+            rtable.attrs.ptime = (t + len(tr.data)/opt.samprate - opt.mintrig).isoformat()
             return []
         else:
-            rtable.attrs.ptime = (t + ptime/opt.samprate).isoformat()
+            rtable.attrs.ptime = (t + ptime).isoformat()
             return trigs
     else:
-        rtable.attrs.ptime = (t + len(tr.data)/opt.samprate -
-            opt.mintrig*opt.samprate).isoformat()
+        rtable.attrs.ptime = (t + len(tr.data)/opt.samprate - opt.mintrig).isoformat()
         return []
 
 
