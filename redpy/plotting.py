@@ -20,6 +20,7 @@ def createBokehTimelineFigure(rtable, ctable, opt):
     # Run plotCores to ensure thumbnails are up to date
     plotCores(rtable, opt)
     plotFamilies(rtable, ctable, opt)
+    printCatalog(rtable, opt)
     
     # Update lastClust column
     rtable.cols.lastClust[:] = rtable.cols.plotClust[:]
@@ -323,6 +324,20 @@ def plotFamilies(rtable, ctable, opt):
                 q = q+len(fam)
         
 
+def printCatalog(rtable, opt):
+    """
+    A thoroughly inefficient way of printing out the catalog...
+    """
+
+    with open('{}/catalog.txt'.format(opt.groupName), 'w') as f:
+    
+        for cnum in range(max(rtable.cols.clusterNumber[:])+1):        
+            fam = rtable.get_where_list('clusterNumber == {}'.format(cnum))
+            utcatalog = [UTCDateTime(rtable[fam]['startTime'][i]) +
+                rtable[fam]['windowStart'][i]/opt.samprate for i in
+                np.argsort(rtable[fam]['startTimeMPL'])]
+            for u in utcatalog:
+                f.write("{0} {1}\n".format(cnum,u.isoformat()))
 
 
 
