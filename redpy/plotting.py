@@ -138,7 +138,7 @@ def plotCores(rtable, ftable, opt):
     cores = rtable[ftable.attrs.cores]
     for r in cores:
         if r['lastClust'] != r['plotClust']:
-            fig = plt.figure(figsize=(2.5, 0.5))
+            fig = plt.figure(figsize=(5, 1))
             ax = plt.Axes(fig, [0., 0., 1., 1.])
             ax.set_axis_off()
             fig.add_axes(ax)
@@ -155,7 +155,8 @@ def plotCores(rtable, ftable, opt):
         
             ax.plot(dat,'k',linewidth=0.25)
             plt.autoscale(tight=True)
-            plt.savefig('{0}/clusters/{1}.gif'.format(opt.groupName,r['plotClust']))
+            plt.savefig('{0}/clusters/{1}.gif'.format(opt.groupName,r['plotClust']),
+                dpi=100)
             plt.close(fig)
 
 
@@ -282,7 +283,7 @@ def plotFamilies(rtable, ctable, ftable, opt):
         
             plt.tight_layout()
             plt.savefig('{0}/clusters/fam{1}.png'.format(opt.groupName,
-                rtable.cols.plotClust[core]))
+                rtable.cols.plotClust[core]), dpi=100)
             plt.close(fig)
         
         
