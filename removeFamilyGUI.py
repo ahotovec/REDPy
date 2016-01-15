@@ -43,7 +43,7 @@ def remove(*args):
         
     if len(removethese) > 0:
         print("Creating plots...")
-        redpy.plotting.createBokehTimelineFigure(rtable, ctable, opt)
+        redpy.plotting.createBokehTimelineFigure(rtable, ctable, ftable, opt)
 
 def close(*args):
     """
