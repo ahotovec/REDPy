@@ -161,6 +161,32 @@ def Correlation(opt):
 
     return dict
 
+
+def Families(opt):
+
+    """
+    Defines the columns in the 'Families' table
+
+    pnum: unique ID number for clusters ordered by time for plotting (integer)
+    members: rows in rtable that contain members of the family as string (string)
+    
+    The members column is a string so that it can be of completely arbitrary length.
+    Well, not completely arbitrary. The itemsize set here (1000000) is a guess at how
+    big the string might get for really large families. One hopes to never encounter a
+    family this big... (100000+ members?)
+    
+    Cores are stored in the ftable header.
+    
+    Returns a dictionary defining the table
+    """
+    
+    dict = {
+        "pnum" : Int32Col(shape=(), pos=0),
+        "members" : StringCol(itemsize=1000000, shape=(), pos=1)
+    }
+
+    return dict
+
     
 def initializeTable(opt):
 
@@ -189,7 +215,6 @@ def initializeTable(opt):
     rtable.attrs.fmax = opt.fmax
     rtable.attrs.previd = 0
     rtable.attrs.ptime = 0
-    rtable.attrs.cores = []
     rtable.flush()
     
     otable = h5file.create_table(group, "orphans", Orphans(opt),
@@ -206,6 +231,10 @@ def initializeTable(opt):
     ctable = h5file.create_table(group, "correlation", Correlation(opt),
         "Correlation Matrix")
     ctable.flush()
+    
+    ftable = h5file.create_table(group, "families", Families(opt), "Families Table")
+    ftable.attrs.cores = []
+    ftable.flush()
 
     h5file.close()
 
@@ -227,11 +256,12 @@ def openTable(opt):
     ctable = eval('h5file.root.'+ opt.groupName + '.correlation')
     jtable = eval('h5file.root.'+ opt.groupName + '.junk')
     dtable = eval('h5file.root.'+ opt.groupName + '.deleted')
+    ftable = eval('h5file.root.'+ opt.groupName + '.families')
     
-    return h5file, rtable, otable, ctable, jtable, dtable
+    return h5file, rtable, otable, ctable, jtable, dtable, ftable
 
     
-def populateRepeater(rtable, id, trig, opt, alignedTo, windowStart=-1):
+def populateRepeater(rtable, ftable, id, trig, opt, alignedTo, windowStart=-1):
 
     """
     Initially populates a new row in the 'Repeater Catalog' table.
@@ -340,7 +370,7 @@ def populateJunk(jtable, trig, isjunk, opt):
     jtable.flush()
 
 
-def moveOrphan(rtable, otable, oindex, alignedTo, opt):
+def moveOrphan(rtable, otable, ftable, oindex, alignedTo, opt):
     
     """
     Moves a row from the 'Orphans' table to the 'Repeater Catalog' table.
@@ -382,8 +412,8 @@ def moveOrphan(rtable, otable, oindex, alignedTo, opt):
     otable.flush()  
     
 
-
-def removeFamily(rtable, ctable, dtable, cnum, opt):
+# This probably needs editing:
+def removeFamily(rtable, ctable, dtable, ftable, cnum, opt):
 
     """
     Moves the core of a family into the dtable, deletes the rest of the members.
@@ -412,7 +442,7 @@ def removeFamily(rtable, ctable, dtable, cnum, opt):
             ctable.remove_row(c)
         rtable.remove_row(m)
     
-    rtable.attrs.cores = rtable.get_where_list('(isCore == 1)')
+    ftable.attrs.cores = rtable.get_where_list('(isCore == 1)')
     
     rtable.flush()
     dtable.flush()

@@ -44,7 +44,7 @@ else:
     if args.verbose: print("Using config file: settings.cfg")
 
 if args.verbose: print("Opening hdf5 table: {0}".format(opt.filename))
-h5file, rtable, otable, ctable, jtable, dtable = redpy.table.openTable(opt)
+h5file, rtable, otable, ctable, jtable, dtable, ftable = redpy.table.openTable(opt)
     
 
 t = time.time()
@@ -91,7 +91,7 @@ for event in eventlist[::-1]:
                 ostart = 1
             else:        
                 id = id + 1
-                redpy.correlation.runCorrelation(rtable, otable, ctable,
+                redpy.correlation.runCorrelation(rtable, otable, ctable, ftable,
                     otable.cols.startTimeMPL[:], rtable.cols.startTimeMPL[:], trigs[0],
                     id, opt)
         else:
@@ -103,7 +103,7 @@ for event in eventlist[::-1]:
             # Loop through remaining triggers
             for i in range(ostart,len(trigs)):  
                 id = id + 1
-                redpy.correlation.runCorrelation(rtable, otable, ctable,
+                redpy.correlation.runCorrelation(rtable, otable, ctable, ftable,
                     otable.cols.startTimeMPL[:], rtable.cols.startTimeMPL[:], trigs[i],
                     id, opt)
         rtable.attrs.previd = id        
@@ -118,7 +118,7 @@ for event in eventlist[::-1]:
         if args.verbose: print("Leftovers in clustering: {0}".format(len(leftovers)))
         for l in leftovers[::-1]:
             rtable.remove_row(l)
-        rtable.attrs.cores = rtable.get_where_list('isCore == 1')
+        redpy.cluster.runFullOPTICS(rtable, ctable, ftable, opt)
     
     # Print some stats
     if args.verbose:
@@ -129,7 +129,7 @@ for event in eventlist[::-1]:
 
 if len(rtable) > 1:
     if args.verbose: print("Creating plots...")
-    redpy.plotting.createBokehTimelineFigure(rtable, ctable, opt)
+    redpy.plotting.createBokehTimelineFigure(rtable, ctable, ftable, opt)
 else:
     print("No repeaters to plot.")
 

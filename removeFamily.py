@@ -41,11 +41,11 @@ else:
     if args.verbose: print("Using config file: settings.cfg")
 
 if args.verbose: print("Opening hdf5 table: {0}".format(opt.filename))
-h5file, rtable, otable, ctable, jtable, dtable = redpy.table.openTable(opt)
+h5file, rtable, otable, ctable, jtable, dtable, ftable = redpy.table.openTable(opt)
 
 for f in args.famnum:
     if args.verbose: print("Removing family {}...".format(f))
-    redpy.table.removeFamily(rtable, ctable, dtable, f, opt)
+    redpy.table.removeFamily(rtable, ctable, dtable, ftable, f, opt)
 
 if args.verbose: print("Creating plots...")
 redpy.plotting.createBokehTimelineFigure(rtable, ctable, opt)

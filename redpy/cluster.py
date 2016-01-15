@@ -6,7 +6,7 @@ from redpy.table import *
 import time
 import copy
 
-def setClusters(rtable, opt):
+def setClusters(rtable, ftable, opt):
 
     """
     Cuts the clustering order into flat clusters, defines orphans as -1
@@ -56,9 +56,31 @@ def setClusters(rtable, opt):
     rtable.cols.plotClust[:] = clust
     rtable.cols.clusterNumber[:] = cnum
     rtable.flush()
+    
+    # Write to ftable
+    
+    # First check print options so all members are printed
+    np.set_printoptions(threshold=np.nan)
+    np.set_printoptions(linewidth=np.nan)
+    
+    # Check length of ftable compared to max(cnum)
+    if len(ftable) <= max(cnum):
+        f = ftable.row
+        f['pnum'] = -1
+        f['members'] = ''
+        f.append()
+        ftable.flush()
+        
+    # Populate ftable
+    n = 0
+    for c in np.argsort(mindt):
+        ftable.cols.pnum[c] = n
+        ftable.cols.members[c] = np.array2string(np.where(cnum==c)[0])[1:-1]
+        n = n+1
+    ftable.flush()
 
     
-def setCenters(rtable, opt):
+def setCenters(rtable, ftable, opt):
 
     """
     Finds the "center" of each cluster (including orphans, if they exist)
@@ -91,17 +113,17 @@ def setCenters(rtable, opt):
     cores[orphans] = -1*np.ones((len(orphans),)).astype(int)
     
     rtable.cols.isCore[:] = cores
-    rtable.attrs.cores = sorted(centers) # Sort is somehow important?
+    ftable.attrs.cores = sorted(centers) # Sort is somehow important?
     rtable.flush()
               
    
-def alignAll(rtable, ctable, opt):
+def alignAll(rtable, ctable, ftable, opt):
     """
     Aligns events in the table that were misaligned. Uses the column 'alignedTo' to guide
     which events are misaligned and skips events which have already been aligned
     """
     
-    cores = rtable.attrs.cores
+    cores = ftable.attrs.cores
     id = rtable.cols.id[:]
     clusterNumber = rtable.cols.clusterNumber[:]
     alignedTo = rtable.cols.alignedTo[:]
@@ -303,7 +325,7 @@ def deepClean(rtable, ctable, opt):
                     tstore = tstore + time.time() - ts
 
     
-def runFullOPTICS(rtable, ctable, opt):
+def runFullOPTICS(rtable, ctable, ftable, opt):
     
     """
     Runs a full, brute-force OPTICS clustering using the correlation values in ctable
@@ -340,8 +362,8 @@ def runFullOPTICS(rtable, ctable, opt):
     rtable.flush()
         
     # Update the clusters and cores, too!
-    setClusters(rtable, opt)
-    setCenters(rtable, opt)
-    alignAll(rtable, ctable, opt)
+    setClusters(rtable, ftable, opt)
+    setCenters(rtable, ftable, opt)
+    alignAll(rtable, ctable, ftable, opt)
 
     

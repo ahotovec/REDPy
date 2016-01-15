@@ -12,15 +12,15 @@ from bokeh.models import HoverTool, ColumnDataSource, OpenURL, TapTool
 These are very brute force plotting; should be replaced with more sophisticated functions
 """
         
-def createBokehTimelineFigure(rtable, ctable, opt):
+def createBokehTimelineFigure(rtable, ctable, ftable, opt):
     
     # Run OPTICS to ensure everything is up to date
-    redpy.cluster.runFullOPTICS(rtable, ctable, opt)
+    redpy.cluster.runFullOPTICS(rtable, ctable, ftable, opt)
         
     # Run plotCores to ensure thumbnails are up to date
-    plotCores(rtable, opt)
-    plotFamilies(rtable, ctable, opt)
-    printCatalog(rtable, opt)
+    plotCores(rtable, ftable, opt)
+    plotFamilies(rtable, ctable, ftable, opt)
+    printCatalog(rtable, ftable, opt)
     
     # Update lastClust column
     rtable.cols.lastClust[:] = rtable.cols.plotClust[:]
@@ -133,9 +133,9 @@ def createBokehTimelineFigure(rtable, ctable, opt):
         save(p) 
 
 
-def plotCores(rtable, opt):
+def plotCores(rtable, ftable, opt):
     # Save cores individually in clusters for timeline hover
-    cores = rtable[rtable.attrs.cores]
+    cores = rtable[ftable.attrs.cores]
     for r in cores:
         if r['lastClust'] != r['plotClust']:
             fig = plt.figure(figsize=(2.5, 0.5))
@@ -159,7 +159,7 @@ def plotCores(rtable, opt):
             plt.close(fig)
 
 
-def plotFamilies(rtable, ctable, opt):
+def plotFamilies(rtable, ctable, ftable, opt):
     # Save ordered waveforms and correlation matrix for each family, as well as a timeline
     
     # Adjust the font face
@@ -208,11 +208,10 @@ def plotFamilies(rtable, ctable, opt):
     cmap.set_under('k')
     for cnum in range(max(rtable.cols.clusterNumber[:])+1):
         
-        fam = rtable.get_where_list('clusterNumber == {}'.format(cnum))
-        
+        fam = np.fromstring(ftable[cnum]['members'], dtype=int, sep=' ')
+
         if sum(rtable[fam]['plotClust'] - rtable[fam]['lastClust']) != 0:
-            core = rtable.get_where_list(
-                '(clusterNumber == {}) & (isCore == 1)'.format(cnum))[0]
+            core = np.intersect1d(fam, ftable.attrs.cores)[0]
         
             fig = plt.figure(figsize=(10, 11))
         
@@ -324,20 +323,21 @@ def plotFamilies(rtable, ctable, opt):
                 q = q+len(fam)
         
 
-def printCatalog(rtable, opt):
+def printCatalog(rtable, ftable, opt):
     """
     A thoroughly inefficient way of printing out the catalog...
     """
 
     with open('{}/catalog.txt'.format(opt.groupName), 'w') as f:
-    
-        for cnum in range(max(rtable.cols.clusterNumber[:])+1):        
-            fam = rtable.get_where_list('clusterNumber == {}'.format(cnum))
-            utcatalog = [UTCDateTime(rtable[fam]['startTime'][i]) +
-                rtable[fam]['windowStart'][i]/opt.samprate for i in
-                np.argsort(rtable[fam]['startTimeMPL'])]
-            for u in utcatalog:
-                f.write("{0} {1}\n".format(cnum,u.isoformat()))
+        
+        for cnum in np.argsort(ftable.cols.pnum[0:max(rtable.cols.clusterNumber[:])+1]):
+            if ftable[cnum]['pnum'] >= 0:
+                fam = np.fromstring(ftable[cnum]['members'], dtype=int, sep=' ')
+                utcatalog = [UTCDateTime(rtable[fam]['startTime'][i]) +
+                    rtable[fam]['windowStart'][i]/opt.samprate for i in
+                    np.argsort(rtable[fam]['startTimeMPL'])]
+                for u in utcatalog:
+                    f.write("{0} {1}\n".format(ftable[cnum]['pnum'],u.isoformat()))
 
 
 

@@ -64,7 +64,7 @@ if args.nsec:
     opt.nsec = args.nsec
 
 if args.verbose: print("Opening hdf5 table: {0}".format(opt.filename))
-h5file, rtable, otable, ctable, jtable, dtable = redpy.table.openTable(opt)
+h5file, rtable, otable, ctable, jtable, dtable, ftable = redpy.table.openTable(opt)
     
 if args.endtime:
     tend = UTCDateTime(args.endtime)
@@ -126,7 +126,7 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
                 ostart = 1
             else:        
                 id = id + 1
-                redpy.correlation.runCorrelation(rtable, otable, ctable, otimes, rtimes,
+                redpy.correlation.runCorrelation(rtable, otable, ctable, ftable, otimes, rtimes,
                     trigs[0], id, opt)
         else:
             ostart = 0
@@ -137,7 +137,7 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
             # Loop through remaining triggers
             for i in range(ostart,len(trigs)):  
                 id = id + 1
-                redpy.correlation.runCorrelation(rtable, otable, ctable, otimes, rtimes,
+                redpy.correlation.runCorrelation(rtable, otable, ctable, ftable, otimes, rtimes,
                     trigs[i], id, opt)            
         rtable.attrs.previd = id
     
@@ -150,7 +150,7 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
         if args.verbose: print("Leftovers in clustering: {0}".format(len(leftovers)))
         for l in leftovers[::-1]:
             rtable.remove_row(l)
-        rtable.attrs.cores = rtable.get_where_list('isCore == 1')
+        redpy.cluster.runFullOPTICS(rtable, ctable, ftable, opt)
     
     # Print some stats
     if args.verbose:
@@ -174,7 +174,7 @@ print("End time now: {}".format(tend))
 
 if len(rtable) > rlen:
     if args.verbose: print("Creating plots...")
-    redpy.plotting.createBokehTimelineFigure(rtable, ctable, opt)
+    redpy.plotting.createBokehTimelineFigure(rtable, ctable, ftable, opt)
 else:
     if args.verbose: print("No new repeaters to plot.")
 
