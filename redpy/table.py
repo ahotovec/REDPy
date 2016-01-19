@@ -465,12 +465,11 @@ def clearExpiredOrphans(otable, opt, tend):
     index = np.where(otable.cols.expires[:] < tend.isoformat())
     if len(index) != len(otable):
         for n in range(len(index[0])-1,-1,-1):
-            otable.remove_row(index[0][n])
-        print '%i Orphans aged out of the system' % len(index[0])
+            otable.remove_row(index[0][n])        
     else:
+        print('Warning: All orphans expired...')
         for n in range(len(index[0])-1,0,-1):
             otable.remove_row(index[0][n])
-        print '%i Orphans aged out of the system, 1 left' % len(index[0])-1
     otable.flush()
     
 
