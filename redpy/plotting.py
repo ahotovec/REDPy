@@ -16,6 +16,15 @@ def createBokehTimelineFigure(rtable, ctable, ftable, opt):
     
     # Run OPTICS to ensure everything is up to date
     redpy.cluster.runFullOPTICS(rtable, ctable, ftable, opt)
+    
+    # Ensure there are no leftovers (leftovers mess up the family plots)
+    leftovers = rtable.get_where_list('clusterNumber == -1')
+    if leftovers.any():
+        leftovers.sort()
+        if args.verbose: print("Leftovers in clustering: {0}".format(len(leftovers)))
+        for l in leftovers[::-1]:
+            rtable.remove_row(l)
+        redpy.cluster.runFullOPTICS(rtable, ctable, ftable, opt)
         
     # Run plotCores to ensure thumbnails are up to date
     plotCores(rtable, ftable, opt)
