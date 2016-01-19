@@ -119,8 +119,6 @@ class Options(object):
             'Settings','trigon') else 3.
         self.trigoff=config.getfloat('Settings','trigoff') if config.has_option(
             'Settings','trigoff') else 2.
-        self.mintrig=config.getfloat('Settings','mintrig') if config.has_option(
-            'Settings','mintrig') else 10.
         self.kurtmax=config.getfloat('Settings','kurtmax') if config.has_option(
             'Settings','kurtmax') else 80.
         self.kurtfmax=config.getfloat('Settings','kurtfmax') if config.has_option(
@@ -131,11 +129,6 @@ class Options(object):
             'Settings','kurtwin') else 5.
         self.winlen=config.getint('Settings','winlen') if config.has_option(
             'Settings','winlen') else 1024
-        self.ptrig=config.getfloat('Settings','ptrig') if config.has_option(
-            'Settings','ptrig') else 20.
-        self.atrig=config.getfloat('Settings','atrig') if config.has_option(
-            'Settings','atrig') else 40.
-        self.wshape = int((self.ptrig + self.atrig)*self.samprate) + 1
         self.fmin=config.getfloat('Settings','fmin') if config.has_option(
             'Settings','fmin') else 1.
         self.fmax=config.getfloat('Settings','fmax') if config.has_option(
@@ -160,3 +153,8 @@ class Options(object):
             'Settings','networkC') else 'UW'
         self.locationC=config.get('Settings','locationC') if config.has_option(
             'Settings','locationC') else '--'
+        # Derived Settings
+        self.ptrig=2*self.winlen/self.samprate
+        self.atrig=4*self.winlen/self.samprate
+        self.mintrig=self.winlen/self.samprate
+        self.wshape = int((self.ptrig + self.atrig)*self.samprate) + 1
