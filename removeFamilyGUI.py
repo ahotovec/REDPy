@@ -101,7 +101,7 @@ canvas.create_window((4,4), window=frame, anchor="nw")
 frame.bind("<Configure>", lambda event, canvas=canvas: onFrameConfigure(canvas))
 
 # Build grid of families
-fams = range(len(rtable.attrs.cores))
+fams = range(len(ftable.attrs.cores))
 r = 1
 c = 1
 imgobj = []
