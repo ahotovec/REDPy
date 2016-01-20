@@ -10,6 +10,8 @@ warnings.filterwarnings("ignore")
 """
 Run this script to manually remove families/clusters (e.g., correlated noise that made it
 past the 'junk' detector) using a GUI interface. Reclusters and remakes images when done.
+Note: using large NCOLS may make the window too wide for your monitor, and the GUI does
+not currently support side scrolling...
 
 usage: removeFamilyGUI.py [-h] [-v] [-c CONFIGFILE]
 
@@ -21,6 +23,8 @@ optional arguments:
                         default settings.cfg
   -n NCOLS, --ncols NCOLS
                         adjust number of columns in layout (default 3)
+  -m MINCLUST, --minclust MINCLUST
+                        only look at clusters with numbers at or above MINCLUST
 """
 
 
@@ -73,6 +77,8 @@ parser.add_argument("-c", "--configfile",
     help="use configuration file named CONFIGFILE instead of default settings.cfg")
 parser.add_argument("-n", "--ncols", default=3, type=int,
     help="adjust number of columns in layout (default 3)")
+parser.add_argument("-m", "--minclust", default=0, type=int,
+    help="only look at clusters with numbers at or above MINCLUST")
 args = parser.parse_args()
 
 if args.configfile:
@@ -85,13 +91,10 @@ else:
 if args.verbose: print("Opening hdf5 table: {0}".format(opt.filename))
 h5file, rtable, otable, ctable, jtable, dtable, ftable = redpy.table.openTable(opt)
 
-
-print('\nIgnore these warning things:')
-
 # Create GUI window
 root = tk.Tk()
 root.title("REDPy - Check Families to Permanently Remove")
-canvas = tk.Canvas(root, borderwidth=0, width=1675, height=1000, background="#ffffff")
+canvas = tk.Canvas(root, borderwidth=0, width=560*args.ncols, height=1500, background="#ffffff")
 frame = tk.Frame(canvas, background="#ffffff")
 vsb = tk.Scrollbar(root, orient="vertical", command=canvas.yview)
 canvas.configure(yscrollcommand=vsb.set)
@@ -108,14 +111,19 @@ imgobj = []
 check = []
 var = []
 for n in fams:
-    imgobj.append(tk.PhotoImage(file='{0}/clusters/{1}.gif'.format(opt.groupName,n)))
-    var.append(tk.IntVar())
-    check.append(tk.Checkbutton(frame, image=imgobj[n], variable = var[n]).grid(
-        column=c, row=r, sticky='N'))
-    c = c+1
-    if c == args.ncols+1:
-        c = 1
-        r = r+1
+    if n >= args.minclust:
+        imgobj.append(tk.PhotoImage(file='{0}/clusters/{1}.gif'.format(opt.groupName,n)))
+        var.append(tk.IntVar())
+        check.append(tk.Checkbutton(frame, image=imgobj[n-args.minclust],
+            variable = var[n-args.minclust]).grid(column=c, row=r, sticky='N'))
+        c = c+1
+        if c == args.ncols+1:
+            c = 1
+            r = r+1
+            if r > 255:
+                print('Ran out of rows. Use -n or -m flags to view more...')
+
+print('\nIgnore these warning things:')
 
 # Add buttons
 tk.Button(frame, text="Remove Checked", background="#ffffff", command=remove).grid(
