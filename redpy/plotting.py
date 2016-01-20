@@ -270,12 +270,12 @@ def plotFamilies(rtable, ctable, ftable, opt):
             ax3.set_yscale('log')
         
             # Prep catalog
-            catalog = np.sort(rtable[fam]['startTimeMPL'])
+            catalogind = np.argsort(rtable[fam]['startTimeMPL'])
+            catalog = rtable[fam]['startTimeMPL'][catalogind]
             longevity = catalog[-1] - catalog[0]
             spacing = np.diff(catalog)*24
-            utcatalog = [UTCDateTime(rtable[fam]['startTime'][i]) +
-                rtable[fam]['windowStart'][i]/opt.samprate for i in
-                np.argsort(rtable[fam]['startTimeMPL'])]
+            minind = catalogind[0]
+            maxind = catalogind[-1]
         
             # Plot spacing timeline
             ax4 = fig.add_subplot(3, 3, (7,9)) 
@@ -319,13 +319,18 @@ def plotFamilies(rtable, ctable, ftable, opt):
                 <span style="font-size: 16px; font-weight: bold; font-family: Helvetica;">
                 Aligned Catalog Times</br></br></span>
                 <span style="font-size: 12px; font-family: Helvetica;">
-                """.format(rtable.cols.plotClust[core], opt.title, len(fam), utcatalog[0].isoformat(),
-                    utcatalog[-1].isoformat(), longevity, (UTCDateTime(
+                """.format(rtable.cols.plotClust[core], opt.title, len(fam), (UTCDateTime(
+                    rtable[minind]['startTime']) +
+                    rtable[minind]['windowStart']/opt.samprate).isoformat(), (UTCDateTime(
+                    rtable[maxind]['startTime']) +
+                    rtable[maxind]['windowStart']/opt.samprate).isoformat(), longevity, (UTCDateTime(
                     rtable[core]['startTime']) +
                     rtable[core]['windowStart']/opt.samprate).isoformat(), np.mean(spacing),
                     np.median(spacing)))
-                for u in utcatalog:
-                    f.write("{}</br>".format(u.isoformat()))
+                
+                for i in np.argsort(rtable[fam]['startTimeMPL']):
+                    f.write("{}</br>".format((UTCDateTime(rtable[fam]['startTime'][i]) +
+                        rtable[fam]['windowStart'][i]/opt.samprate).isoformat()))
                 f.write("""
                 </br></span></center></body></html>
                 """)
@@ -343,12 +348,10 @@ def printCatalog(rtable, ftable, opt):
         for cnum in np.argsort(ftable.cols.pnum[0:max(rtable.cols.clusterNumber[:])+1]):
             if ftable[cnum]['pnum'] >= 0:
                 fam = np.fromstring(ftable[cnum]['members'], dtype=int, sep=' ')
-                utcatalog = [UTCDateTime(rtable[fam]['startTime'][i]) +
-                    rtable[fam]['windowStart'][i]/opt.samprate for i in
-                    np.argsort(rtable[fam]['startTimeMPL'])]
-                for u in utcatalog:
-                    f.write("{0} {1}\n".format(ftable[cnum]['pnum'],u.isoformat()))
-
+                for i in np.argsort(rtable[fam]['startTimeMPL']):
+                    f.write("{0} {1}\n".format(ftable[cnum]['pnum'],(
+                        UTCDateTime(rtable[fam]['startTime'][i]) +
+                        rtable[fam]['windowStart'][i]/opt.samprate).isoformat()))
 
 
 # These are old...
