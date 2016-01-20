@@ -315,10 +315,7 @@ def plotFamilies(rtable, ctable, ftable, opt):
                     Core event: {6}</br>
                     Last event: {4}</br>
                     </span> 
-                <img src="fam{0}.png"></br></br>
-                <span style="font-size: 16px; font-weight: bold; font-family: Helvetica;">
-                Aligned Catalog Times</br></br></span>
-                <span style="font-size: 12px; font-family: Helvetica;">
+                <img src="fam{0}.png"></br>                
                 """.format(rtable.cols.plotClust[core], opt.title, len(fam), (UTCDateTime(
                     rtable[minind]['startTime']) +
                     rtable[minind]['windowStart']/opt.samprate).isoformat(), (UTCDateTime(
@@ -327,12 +324,9 @@ def plotFamilies(rtable, ctable, ftable, opt):
                     rtable[core]['startTime']) +
                     rtable[core]['windowStart']/opt.samprate).isoformat(), np.mean(spacing),
                     np.median(spacing)))
-                
-                for i in np.argsort(rtable[fam]['startTimeMPL']):
-                    f.write("{}</br>".format((UTCDateTime(rtable[fam]['startTime'][i]) +
-                        rtable[fam]['windowStart'][i]/opt.samprate).isoformat()))
+                                
                 f.write("""
-                </br></span></center></body></html>
+                </center></body></html>
                 """)
         else:
                 q = q+len(fam)
