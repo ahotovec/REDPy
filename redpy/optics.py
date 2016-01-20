@@ -136,7 +136,8 @@ def set_reach_dist(SetOfObjects, point_index, epsilon):
         # if so, return control to main loop ##
         if unprocessed.size > 0:
             # Define return order based on reachability distance ###
-            return sorted(zip(SetOfObjects._reachability[unprocessed], unprocessed), key=lambda reachability: reachability[0])[0][1]
+            # return sorted(zip(SetOfObjects._reachability[unprocessed], unprocessed), key=lambda reachability: reachability[0])[0][1]
+            return unprocessed[np.argsort(np.array(SetOfObjects._reachability[unprocessed]))[0]]
         else:
             return point_index
     else: # Not sure if this else statement is actaully needed... ##
