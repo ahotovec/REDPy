@@ -337,7 +337,7 @@ def runFullOPTICS(rtable, ctable, ftable, opt):
     Sets the order, reachability, and coreDistance columns in rtable
     """
             
-    C = np.zeros((len(rtable),len(rtable)))
+    C = np.eye(len(rtable))
     id1 = ctable.cols.id1[:]
     id2 = ctable.cols.id2[:]
     
@@ -346,8 +346,7 @@ def runFullOPTICS(rtable, ctable, ftable, opt):
     r = np.zeros((max(rtable_ids)+1,)).astype('int')
     r[rtable_ids] = range(len(rtable_ids))
     C[r[id1], r[id2]] = ctable.cols.ccc[:]
-            
-    C = C + C.T + np.eye(len(C))
+    C[r[id2], r[id1]] = ctable.cols.ccc[:]
     
     # Cluster with OPTICS
     ttree = setOfObjects(1-C)

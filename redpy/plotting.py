@@ -21,7 +21,7 @@ def createBokehTimelineFigure(rtable, ctable, ftable, opt):
     leftovers = rtable.get_where_list('clusterNumber == -1')
     if leftovers.any():
         leftovers.sort()
-        if args.verbose: print("Leftovers in clustering: {0}".format(len(leftovers)))
+        print("Removing leftovers before plotting: {0}".format(len(leftovers)))
         for l in leftovers[::-1]:
             rtable.remove_row(l)
         redpy.cluster.runFullOPTICS(rtable, ctable, ftable, opt)
@@ -180,7 +180,7 @@ def plotFamilies(rtable, ctable, ftable, opt):
     # Get full correlation matrix, sort by order
     order = rtable.cols.order[:]
     
-    C = np.zeros((len(rtable),len(rtable)))
+    C = np.eye(len(rtable))
     id1 = ctable.cols.id1[:]
     id2 = ctable.cols.id2[:]
     
@@ -189,7 +189,8 @@ def plotFamilies(rtable, ctable, ftable, opt):
     r = np.zeros((max(rtable_ids)+1,)).astype('int')
     r[rtable_ids] = range(len(rtable_ids))
     C[r[id1], r[id2]] = ctable.cols.ccc[:]
-    C = C + C.T + np.eye(len(C))
+    C[r[id2], r[id1]] = ctable.cols.ccc[:]
+    
     Co = C[order, :]
     Co = Co[:, order]
     
