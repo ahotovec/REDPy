@@ -122,20 +122,29 @@ def alignAll(rtable, ctable, ftable, opt):
     Aligns events in the table that were misaligned. Uses the column 'alignedTo' to guide
     which events are misaligned and skips events which have already been aligned
     """
-    
+
     cores = ftable.attrs.cores
     id = rtable.cols.id[:]
     clusterNumber = rtable.cols.clusterNumber[:]
     alignedTo = rtable.cols.alignedTo[:]
     
+    cid1 = ctable.cols.id1[:]
+    cid2 = ctable.cols.id2[:]
+    C = np.eye(len(rtable))
+    rtable_ids = rtable.cols.id[:]
+    r = np.zeros((max(rtable_ids)+1,)).astype('int')
+    r[rtable_ids] = range(len(rtable_ids))
+    C[r[cid1], r[cid2]] = ctable.cols.ccc[:]
+    C[r[cid2], r[cid1]] = ctable.cols.ccc[:]
+    
     for core in cores:
+
         members = np.where(clusterNumber == clusterNumber[core])
         
         # Change alignedTo of the core to itself, as well as any events that share its
         # former alignedTo value
         calignedTo = copy.copy(alignedTo[core])
-        for f in np.intersect1d(members, np.where(alignedTo == calignedTo)):
-            alignedTo[f] = id[core]
+        alignedTo[np.intersect1d(members, np.where(alignedTo == calignedTo))] = id[core]
             
         # Check for any members with other alignedTo values
         fam = np.intersect1d(members, np.where(alignedTo != id[core]))
@@ -143,9 +152,9 @@ def alignAll(rtable, ctable, ftable, opt):
             # Clean up alignedTo values that reference an id that is not itself
             for u in np.unique(alignedTo[fam]):
                 unum = np.where(id == u)[0][0]
-                for f in np.intersect1d(members, np.where(alignedTo == u)):
-                    alignedTo[f] = rtable[unum]['alignedTo']
-            
+                alignedTo[np.intersect1d(members, np.where(
+                    alignedTo == u))] = rtable[unum]['alignedTo']
+             
             # Loop over remaining unique values
             fftj = rtable[core]['windowFFT']
             coeffj = rtable[core]['windowCoeff']
@@ -160,29 +169,20 @@ def alignAll(rtable, ctable, ftable, opt):
                 if cor < opt.cmin + 0.05:
                     tmp = np.intersect1d(members, np.where(alignedTo != u))
                     utmp = np.intersect1d(members, np.where(alignedTo == u))
-                        
-                    cormax = 0
-                    id1 = -1
-                    cid1 = ctable.cols.id1[:]
-                    cid2 = ctable.cols.id2[:]
-                    for t in tmp:
-                        for f in utmp:
-                            clist = np.intersect1d(np.where(cid1 == min(rtable[f]['id'],
-                                rtable[t]['id'])), np.where(cid2 == max(rtable[f]['id'],
-                                rtable[t]['id'])))
-                            if clist.any():
-                                if ctable[clist[0]]['ccc'] > cormax:
-                                    cormax = ctable[clist[0]]['ccc']
-                                    id1 = f
-                                    id2 = t
-                    if id1 != -1:
-                        cor1, lag1 = redpy.correlation.xcorr1x1(
-                            rtable[id2]['windowFFT'], rtable[id1]['windowFFT'],
-                            rtable[id2]['windowCoeff'], rtable[id1]['windowCoeff'])
-                        cor2, lag2 = redpy.correlation.xcorr1x1(
-                            rtable[core]['windowFFT'], rtable[id2]['windowFFT'],
-                            rtable[core]['windowCoeff'], rtable[id2]['windowCoeff'])
-                        lag = lag1 + lag2
+                    
+                    Cslice = C[tmp,:]
+                    Cslice = Cslice[:,utmp]
+                    [t,f] = np.unravel_index(np.argmax(Cslice), np.shape(Cslice))
+                    id1 = utmp[f]
+                    id2 = tmp[t]
+                    
+                    cor1, lag1 = redpy.correlation.xcorr1x1(
+                        rtable[id2]['windowFFT'], rtable[id1]['windowFFT'],
+                        rtable[id2]['windowCoeff'], rtable[id1]['windowCoeff'])
+                    cor2, lag2 = redpy.correlation.xcorr1x1(
+                        rtable[core]['windowFFT'], rtable[id2]['windowFFT'],
+                        rtable[core]['windowCoeff'], rtable[id2]['windowCoeff'])
+                    lag = lag1 + lag2
                 
                 for f in np.intersect1d(members, np.where(alignedTo == u)):
                     alignedTo[f] = id[core]
@@ -190,139 +190,8 @@ def alignAll(rtable, ctable, ftable, opt):
                     rtable.cols.windowCoeff[f], rtable.cols.windowFFT[f] = redpy.correlation.calcWindow(
                         rtable.cols.waveform[f], rtable.cols.windowStart[f], opt)
                 rtable.flush()
-    
     rtable.cols.alignedTo[:] = alignedTo
     rtable.flush()
- 
-                 
-def mergeFamilies(rtable, ctable, opt):
-    """
-    Cross-correlates the cores of each family and attempts to realign and merge them.
-    """
-    
-    cores = rtable.get_where_list('(isCore==1)')    
-    c = 0
-    for core1 in cores[0:-1]:
-        c = c+1
-        if (rtable[core1]['isCore'] == 1):
-            coeffj = rtable[core1]['windowCoeff']
-            fftj = rtable[core1]['windowFFT']
-            for core2 in cores[c:]:
-                if (rtable[core2]['isCore'] == 1):
-                    # Try comparing cores with no lag
-                    cor, lag = redpy.correlation.xcorr1x1(fftj, rtable[core2]['windowFFT'],
-                        coeffj, rtable[core2]['windowCoeff'])
-                    cormax = cor
-                    lagmax = lag
-                    if cor <= opt.cmin - 0.05:
-                        waveform = rtable[core2]['waveform']
-                        windowStart = rtable[core2]['windowStart']
-                        # Try comparing cores with window moved forward half window
-                        coeffi, ffti = redpy.correlation.calcWindow(waveform,
-                            windowStart + opt.winlen/2, opt)
-                        cor, lag = redpy.correlation.xcorr1x1(fftj, ffti, coeffj,
-                            coeffi)
-                        lag = lag + opt.winlen/2
-                        if cor > cormax:
-                            cormax = cor
-                            lagmax = lag
-                        if cor <= opt.cmin - 0.05 and windowStart > opt.winlen/2:
-                            # Try with window moved back half window
-                            coeffi, ffti = redpy.correlation.calcWindow(waveform,
-                                windowStart - opt.winlen/2, opt)
-                            cor, lag = redpy.correlation.xcorr1x1(fftj, ffti, coeffj,
-                                coeffi)
-                            lag = lag - opt.winlen/2
-                            if cor > cormax:
-                                cormax = cor
-                                lagmax = lag
-                    cor = cormax
-                    lag = lagmax
-                    if cor > opt.cmin - 0.05:
-                        f1 = rtable.get_where_list(
-                            '(clusterNumber=={})'.format(rtable[core1]['clusterNumber']))
-                        f2 = rtable.get_where_list(
-                            '(clusterNumber=={})'.format(rtable[core2]['clusterNumber']))
-                        # Determine smaller family to adjust
-                        if len(f1) >= len(f2):
-                            f = f2
-                            ff = rtable[f1]
-                            fnum = rtable[core1]['clusterNumber']
-                            falign = rtable[core1]['id']
-                        else:
-                            f = f1
-                            ff = rtable[f2]
-                            lag = -lag    
-                            fnum = rtable[core2]['clusterNumber']   
-                            falign = rtable[core2]['id'] 
-                        # Shove the smaller family over, remove isCore, set clusterNumber
-                        # Problem when it tries to move it over and there isn't enough padding
-                        for n in f:
-                            coeffn, fftn = redpy.correlation.calcWindow(
-                                rtable.cols.waveform[n], rtable.cols.windowStart[n] - lag,
-                                opt)
-                            rtable.cols.windowCoeff[n] = coeffn
-                            rtable.cols.windowFFT[n] = fftn
-                            rtable.cols.windowStart[n] = rtable.cols.windowStart[n] - lag
-                            rtable.cols.clusterNumber[n] = fnum
-                            rtable.cols.isCore[n] = 0
-                            rtable.cols.alignedTo[n] = falign
-                            rtable.flush()
-                            corn, lagn = redpy.correlation.xcorr1xtable(coeffn, fftn, ff,
-                                opt)
-                            for j in range(len(corn)):
-                                redpy.table.appendCorrelation(ctable, rtable[n]['id'],
-                                    ff[j]['id'], corn[j], opt)
-    
-
-def deepClean(rtable, ctable, opt):
-
-    """
-    Completely recalculates the correlation table after realignment.
-    
-    rtable: Repeater table
-    ctable: Correlation matrix table
-    opt: Options object describing station/run parameters
-    
-    May take a VERY long time to complete! Run with extreme caution.
-    """
-    
-    alignAll(rtable, ctable, opt)
-    mergeFamilies(rtable, ctable, opt)
-
-    cores = rtable.where('(isCore==1)')
-    for core in cores:
-        fam = rtable.get_where_list('(clusterNumber=={})'.format(core['clusterNumber']))
-        if len(fam) > 2:
-            
-            # Destroy any lines in ctable relating to the members of this family
-            cstring = []
-            cstring.append('(id1 == {0}) | (id2 == {0})'.format(rtable[fam[0]]['id']))
-            for f in range(1,len(fam)):
-                cstring.append(' | (id1 == {0}) | (id2 == {0})'.format(
-                    rtable[fam[f]]['id']))
-            cindex = ctable.get_where_list(''.join(cstring))
-            for n in reversed(cindex):
-                ctable.remove_row(n)
-            
-            c = 0
-            # Refill the correlation table
-            # There is a LOT of overhead associated with this step!
-            print('Cross-correlating {} events...'.format(len(fam)))
-            for n in fam[0:-1]:                
-                c = c+1
-                ffti = rtable[n]['windowFFT']
-                coeffi = rtable[n]['windowCoeff']
-                id = rtable[n]['id']
-                # Correlate
-                for m in fam[c:]:
-                    tx = time.time()
-                    cor, lag = redpy.correlation.xcorr1x1(ffti, rtable[m]['windowFFT'],
-                        coeffi, rtable[m]['windowCoeff'])
-                    txcorr = txcorr + time.time() - tx
-                    ts = time.time()
-                    redpy.table.appendCorrelation(ctable, id, rtable[m]['id'], cor, opt)
-                    tstore = tstore + time.time() - ts
 
     
 def runFullOPTICS(rtable, ctable, ftable, opt):
