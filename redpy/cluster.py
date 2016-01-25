@@ -6,7 +6,7 @@ from redpy.table import *
 import time
 import copy
 
-def setClusters(rtable, ftable, opt):
+def setClusters(rtable, ftable, order, reach, dist, opt):
 
     """
     Cuts the clustering order into flat clusters, defines orphans as -1
@@ -19,12 +19,8 @@ def setClusters(rtable, ftable, opt):
     """
     
     cutoff = opt.cmin
-
-    order = rtable.cols.order[:] # Ordering
-    oreach = rtable.cols.reachability[:] # Ordered reachability
-    oreach = oreach[order]
-    odist = rtable.cols.coreDistance[:]
-    odist = odist[order] # Ordered core distance
+    oreach = reach[order]
+    odist = dist[order]
     cluster_id = -1
 
     oclust = np.zeros((len(oreach),))
@@ -38,7 +34,7 @@ def setClusters(rtable, ftable, opt):
         else:
             oclust[x] = cluster_id
 
-    cnum = np.zeros((len(oreach),))
+    cnum = np.zeros((len(oreach),), dtype=np.int32)
     cnum[order] = oclust
     
     # Figure out earliest member in each family
@@ -48,7 +44,7 @@ def setClusters(rtable, ftable, opt):
         mindt[clustNum] = min(dt[cnum==clustNum])
     
     n = 0
-    clust = np.zeros((len(oreach),))
+    clust = np.zeros((len(oreach),), dtype=np.int32)
     for clustNum in np.argsort(mindt):
         clust[cnum==clustNum] = n
         n = n+1
@@ -78,9 +74,11 @@ def setClusters(rtable, ftable, opt):
         ftable.cols.members[c] = np.array2string(np.where(cnum==c)[0])[1:-1]
         n = n+1
     ftable.flush()
+    
+    return cnum
 
     
-def setCenters(rtable, ftable, opt):
+def setCenters(rtable, ftable, order, reach, clust, opt):
 
     """
     Finds the "center" of each cluster (including orphans, if they exist)
@@ -94,19 +92,14 @@ def setCenters(rtable, ftable, opt):
     """
     
     cutoff = opt.cmin
-
-    order = rtable.cols.order[:]
     oo = np.sort(order) # Unsorted row position
     
-    reach = rtable.cols.reachability[:]
-    clust = rtable.cols.clusterNumber[:]
-
     cluster_id = np.max(clust).astype(int)
     centers = np.zeros((cluster_id + 1,)).astype(int)
     for clusternum in range(cluster_id + 1):
         clustermembers = oo[clust == clusternum]
         centers[clusternum] = clustermembers[np.argmin(reach[clustermembers])]    
-    orphans = order[clust == -1]    
+    orphans = order[clust == -1]  
 
     cores = np.zeros((len(order),)).astype(int) # Reset everything to 0
     cores[centers] = np.ones((len(centers),)).astype(int)
@@ -117,7 +110,7 @@ def setCenters(rtable, ftable, opt):
     rtable.flush()
               
    
-def alignAll(rtable, ctable, ftable, opt):
+def alignAll(rtable, ctable, ftable, clusterNumber, opt):
     """
     Aligns events in the table that were misaligned. Uses the column 'alignedTo' to guide
     which events are misaligned and skips events which have already been aligned
@@ -125,7 +118,6 @@ def alignAll(rtable, ctable, ftable, opt):
 
     cores = ftable.attrs.cores
     id = rtable.cols.id[:]
-    clusterNumber = rtable.cols.clusterNumber[:]
     alignedTo = rtable.cols.alignedTo[:]
     
     cid1 = ctable.cols.id1[:]
@@ -201,37 +193,39 @@ def runFullOPTICS(rtable, ctable, ftable, opt):
     
     rtable: Repeater table
     ctable: Correlation matrix table
+    ftable: Families table
     opt: Options object describing station/run parameters
     
-    Sets the order, reachability, and coreDistance columns in rtable
+    Sets the order column in rtable
     """
-            
-    C = np.eye(len(rtable))
+     
+    t = time.time()       
+    C = np.ones((len(rtable),len(rtable)))
     id1 = ctable.cols.id1[:]
     id2 = ctable.cols.id2[:]
+    ccc = 1-ctable.cols.ccc[:]
     
     # Convert id to row
     rtable_ids = rtable.cols.id[:]
     r = np.zeros((max(rtable_ids)+1,)).astype('int')
     r[rtable_ids] = range(len(rtable_ids))
-    C[r[id1], r[id2]] = ctable.cols.ccc[:]
-    C[r[id2], r[id1]] = ctable.cols.ccc[:]
+    C[r[id1], r[id2]] = ccc
+    C[r[id2], r[id1]] = ccc
+    C[range(len(rtable)),range(len(rtable))] = 0
     
     # Cluster with OPTICS
-    ttree = setOfObjects(1-C)
+    ttree = setOfObjects(C)
     prep_optics(ttree,1)
     build_optics(ttree,1)
-    order = ttree._ordered_list
+    order = np.array(ttree._ordered_list)
 
     # Save the ordering to the repeater table
     rtable.cols.order[:] = order
-    rtable.cols.reachability[:] = ttree._reachability
-    rtable.cols.coreDistance[:] = ttree._core_dist
     rtable.flush()
         
     # Update the clusters and cores, too!
-    setClusters(rtable, ftable, opt)
-    setCenters(rtable, ftable, opt)
-    alignAll(rtable, ctable, ftable, opt)
+    cnum = setClusters(rtable, ftable, order, ttree._reachability, ttree._core_dist, opt)
+    setCenters(rtable, ftable, order, ttree._reachability, cnum, opt)
+    alignAll(rtable, ctable, ftable, cnum, opt)
 
     

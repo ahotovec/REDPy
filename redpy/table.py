@@ -21,8 +21,6 @@ def Repeaters(opt):
     windowFFT: Fourier transform of window (complex ndarray)
     windowAmp: amplitude in first half of window (float)
     order: Order in the cluster ordering (integer)
-    reachability: Reachability in the cluster ordering (float)
-    coreDistance: Core distance in the cluster ordering (float)
     clusterNumber: ID of flat cluster (integer)
     isCore: 1 if core, else 0 (integer)
     alignedTo: ID of event this one is aligned to (integer)
@@ -42,13 +40,11 @@ def Repeaters(opt):
         "windowFFT"     : ComplexCol(shape=(opt.winlen,), itemsize=16, pos=6),
         "windowAmp"     : Float64Col(shape=(), pos=7),
         "order"         : Int32Col(shape=(), pos=8),
-        "reachability"  : Float64Col(shape=(), pos=9),
-        "coreDistance"  : Float64Col(shape=(), pos=10),
-        "clusterNumber" : Int32Col(shape=(), pos=11),
-        "isCore"        : Int32Col(shape=(), pos=12),
-        "alignedTo"     : Int32Col(shape=(), pos=13),
-        "plotClust"     : Int32Col(shape=(), pos=14),
-        "lastClust"     : Int32Col(shape=(), pos=15)
+        "clusterNumber" : Int32Col(shape=(), pos=9),
+        "isCore"        : Int32Col(shape=(), pos=10),
+        "alignedTo"     : Int32Col(shape=(), pos=11),
+        "plotClust"     : Int32Col(shape=(), pos=12),
+        "lastClust"     : Int32Col(shape=(), pos=13)
         }
     
     return dict
@@ -297,8 +293,6 @@ def populateRepeater(rtable, ftable, id, trig, opt, alignedTo, windowStart=-1):
         trig.data, windowStart, opt)
     trigger['windowAmp'] = max(abs(trig.data[windowStart:int(windowStart+opt.winlen/2)]))
     trigger['order'] = -1
-    trigger['reachability'] = -1.0
-    trigger['coreDistance'] = -1.0
     trigger['clusterNumber'] = -1
     trigger['plotClust'] = -1
     trigger['lastClust'] = -1
@@ -396,8 +390,6 @@ def moveOrphan(rtable, otable, ftable, oindex, alignedTo, opt):
         otable.cols.expires[oindex] = (UTCDateTime(orow['startTime'])-86400).isoformat()
     trigger['windowAmp'] = orow['windowAmp']
     trigger['order'] = -1
-    trigger['reachability'] = -1.0
-    trigger['coreDistance'] = -1.0
     trigger['clusterNumber'] = -1
     trigger['plotClust'] = -1
     trigger['lastClust'] = -1
