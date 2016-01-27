@@ -119,71 +119,78 @@ def alignAll(rtable, ctable, ftable, clusterNumber, opt):
     cores = ftable.attrs.cores
     id = rtable.cols.id[:]
     alignedTo = rtable.cols.alignedTo[:]
-    
-    cid1 = ctable.cols.id1[:]
-    cid2 = ctable.cols.id2[:]
-    C = np.eye(len(rtable))
-    rtable_ids = rtable.cols.id[:]
-    r = np.zeros((max(rtable_ids)+1,)).astype('int')
-    r[rtable_ids] = range(len(rtable_ids))
-    C[r[cid1], r[cid2]] = ctable.cols.ccc[:]
-    C[r[cid2], r[cid1]] = ctable.cols.ccc[:]
+    alignedToF = copy.copy(alignedTo)
     
     for core in cores:
-
         members = np.where(clusterNumber == clusterNumber[core])
+        alignedToF[members[0]] = id[core]
+        if alignedTo[core] != id[core]:
+            calignedTo = copy.copy(alignedTo[core])
+            alignedTo[np.intersect1d(members, np.where(
+                alignedTo == calignedTo))] = id[core]
+    
+    notAligned = np.where(alignedTo != alignedToF)[0]
+    if notAligned.any():
+        for n in notAligned:
+            alignedTo[n] = alignedTo[np.where(id == alignedTo[n])[0]]
         
-        # Change alignedTo of the core to itself, as well as any events that share its
-        # former alignedTo value
-        calignedTo = copy.copy(alignedTo[core])
-        alignedTo[np.intersect1d(members, np.where(alignedTo == calignedTo))] = id[core]
+        notAligned = np.where(alignedTo != alignedToF)[0]
+        if notAligned.any():
+            cid1 = ctable.cols.id1[:]
+            cid2 = ctable.cols.id2[:]
+            ccc = ctable.cols.ccc[:]
+            C = np.eye(len(rtable))
+            rtable_ids = id
+            r = np.zeros((max(rtable_ids)+1,)).astype('int')
+            r[rtable_ids] = range(len(rtable_ids))
+            C[r[cid1], r[cid2]] = ccc
+            C[r[cid2], r[cid1]] = ccc
+        
+            clustNA = clusterNumber[notAligned]
+            idNA = id[notAligned]
+            alignedNA = alignedTo[notAligned]
+        
+            for c in np.unique(clustNA):
+        
+                core = np.intersect1d(np.where(clusterNumber == c), cores)[0]
+                fftj = rtable[core]['windowFFT']
+                coeffj = rtable[core]['windowCoeff']
             
-        # Check for any members with other alignedTo values
-        fam = np.intersect1d(members, np.where(alignedTo != id[core]))
-        if fam.any():
-            # Clean up alignedTo values that reference an id that is not itself
-            for u in np.unique(alignedTo[fam]):
-                unum = np.where(id == u)[0][0]
-                alignedTo[np.intersect1d(members, np.where(
-                    alignedTo == u))] = rtable[unum]['alignedTo']
-             
-            # Loop over remaining unique values
-            fftj = rtable[core]['windowFFT']
-            coeffj = rtable[core]['windowCoeff']
-            
-            for u in np.unique(alignedTo[fam]):
-                # Align to core, apply same lag to other members
-                unum = np.where(id == u)[0][0]
-                cor, lag = redpy.correlation.xcorr1x1(fftj, rtable[unum]['windowFFT'],
-                    coeffj, rtable[unum]['windowCoeff'])
-                        
-                # If doesn't correlate well, try a better event
-                if cor < opt.cmin + 0.05:
-                    tmp = np.intersect1d(members, np.where(alignedTo != u))
-                    utmp = np.intersect1d(members, np.where(alignedTo == u))
-                    
-                    Cslice = C[tmp,:]
-                    Cslice = Cslice[:,utmp]
-                    [t,f] = np.unravel_index(np.argmax(Cslice), np.shape(Cslice))
-                    id1 = utmp[f]
-                    id2 = tmp[t]
-                    
-                    cor1, lag1 = redpy.correlation.xcorr1x1(
-                        rtable[id2]['windowFFT'], rtable[id1]['windowFFT'],
-                        rtable[id2]['windowCoeff'], rtable[id1]['windowCoeff'])
-                    cor2, lag2 = redpy.correlation.xcorr1x1(
-                        rtable[core]['windowFFT'], rtable[id2]['windowFFT'],
-                        rtable[core]['windowCoeff'], rtable[id2]['windowCoeff'])
-                    lag = lag1 + lag2
+                for u in np.unique(alignedNA[np.where(clustNA == c)[0]]):
                 
-                for f in np.intersect1d(members, np.where(alignedTo == u)):
-                    alignedTo[f] = id[core]
-                    rtable.cols.windowStart[f] = rtable.cols.windowStart[f] - lag
-                    rtable.cols.windowCoeff[f], rtable.cols.windowFFT[f] = redpy.correlation.calcWindow(
-                        rtable.cols.waveform[f], rtable.cols.windowStart[f], opt)
-                rtable.flush()
-    rtable.cols.alignedTo[:] = alignedTo
-    rtable.flush()
+                    members = np.where(clusterNumber == c)
+                    utmp = np.intersect1d(members, np.where(alignedTo == u))
+                    unum = notAligned[np.where(idNA == u)[0]][0]
+                    cor, lag = redpy.correlation.xcorr1x1(fftj, rtable[unum]['windowFFT'],
+                        coeffj, rtable[unum]['windowCoeff'])
+                
+                    # If doesn't correlate well, try a better event
+                    if cor < opt.cmin + 0.05:
+                        
+                        tmp = np.intersect1d(members, np.where(alignedTo == id[core]))
+                    
+                        Cslice = C[tmp,:]
+                        Cslice = Cslice[:,utmp]
+                        [t,f] = np.unravel_index(np.argmax(Cslice), np.shape(Cslice))
+                        id1 = utmp[f]
+                        id2 = tmp[t]
+                    
+                        cor1, lag1 = redpy.correlation.xcorr1x1(
+                            rtable[id2]['windowFFT'], rtable[id1]['windowFFT'],
+                            rtable[id2]['windowCoeff'], rtable[id1]['windowCoeff'])
+                        cor2, lag2 = redpy.correlation.xcorr1x1(
+                            rtable[core]['windowFFT'], rtable[id2]['windowFFT'],
+                            rtable[core]['windowCoeff'], rtable[id2]['windowCoeff'])
+                        lag = lag1 + lag2
+                
+                    for f in utmp:
+                        rtable.cols.windowStart[f] = rtable.cols.windowStart[f] - lag
+                        rtable.cols.windowCoeff[f], rtable.cols.windowFFT[f] = redpy.correlation.calcWindow(
+                            rtable.cols.waveform[f], rtable.cols.windowStart[f], opt)
+                    rtable.flush()
+    
+        rtable.cols.alignedTo[:] = alignedToF
+        rtable.flush()
 
     
 def runFullOPTICS(rtable, ctable, ftable, opt):
