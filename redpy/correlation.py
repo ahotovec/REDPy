@@ -184,6 +184,7 @@ def compareGoodOrphans(rtable, otable, ctable, ftable, trig, id, coeffi, ffti, c
                 redpy.table.populateRepeater(rtable, ftable, id, trig, opt,
                     id, int(opt.ptrig*opt.samprate + lagmax))
                 redpy.table.moveOrphan(rtable, otable, ftable, np.argmax(cor), id, opt)
+                redpy.table.appendCorrelation(ctable, id, rtable.cols.id[-1], cor2, opt)
                 written = 2
             # Update the table to reflect the new window, then move it
             else:
@@ -192,6 +193,7 @@ def compareGoodOrphans(rtable, otable, ctable, ftable, trig, id, coeffi, ffti, c
                 otable.cols.windowStart[np.argmax(cor)] = int(opt.ptrig*opt.samprate +
                     lagmax - lag[np.argmax(cor)])
                 redpy.table.moveOrphan(rtable, otable, ftable, np.argmax(cor), id, opt)
+                redpy.table.appendCorrelation(ctable, id, rtable.cols.id[-1], cor2, opt)
                 written = written+1
                 
         lag = np.delete(lag, np.argmax(cor))
