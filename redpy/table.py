@@ -230,6 +230,7 @@ def initializeTable(opt):
     
     ftable = h5file.create_table(group, "families", Families(opt), "Families Table")
     ftable.attrs.cores = []
+    ftable.attrs.prevcores = []
     ftable.flush()
 
     h5file.close()
@@ -435,6 +436,7 @@ def removeFamily(rtable, ctable, dtable, ftable, cnum, opt):
         rtable.remove_row(m)
     
     ftable.attrs.cores = rtable.get_where_list('(isCore == 1)')
+    ftable.attrs.prevcores = ftable.attrs.cores
     
     rtable.flush()
     dtable.flush()
