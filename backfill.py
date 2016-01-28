@@ -142,16 +142,7 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
         rtable.attrs.previd = id
     
     redpy.table.clearExpiredOrphans(otable, opt, tstart+(n+1)*opt.nsec)
-    
-    # Deal with leftovers (currently thrown away...)
-    leftovers = rtable.get_where_list('clusterNumber == -1')
-    if leftovers.any():
-        leftovers.sort()
-        if args.verbose: print("Leftovers in clustering: {0}".format(len(leftovers)))
-        for l in leftovers[::-1]:
-            rtable.remove_row(l)
-        redpy.cluster.runFullOPTICS(rtable, ctable, ftable, opt)
-    
+        
     # Print some stats
     if args.verbose:
         print("Length of Orphan table: {}".format(len(otable)))
