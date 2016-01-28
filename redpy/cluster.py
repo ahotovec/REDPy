@@ -106,6 +106,7 @@ def setCenters(rtable, ftable, order, reach, clust, opt):
     cores[orphans] = -1*np.ones((len(orphans),)).astype(int)
     
     rtable.cols.isCore[:] = cores
+    ftable.attrs.prevcores = copy.copy(ftable.attrs.cores)
     ftable.attrs.cores = sorted(centers) # Sort is somehow important?
     rtable.flush()
               
@@ -192,6 +193,26 @@ def alignAll(rtable, ctable, ftable, clusterNumber, opt):
         rtable.cols.alignedTo[:] = alignedToF
         rtable.flush()
 
+
+def mergeCores(rtable, ctable, ftable, opt):
+    """
+    Compares current cores together and appends any cores that are good matches to
+    ctable prior to reclustering.
+    """
+    
+    # Exclude reprocessing core pairs from the last run
+    newcores = np.array(np.intersect1d(ftable.attrs.cores,
+        np.setxor1d(ftable.attrs.prevcores, ftable.attrs.cores)))
+    cores = np.array(ftable.attrs.cores)
+    for n in newcores:
+        for m in cores[np.where(cores>n)[0]]:
+            cor, lag = redpy.correlation.xcorr1x1(rtable[n]['windowFFT'],
+                rtable[m]['windowFFT'], rtable[n]['windowCoeff'],
+                rtable[m]['windowCoeff'])
+            if cor >= opt.cmin:
+                redpy.table.appendCorrelation(ctable, rtable[n]['id'],
+                    rtable[m]['id'], cor, opt)
+    
     
 def runFullOPTICS(rtable, ctable, ftable, opt):
     
@@ -205,8 +226,9 @@ def runFullOPTICS(rtable, ctable, ftable, opt):
     
     Sets the order column in rtable
     """
-     
-    t = time.time()       
+    
+    mergeCores(rtable, ctable, ftable, opt)
+         
     C = np.ones((len(rtable),len(rtable)))
     id1 = ctable.cols.id1[:]
     id2 = ctable.cols.id2[:]
