@@ -41,9 +41,7 @@ def remove(*args):
     print(removethese)
     root.destroy() # Close the window
     
-    for f in removethese:
-        print("Removing family {}...".format(f))
-        redpy.table.removeFamily(rtable, ctable, dtable, ftable, f, opt)
+    redpy.table.removeFamilies(rtable, ctable, dtable, ftable, removethese, opt)
         
     if len(removethese) > 0:
         print("Creating plots...")

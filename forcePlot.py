@@ -44,7 +44,7 @@ h5file, rtable, otable, ctable, jtable, dtable, ftable = redpy.table.openTable(o
 
 if args.all:
     if args.verbose: print("Resetting plotting column...")
-    rtable.cols.lastClust[:] = -1*rtable.cols.plotClust[:] - 1
+    rtable.cols.lastClust[:] = -1*rtable.cols.clusterNumber[:] - 1
 
 if args.verbose: print("Creating plots...")
 redpy.plotting.createBokehTimelineFigure(rtable, ctable, ftable, opt)

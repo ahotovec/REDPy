@@ -48,19 +48,16 @@ def setClusters(rtable, ftable, order, reach, dist, opt):
     for clustNum in np.argsort(mindt):
         clust[cnum==clustNum] = n
         n = n+1
-        
-    rtable.cols.plotClust[:] = clust
-    rtable.cols.clusterNumber[:] = cnum
-    rtable.flush()
     
-    # Write to ftable
+    rtable.cols.clusterNumber[:] = clust
+    rtable.flush()
     
     # First check print options so all members are printed
     np.set_printoptions(threshold=np.nan)
     np.set_printoptions(linewidth=np.nan)
     
     # Check length of ftable compared to max(cnum)
-    if len(ftable) <= max(cnum):
+    if len(ftable) <= max(clust):
         f = ftable.row
         f['pnum'] = -1
         f['members'] = ''
@@ -70,12 +67,12 @@ def setClusters(rtable, ftable, order, reach, dist, opt):
     # Populate ftable
     n = 0
     for c in np.argsort(mindt):
-        ftable.cols.pnum[c] = n
-        ftable.cols.members[c] = np.array2string(np.where(cnum==c)[0])[1:-1]
+        ftable.cols.pnum[n] = c
+        ftable.cols.members[n] = np.array2string(np.where(clust==n)[0])[1:-1]
         n = n+1
     ftable.flush()
     
-    return cnum
+    return clust
 
     
 def setCenters(rtable, ftable, order, reach, clust, opt):
@@ -99,15 +96,9 @@ def setCenters(rtable, ftable, order, reach, clust, opt):
     for clusternum in range(cluster_id + 1):
         clustermembers = oo[clust == clusternum]
         centers[clusternum] = clustermembers[np.argmin(reach[clustermembers])]    
-    orphans = order[clust == -1]  
 
-    cores = np.zeros((len(order),)).astype(int) # Reset everything to 0
-    cores[centers] = np.ones((len(centers),)).astype(int)
-    cores[orphans] = -1*np.ones((len(orphans),)).astype(int)
-    
-    rtable.cols.isCore[:] = cores
     ftable.attrs.prevcores = copy.copy(ftable.attrs.cores)
-    ftable.attrs.cores = sorted(centers) # Sort is somehow important?
+    ftable.attrs.cores = sorted(centers) # Sort is important?
     rtable.flush()
               
    

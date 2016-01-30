@@ -22,9 +22,7 @@ def Repeaters(opt):
     windowAmp: amplitude in first half of window (float)
     order: Order in the cluster ordering (integer)
     clusterNumber: ID of flat cluster (integer)
-    isCore: 1 if core, else 0 (integer)
     alignedTo: ID of event this one is aligned to (integer)
-    plotClust: ID of flat cluster ordered by time (integer)
     lastClust: ID of flat cluster when last plotted (integer)
     
     Returns a dictionary defining the table
@@ -41,10 +39,8 @@ def Repeaters(opt):
         "windowAmp"     : Float64Col(shape=(), pos=7),
         "order"         : Int32Col(shape=(), pos=8),
         "clusterNumber" : Int32Col(shape=(), pos=9),
-        "isCore"        : Int32Col(shape=(), pos=10),
-        "alignedTo"     : Int32Col(shape=(), pos=11),
-        "plotClust"     : Int32Col(shape=(), pos=12),
-        "lastClust"     : Int32Col(shape=(), pos=13)
+        "alignedTo"     : Int32Col(shape=(), pos=10),
+        "lastClust"     : Int32Col(shape=(), pos=11)
         }
     
     return dict
@@ -295,9 +291,7 @@ def populateRepeater(rtable, ftable, id, trig, opt, alignedTo, windowStart=-1):
     trigger['windowAmp'] = max(abs(trig.data[windowStart:int(windowStart+opt.winlen/2)]))
     trigger['order'] = -1
     trigger['clusterNumber'] = -1
-    trigger['plotClust'] = -1
     trigger['lastClust'] = -1
-    trigger['isCore'] = 0 # Set to zero to avoid being counted erroneously as a core
     trigger['alignedTo'] = alignedTo
     trigger.append()  
     rtable.flush()  
@@ -392,9 +386,7 @@ def moveOrphan(rtable, otable, ftable, oindex, alignedTo, opt):
     trigger['windowAmp'] = orow['windowAmp']
     trigger['order'] = -1
     trigger['clusterNumber'] = -1
-    trigger['plotClust'] = -1
     trigger['lastClust'] = -1
-    trigger['isCore'] = 0 # Set to zero to avoid being counted erroneously as a core
     trigger['alignedTo'] = alignedTo
     trigger.append()
         
@@ -405,39 +397,40 @@ def moveOrphan(rtable, otable, ftable, oindex, alignedTo, opt):
     otable.flush()  
     
 
-# This probably needs editing:
-def removeFamily(rtable, ctable, dtable, ftable, cnum, opt):
+def removeFamilies(rtable, ctable, dtable, ftable, cnums, opt):
 
     """
-    Moves the core of a family into the dtable, deletes the rest of the members.
+    Moves the core of the families into the dtable, deletes the rest of the members.
     """
     
-    trigger = dtable.row
+    ids = rtable.cols.id[:]
+    members = np.array([])
+    for cnum in cnums:
+        members = np.append(members, np.fromstring(ftable[cnum]['members'], dtype=int, sep=' '))
+    members = np.sort(members).astype(int)
     
-    members = rtable.get_where_list('(plotClust=={})'.format(cnum))
-    idx = rtable.get_where_list('(plotClust=={}) & (isCore==1)'.format(cnum))
-    core = rtable[idx]
-    
-    trigger['id'] = core['id']
-    trigger['startTime'] = core['startTime'][0]
-    trigger['startTimeMPL'] = core['startTimeMPL']
-    trigger['waveform'] = core['waveform']
-    trigger['windowStart'] = core['windowStart']
-    trigger['windowCoeff'] = core['windowCoeff']
-    trigger['windowFFT'] = core['windowFFT']
-    trigger['windowAmp'] = core['windowAmp']
-    trigger.append()
-    
+    cores = rtable[np.intersect1d(members, ftable.attrs.cores)]
+    for core in cores:
+        trigger = dtable.row
+        trigger['id'] = core['id']
+        trigger['startTime'] = core['startTime'][0]
+        trigger['startTimeMPL'] = core['startTimeMPL']
+        trigger['waveform'] = core['waveform']
+        trigger['windowStart'] = core['windowStart']
+        trigger['windowCoeff'] = core['windowCoeff']
+        trigger['windowFFT'] = core['windowFFT']
+        trigger['windowAmp'] = core['windowAmp']
+        trigger.append()
+
     for m in members[::-1]:
-        id = rtable.cols.id[m]
+        id = ids[m]
         idxc = ctable.get_where_list('(id1=={0}) | (id2=={0})'.format(id))
         for c in idxc[::-1]:
             ctable.remove_row(c)
         rtable.remove_row(m)
     
-    ftable.attrs.cores = rtable.get_where_list('(isCore == 1)')
-    ftable.attrs.prevcores = ftable.attrs.cores
-    
+    ftable.attrs.prevcores = []
+    ftable.attrs.cores = []
     rtable.flush()
     dtable.flush()
 

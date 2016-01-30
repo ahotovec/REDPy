@@ -16,15 +16,6 @@ def createBokehTimelineFigure(rtable, ctable, ftable, opt):
     
     # Run OPTICS to ensure everything is up to date
     redpy.cluster.runFullOPTICS(rtable, ctable, ftable, opt)
-    
-    # Ensure there are no leftovers (leftovers mess up the family plots)
-    leftovers = rtable.get_where_list('clusterNumber == -1')
-    if leftovers.any():
-        leftovers.sort()
-        print("Removing leftovers before plotting: {0}".format(len(leftovers)))
-        for l in leftovers[::-1]:
-            rtable.remove_row(l)
-        redpy.cluster.runFullOPTICS(rtable, ctable, ftable, opt)
         
     # Run plotCores to ensure thumbnails are up to date
     plotCores(rtable, ftable, opt)
@@ -32,15 +23,14 @@ def createBokehTimelineFigure(rtable, ctable, ftable, opt):
     printCatalog(rtable, ftable, opt)
     
     # Update lastClust column
-    rtable.cols.lastClust[:] = rtable.cols.plotClust[:]
+    rtable.cols.lastClust[:] = rtable.cols.clusterNumber[:]
     rtable.flush()
 
     output_file('{}/timeline.html'.format(opt.groupName),
         title='{} Timeline'.format(opt.title))
 
     dt = rtable.cols.startTimeMPL[:]
-    cnum = rtable.cols.clusterNumber[:]
-    fnums = rtable.cols.plotClust[:]    
+    cnum = rtable.cols.clusterNumber[:]   
     amp = np.log10(rtable.cols.windowAmp[:])
         
     # Build hover to show an image of the cluster core
@@ -69,14 +59,9 @@ def createBokehTimelineFigure(rtable, ctable, ftable, opt):
     bokehpalette = [matplotlib.colors.rgb2hex(m) for m in colormap(
         np.arange(colormap.N))]
     
-    # Figure out earliest member in each family
-    mindt = np.zeros((max(cnum)+1,))
-    for clustNum in range(max(cnum)+1):
-        mindt[clustNum] = min(dt[cnum==clustNum])
-    
     # Build the lists and dictionaries    
     n = 0
-    for clustNum in np.argsort(mindt):
+    for clustNum in np.unique(cnum):
         if len(dt[cnum==clustNum]) >= opt.minplot:
         
             # Date is required as datenum
@@ -106,7 +91,7 @@ def createBokehTimelineFigure(rtable, ctable, ftable, opt):
                  text_baseline='middle')
                  
             # Build source for hover patches
-            fnum = fnums[cnum==clustNum][0]
+            fnum = clustNum
             if n == 0:
                 xs=[[matplotlib.dates.num2date(min(dt[cnum==clustNum])),
                     matplotlib.dates.num2date(min(dt[cnum==clustNum])),
@@ -146,7 +131,7 @@ def plotCores(rtable, ftable, opt):
     # Save cores individually in clusters for timeline hover
     cores = rtable[ftable.attrs.cores]
     for r in cores:
-        if r['lastClust'] != r['plotClust']:
+        if r['lastClust'] != r['clusterNumber']:
             fig = plt.figure(figsize=(5, 1))
             ax = plt.Axes(fig, [0., 0., 1., 1.])
             ax.set_axis_off()
@@ -164,7 +149,7 @@ def plotCores(rtable, ftable, opt):
         
             ax.plot(dat,'k',linewidth=0.25)
             plt.autoscale(tight=True)
-            plt.savefig('{0}/clusters/{1}.gif'.format(opt.groupName,r['plotClust']),
+            plt.savefig('{0}/clusters/{1}.gif'.format(opt.groupName,r['clusterNumber']),
                 dpi=100)
             plt.close(fig)
 
@@ -217,11 +202,11 @@ def plotFamilies(rtable, ctable, ftable, opt):
     q = 0
     cmap = matplotlib.cm.get_cmap('YlOrRd')
     cmap.set_under('k')
-    for cnum in range(max(rtable.cols.clusterNumber[:])+1):
-        
+    for cnum in np.argsort(ftable.cols.pnum[0:max(rtable.cols.clusterNumber[:])+1]):
+
         fam = np.fromstring(ftable[cnum]['members'], dtype=int, sep=' ')
 
-        if sum(rtable[fam]['plotClust'] - rtable[fam]['lastClust']) != 0:
+        if sum(rtable[fam]['clusterNumber'] - rtable[fam]['lastClust']) != 0:
             core = np.intersect1d(fam, ftable.attrs.cores)[0]
         
             fig = plt.figure(figsize=(10, 11))
@@ -293,13 +278,13 @@ def plotFamilies(rtable, ctable, ftable, opt):
         
             plt.tight_layout()
             plt.savefig('{0}/clusters/fam{1}.png'.format(opt.groupName,
-                rtable.cols.plotClust[core]), dpi=100)
+                rtable.cols.clusterNumber[core]), dpi=100)
             plt.close(fig)
         
         
             # Now write a simple HTML file to show image and catalog
             with open('{0}/clusters/{1}.html'.format(opt.groupName,
-                rtable.cols.plotClust[core]), 'w') as f:
+                rtable.cols.clusterNumber[core]), 'w') as f:
                 f.write("""
                 <html><head><title>{1} - Cluster {0}</title>
                 </head>
@@ -317,7 +302,7 @@ def plotFamilies(rtable, ctable, ftable, opt):
                     Last event: {4}</br>
                     </span> 
                 <img src="fam{0}.png"></br>                
-                """.format(rtable.cols.plotClust[core], opt.title, len(fam), (UTCDateTime(
+                """.format(rtable.cols.clusterNumber[core], opt.title, len(fam), (UTCDateTime(
                     rtable[minind]['startTime']) +
                     rtable[minind]['windowStart']/opt.samprate).isoformat(), (UTCDateTime(
                     rtable[maxind]['startTime']) +
@@ -340,10 +325,11 @@ def printCatalog(rtable, ftable, opt):
 
     with open('{}/catalog.txt'.format(opt.groupName), 'w') as f:
         
-        for cnum in np.argsort(ftable.cols.pnum[0:max(rtable.cols.clusterNumber[:])+1]):
-            if ftable[cnum]['pnum'] >= 0:
-                fam = np.fromstring(ftable[cnum]['members'], dtype=int, sep=' ')
-                for i in np.argsort(rtable[fam]['startTimeMPL']):
-                    f.write("{0} {1}\n".format(ftable[cnum]['pnum'],(
-                        UTCDateTime(rtable[fam]['startTime'][i]) +
-                        rtable[fam]['windowStart'][i]/opt.samprate).isoformat()))
+        startTimes = rtable.cols.startTimeMPL[:]
+        windowStarts = rtable.cols.windowStart[:]
+        
+        for cnum in np.unique(rtable.cols.clusterNumber[:]):
+            fam = np.fromstring(ftable[cnum]['members'], dtype=int, sep=' ')
+            for i in np.argsort(startTimes[fam]):
+                f.write("{0} {1}\n".format(cnum,(UTCDateTime(startTimes[fam][i]) +
+                    windowStarts[fam][i]/opt.samprate).isoformat()))

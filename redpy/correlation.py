@@ -282,13 +282,6 @@ def compareMultipleOrphans2Cores(rtable, ctable, ftable, written, opt):
         
     # Run clustering if events create a new family
     if found == 0:
-        # Add new row
-        f = ftable.row
-        f['pnum'] = -1
-        f['members'] = ''
-        f.append()
-        ftable.flush()
-        # Cluster
         redpy.cluster.runFullOPTICS(rtable, ctable, ftable, opt)
         
 
