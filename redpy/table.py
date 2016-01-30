@@ -21,7 +21,7 @@ def Repeaters(opt):
     windowFFT: Fourier transform of window (complex ndarray)
     windowAmp: amplitude in first half of window (float)
     order: Order in the cluster ordering (integer)
-    clusterNumber: ID of flat cluster (integer)
+    clusterNumber: ID of flat cluster ordered by time (integer)
     alignedTo: ID of event this one is aligned to (integer)
     lastClust: ID of flat cluster when last plotted (integer)
     
