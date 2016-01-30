@@ -193,8 +193,8 @@ def mergeCores(rtable, ctable, ftable, opt):
     
     # Exclude reprocessing core pairs from the last run
     newcores = np.array(np.intersect1d(ftable.attrs.cores,
-        np.setxor1d(ftable.attrs.prevcores, ftable.attrs.cores)))
-    cores = np.array(ftable.attrs.cores)
+        np.setxor1d(ftable.attrs.prevcores, ftable.attrs.cores))).astype(int)
+    cores = np.array(ftable.attrs.cores).astype(int)
     for n in newcores:
         for m in cores[np.where(cores>n)[0]]:
             cor, lag = redpy.correlation.xcorr1x1(rtable[n]['windowFFT'],
