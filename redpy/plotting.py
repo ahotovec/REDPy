@@ -5,7 +5,7 @@ import matplotlib
 import time
 import redpy.cluster
 from obspy import UTCDateTime
-from bokeh.plotting import figure, output_file, save
+from bokeh.plotting import figure, output_file, save, gridplot
 from bokeh.models import HoverTool, ColumnDataSource, OpenURL, TapTool
 
 """
@@ -54,14 +54,33 @@ def createBokehTimelineFigure(rtable, ctable, ftable, opt):
     p.xaxis.axis_label = 'Date'
     p.yaxis.axis_label = 'Cluster by Date ({}+ Members)'.format(opt.minplot)
     
+    q = figure(plot_width=1250, plot_height=250, x_axis_type='datetime',
+        x_range=p.x_range)
+    q.title = 'Active Families and Repeaters by Hour'
+    q.grid.grid_line_alpha = 0.3
+    q.xaxis.axis_label = 'Date'
+    q.yaxis.axis_label = 'Count'
+    
     # Steal YlOrRd (len=256) colormap from matplotlib
     colormap = matplotlib.cm.get_cmap('YlOrRd')
     bokehpalette = [matplotlib.colors.rgb2hex(m) for m in colormap(
         np.arange(colormap.N))]
     
+    hours = np.arange(np.floor(min(dt)*24),np.ceil(max(dt)*24)+1)/24
+    fams = np.zeros((len(hours),))
+    rept = np.zeros((len(hours),))
+
     # Build the lists and dictionaries    
     n = 0
     for clustNum in np.unique(cnum):
+        
+        t = np.intersect1d(np.where(min(dt[cnum==clustNum])<=hours-1/48)[0],
+            np.where(max(dt[cnum==clustNum])>hours+1/48)[0]+1)
+        fams[t] = fams[t]+1
+        for d in dt[cnum==clustNum]:
+            t = np.intersect1d(np.where(d<=hours-1/48)[0],np.where(d>hours+1/48)[0]+1)
+            rept[t] = rept[t]+1 
+        
         if len(dt[cnum==clustNum]) >= opt.minplot:
         
             # Date is required as datenum
@@ -123,8 +142,13 @@ def createBokehTimelineFigure(rtable, ctable, ftable, opt):
         taptool = p.select(dict(type=TapTool))[0]
         taptool.names.append("patch")
         taptool.callback = OpenURL(url=url)
+        
+        q.line(matplotlib.dates.num2date(hours), fams, color='red', line_width=1.5, legend='Families')
+        q.line(matplotlib.dates.num2date(hours), rept, color='black', line_width=0.5, legend='Repeaters')
+        q.legend.orientation = "top_left"
+        r = gridplot([[q],[p]])
     
-        save(p) 
+        save(r) 
 
 
 def plotCores(rtable, ftable, opt):
@@ -325,7 +349,7 @@ def printCatalog(rtable, ftable, opt):
 
     with open('{}/catalog.txt'.format(opt.groupName), 'w') as f:
         
-        startTimes = rtable.cols.startTimeMPL[:]
+        startTimes = rtable.cols.startTime[:]
         windowStarts = rtable.cols.windowStart[:]
         
         for cnum in np.unique(rtable.cols.clusterNumber[:]):
