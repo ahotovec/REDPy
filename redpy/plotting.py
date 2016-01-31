@@ -56,7 +56,10 @@ def createBokehTimelineFigure(rtable, ctable, ftable, opt):
     
     q = figure(plot_width=1250, plot_height=250, x_axis_type='datetime',
         x_range=p.x_range)
-    q.title = 'Active Families and Repeaters by Hour'
+    if opt.hbin>=1:
+        q.title = 'Active Families and Repeaters by {:.1f} Day Bin'.format(opt.hbin)
+    else:
+        q.title = 'Active Families and Repeaters by {:.1f} Hour Bin'.format(opt.hbin*24)
     q.grid.grid_line_alpha = 0.3
     q.xaxis.axis_label = 'Date'
     q.yaxis.axis_label = 'Count'
@@ -66,20 +69,20 @@ def createBokehTimelineFigure(rtable, ctable, ftable, opt):
     bokehpalette = [matplotlib.colors.rgb2hex(m) for m in colormap(
         np.arange(colormap.N))]
     
-    hours = np.arange(np.floor(min(dt)*24),np.ceil(max(dt)*24)+1)/24
+    hours = np.arange(np.floor(min(dt)/opt.hbin),np.ceil(max(dt)/opt.hbin)+1)*opt.hbin
     fams = np.zeros((len(hours),))
     rept = np.zeros((len(hours),))
 
     # Build the lists and dictionaries    
-    n = 0
+    n = 0    
     for clustNum in np.unique(cnum):
         
-        t = np.intersect1d(np.where(min(dt[cnum==clustNum])<=hours-1/48)[0],
-            np.where(max(dt[cnum==clustNum])>hours+1/48)[0]+1)
-        fams[t] = fams[t]+1
+        t1 = np.argmin(np.abs(min(dt[cnum==clustNum])-hours))
+        t2 = np.argmin(np.abs(max(dt[cnum==clustNum])-hours))+1
+        fams[t1:t2] = fams[t1:t2]+1
         for d in dt[cnum==clustNum]:
-            t = np.intersect1d(np.where(d<=hours-1/48)[0],np.where(d>hours+1/48)[0]+1)
-            rept[t] = rept[t]+1 
+            t0 = np.argmin(np.abs(d-hours))
+            rept[t0] = rept[t0]+1 
         
         if len(dt[cnum==clustNum]) >= opt.minplot:
         
@@ -143,8 +146,10 @@ def createBokehTimelineFigure(rtable, ctable, ftable, opt):
         taptool.names.append("patch")
         taptool.callback = OpenURL(url=url)
         
-        q.line(matplotlib.dates.num2date(hours), fams, color='red', line_width=1.5, legend='Families')
-        q.line(matplotlib.dates.num2date(hours), rept, color='black', line_width=0.5, legend='Repeaters')
+        q.line(matplotlib.dates.num2date(hours), fams, color='red', line_width=1.5,
+            legend='Families')
+        q.line(matplotlib.dates.num2date(hours), rept, color='black', line_width=0.5,
+            legend='Repeaters')
         q.legend.orientation = "top_left"
         r = gridplot([[q],[p]])
     
