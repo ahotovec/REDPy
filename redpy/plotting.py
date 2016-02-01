@@ -235,11 +235,10 @@ def createBokehTimelineFigure(rtable, ctable, ftable, opt):
         p1.patches(xs=xs, ys=ys, source=source, name="patch", alpha=0)
         
         # Tapping on one of the patches will open a window to a file with more information
-        # on the cluster in question. Temporarily, it leads to only the image, but could
-        # lead to an HTML file instead. Need to render those files, of course.
+        # on the cluster in question.
         url = "./clusters/@famnum.html"
         renderer = p1.select(name="patch")[0]
-        renderer.nonselection_glyph=renderer.glyph.clone()
+        renderer.nonselection_glyph=renderer.selection_glyph
         taptool = p1.select(dict(type=TapTool))[0]
         taptool.names.append("patch")
         taptool.callback = OpenURL(url=url)
@@ -262,9 +261,8 @@ def createBokehTimelineFigure(rtable, ctable, ftable, opt):
         sourcer = ColumnDataSource(data=dict(xs=xsr, ys=ysr, famnum=famnumr))
         r1.patches(xs=xsr, ys=ysr, source=sourcer, name="patchr", alpha=0)
         
-        url = "./clusters/@famnum.html"
         renderer = r1.select(name="patchr")[0]
-        renderer.nonselection_glyph=renderer.glyph.clone()
+        renderer.nonselection_glyph=renderer.selection_glyph
         taptool = r1.select(dict(type=TapTool))[0]
         taptool.names.append("patchr")
         taptool.callback = OpenURL(url=url)
