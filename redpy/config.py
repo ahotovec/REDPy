@@ -141,8 +141,12 @@ class Options(object):
             'Settings','maxorph') else 7.
         self.minplot=config.getint('Settings','minplot') if config.has_option(
             'Settings','minplot') else 3
-        self.hbin=config.getfloat('Settings','hbin') if config.has_option(
-            'Settings','hbin') else 0.125
+        self.dybin=config.getfloat('Settings','dybin') if config.has_option(
+            'Settings','dybin') else 7.
+        self.hrbin=config.getfloat('Settings','hrbin') if config.has_option(
+            'Settings','hrbin') else 1.
+        self.recplot=config.getfloat('Settings','recplot') if config.has_option(
+            'Settings','recplot') else 14.
         self.useCoincidence=config.getint('Settings','useCoincidence') if config.has_option(
             'Settings','useCoincidence') else 1
         self.nsta=config.getint('Settings','nsta') if config.has_option(
