@@ -238,7 +238,7 @@ def createBokehTimelineFigure(rtable, ctable, ftable, opt):
         # on the cluster in question.
         url = "./clusters/@famnum.html"
         renderer = p1.select(name="patch")[0]
-        renderer.nonselection_glyph=renderer.selection_glyph
+        renderer.nonselection_glyph=renderer.glyph.clone()
         taptool = p1.select(dict(type=TapTool))[0]
         taptool.names.append("patch")
         taptool.callback = OpenURL(url=url)
@@ -262,7 +262,7 @@ def createBokehTimelineFigure(rtable, ctable, ftable, opt):
         r1.patches(xs=xsr, ys=ysr, source=sourcer, name="patchr", alpha=0)
         
         renderer = r1.select(name="patchr")[0]
-        renderer.nonselection_glyph=renderer.selection_glyph
+        renderer.nonselection_glyph=renderer.glyph.clone()
         taptool = r1.select(dict(type=TapTool))[0]
         taptool.names.append("patchr")
         taptool.callback = OpenURL(url=url)
