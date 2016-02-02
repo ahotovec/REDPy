@@ -142,7 +142,7 @@ class Options(object):
         self.minplot=config.getint('Settings','minplot') if config.has_option(
             'Settings','minplot') else 3
         self.dybin=config.getfloat('Settings','dybin') if config.has_option(
-            'Settings','dybin') else 7.
+            'Settings','dybin') else 1.
         self.hrbin=config.getfloat('Settings','hrbin') if config.has_option(
             'Settings','hrbin') else 1.
         self.recplot=config.getfloat('Settings','recplot') if config.has_option(
