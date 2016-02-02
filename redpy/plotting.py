@@ -416,8 +416,8 @@ def plotFamilies(rtable, ctable, ftable, opt):
             catalog = rtable[fam]['startTimeMPL'][catalogind]
             longevity = catalog[-1] - catalog[0]
             spacing = np.diff(catalog)*24
-            minind = catalogind[0]
-            maxind = catalogind[-1]
+            minind = fam[catalogind[0]]
+            maxind = fam[catalogind[-1]]
         
             # Plot spacing timeline
             ax4 = fig.add_subplot(3, 3, (7,9)) 
