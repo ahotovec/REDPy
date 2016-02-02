@@ -37,10 +37,10 @@ def remove(*args):
     removethese = []
     for n in range(len(var)):
         if var[n].get() > 0:
-            removethese.append(n)
+            removethese.append(n+m)
     print(removethese)
     root.destroy() # Close the window
-    
+
     redpy.table.removeFamilies(rtable, ctable, dtable, ftable, removethese, opt)
         
     if len(removethese) > 0:
@@ -89,6 +89,11 @@ else:
 if args.verbose: print("Opening hdf5 table: {0}".format(opt.filename))
 h5file, rtable, otable, ctable, jtable, dtable, ftable = redpy.table.openTable(opt)
 
+if args.minclust:
+    m = args.minclust
+else:
+    m = 0
+
 # Create GUI window
 root = tk.Tk()
 root.title("REDPy - Check Families to Permanently Remove")
@@ -112,8 +117,8 @@ for n in fams:
     if n >= args.minclust:
         imgobj.append(tk.PhotoImage(file='{0}/clusters/{1}.gif'.format(opt.groupName,n)))
         var.append(tk.IntVar())
-        check.append(tk.Checkbutton(frame, image=imgobj[n-args.minclust],
-            variable = var[n-args.minclust]).grid(column=c, row=r, sticky='N'))
+        check.append(tk.Checkbutton(frame, image=imgobj[n-m],
+            variable = var[n-m]).grid(column=c, row=r, sticky='N'))
         c = c+1
         if c == args.ncols+1:
             c = 1
