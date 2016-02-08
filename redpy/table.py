@@ -20,10 +20,6 @@ def Repeaters(opt):
     windowCoeff: amplitude scaling for cross-correlation (float)
     windowFFT: Fourier transform of window (complex ndarray)
     windowAmp: amplitude in first half of window (float)
-    order: Order in the cluster ordering (integer)
-    clusterNumber: ID of flat cluster ordered by time (integer)
-    alignedTo: ID of event this one is aligned to (integer)
-    lastClust: ID of flat cluster when last plotted (integer)
     
     Returns a dictionary defining the table
     """
@@ -37,10 +33,7 @@ def Repeaters(opt):
         "windowCoeff"   : Float64Col(shape=(), pos=5),
         "windowFFT"     : ComplexCol(shape=(opt.winlen,), itemsize=16, pos=6),
         "windowAmp"     : Float64Col(shape=(), pos=7),
-        "order"         : Int32Col(shape=(), pos=8),
-        "clusterNumber" : Int32Col(shape=(), pos=9),
-        "alignedTo"     : Int32Col(shape=(), pos=10),
-        "lastClust"     : Int32Col(shape=(), pos=11)
+        "alignedTo"     : Int32Col(shape=(), pos=8)
         }
     
     return dict
@@ -159,8 +152,8 @@ def Families(opt):
     """
     Defines the columns in the 'Families' table
 
-    pnum: unique ID number for clusters ordered by time for plotting (integer)
-    members: rows in rtable that contain members of the family as string (string)
+    members: rows in rtable that contain members of the family as ordered string (string)
+    printme: describes whether the family has been updated since last printing (int)
     
     The members column is a string so that it can be of completely arbitrary length.
     Well, not completely arbitrary. The itemsize set here (1000000) is a guess at how
@@ -173,8 +166,8 @@ def Families(opt):
     """
     
     dict = {
-        "pnum" : Int32Col(shape=(), pos=0),
-        "members" : StringCol(itemsize=1000000, shape=(), pos=1)
+        "members" : StringCol(itemsize=1000000, shape=(), pos=0),
+        "printme" : Int32Col(shape=(), pos=2)
     }
 
     return dict
@@ -227,6 +220,7 @@ def initializeTable(opt):
     ftable = h5file.create_table(group, "families", Families(opt), "Families Table")
     ftable.attrs.cores = []
     ftable.attrs.prevcores = []
+    ftable.attrs.nClust = 0
     ftable.flush()
 
     h5file.close()
@@ -289,10 +283,8 @@ def populateRepeater(rtable, ftable, id, trig, opt, alignedTo, windowStart=-1):
     trigger['windowCoeff'], trigger['windowFFT'] = redpy.correlation.calcWindow(
         trig.data, windowStart, opt)
     trigger['windowAmp'] = max(abs(trig.data[windowStart:int(windowStart+opt.winlen/2)]))
-    trigger['order'] = -1
-    trigger['clusterNumber'] = -1
-    trigger['lastClust'] = -1
     trigger['alignedTo'] = alignedTo
+    
     trigger.append()  
     rtable.flush()  
 
@@ -345,6 +337,7 @@ def populateJunk(jtable, trig, isjunk, opt):
     trig: ObsPy trace from triggering function
     isjunk: Integer flag, 0=junk, 1=expired orphan
     opt: Options object describing station/run parameters
+    
     """
     
     trigger = jtable.row
@@ -363,6 +356,14 @@ def moveOrphan(rtable, otable, ftable, oindex, alignedTo, opt):
     
     """
     Moves a row from the 'Orphans' table to the 'Repeater Catalog' table.
+    
+    rtable: Repeater table
+    otable: Orphan table
+    ftable: Families table
+    oindex: Row in otable to move
+    alignedTo: ID of event new repeater is aligned to
+    opt: Options object describing station/run parameters
+    
     """
     
     trigger = rtable.row
@@ -384,10 +385,8 @@ def moveOrphan(rtable, otable, ftable, oindex, alignedTo, opt):
         otable.cols.windowCoeff[oindex] = 0
         otable.cols.expires[oindex] = (UTCDateTime(orow['startTime'])-86400).isoformat()
     trigger['windowAmp'] = orow['windowAmp']
-    trigger['order'] = -1
-    trigger['clusterNumber'] = -1
-    trigger['lastClust'] = -1
     trigger['alignedTo'] = alignedTo
+    
     trigger.append()
         
     if len(otable) > 1:
@@ -401,13 +400,22 @@ def removeFamilies(rtable, ctable, dtable, ftable, cnums, opt):
 
     """
     Moves the core of the families into the dtable, deletes the rest of the members.
+    
+    rtable: Repeater table
+    ctable: Correlation matrix table
+    dtable: Deleted table
+    ftable: Families table
+    cnums: Families to remove
+    opt: Options object describing station/run parameters
+    
+    Reruns OPTICS when done deleting
     """
     
     ids = rtable.cols.id[:]
     members = np.array([])
     for cnum in cnums:
         members = np.append(members, np.fromstring(ftable[cnum]['members'], dtype=int, sep=' '))
-    members = np.sort(members).astype(int)
+    members = np.sort(members).astype('uint32')
     
     cores = rtable[np.intersect1d(members, ftable.attrs.cores)]
     for core in cores:
@@ -430,7 +438,9 @@ def removeFamilies(rtable, ctable, dtable, ftable, cnums, opt):
         rtable.remove_row(m)
     
     ftable.attrs.prevcores = []
-    ftable.attrs.cores = []
+    ftable.attrs.cores = []    
+    redpy.cluster.runFullOPTICS(rtable, ctable, ftable, opt)
+    
     rtable.flush()
     dtable.flush()
 

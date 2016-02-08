@@ -148,7 +148,7 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
         print("Length of Orphan table: {}".format(len(otable)))
         if len(rtable) > 1:
             print("Number of repeaters: {}".format(len(rtable)))
-            print("Number of clusters: {}".format(max(rtable.cols.clusterNumber[:])+1))
+            print("Number of clusters: {}".format(ftable.attrs.nClust))
     
     # Update tend if an end date is not specified so this will run until it is fully 
     # caught up, instead of running to when the script was originally run.

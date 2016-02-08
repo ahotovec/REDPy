@@ -9,12 +9,16 @@ import copy
 def setClusters(rtable, ftable, order, reach, dist, opt):
 
     """
-    Cuts the clustering order into flat clusters, defines orphans as -1
+    Cuts the clustering order into flat clusters
 
-    rtable: Repeater table, with cluster ordering in columns 6 - 8
+    rtable: Repeater table
+    ftable: Families table
+    order: Ordering from OPTICS
+    reach: Reachability from OPTICS
+    dist: Correlation distance from OPTICS
     opt: Options object describing station/run parameters
 
-    Sets cluster numbers in column 9 of the repeater table, ordered by first event in
+    Sets cluster numbers and members in ftable, row ordered by first event in
     each cluster
     """
     
@@ -48,10 +52,7 @@ def setClusters(rtable, ftable, order, reach, dist, opt):
     for clustNum in np.argsort(mindt):
         clust[cnum==clustNum] = n
         n = n+1
-    
-    rtable.cols.clusterNumber[:] = clust
-    rtable.flush()
-    
+
     # First check print options so all members are printed
     np.set_printoptions(threshold=np.nan)
     np.set_printoptions(linewidth=np.nan)
@@ -59,16 +60,17 @@ def setClusters(rtable, ftable, order, reach, dist, opt):
     # Check length of ftable compared to max(cnum)
     if len(ftable) <= max(clust):
         f = ftable.row
-        f['pnum'] = -1
         f['members'] = ''
+        f['printme'] = 0
         f.append()
         ftable.flush()
         
     # Populate ftable
     n = 0
     for c in np.argsort(mindt):
-        ftable.cols.pnum[n] = c
-        ftable.cols.members[n] = np.array2string(np.where(clust==n)[0])[1:-1]
+        if ftable.cols.members[n] != np.array2string(order[oclust==c])[1:-1]:
+            ftable.cols.members[n] = np.array2string(order[oclust==c])[1:-1]
+            ftable.cols.printme[n] = 1
         n = n+1
     ftable.flush()
     
@@ -80,32 +82,44 @@ def setCenters(rtable, ftable, order, reach, clust, opt):
     """
     Finds the "center" of each cluster (including orphans, if they exist)
     
-    rtable: Repeater table, with clustering order in columns 6 - 8
+    rtable: Repeater table
+    ftable: Families table
+    order: Ordering from OPTICS
+    reach: Reachability from OPTICS
+    clust: Cluster number from setClusters
     opt: Options object describing station/run parameters
 
-    Sets column 10 of the repeater table to 0 if it is not a core, 1 if it is a core,
-    and -1 if it is an orphan. Orphans may exist in the repeater table if the cutoff in
-    opt is higher than what was used to originally consider them a repeater.
+    Sets cluster attributes of ftable to locations of cores
     """
     
     cutoff = opt.cmin
     oo = np.sort(order) # Unsorted row position
     
-    cluster_id = np.max(clust).astype(int)
-    centers = np.zeros((cluster_id + 1,)).astype(int)
+    cluster_id = np.max(clust).astype('uint32')
+    centers = np.zeros((cluster_id + 1,)).astype('uint32')
     for clusternum in range(cluster_id + 1):
         clustermembers = oo[clust == clusternum]
         centers[clusternum] = clustermembers[np.argmin(reach[clustermembers])]    
 
-    ftable.attrs.prevcores = copy.copy(ftable.attrs.cores)
-    ftable.attrs.cores = sorted(centers) # Sort is important?
-    rtable.flush()
+    ftable.attrs.prevcores = np.array(copy.copy(ftable.attrs.cores)).astype('uint32')
+    ftable.attrs.cores = np.array(centers).astype('uint32')
+    ftable.attrs.nClust = len(centers)
+    ftable.flush()
               
    
 def alignAll(rtable, ctable, ftable, clusterNumber, opt):
+
     """
-    Aligns events in the table that were misaligned. Uses the column 'alignedTo' to guide
-    which events are misaligned and skips events which have already been aligned
+    Aligns events in the table that were misaligned.
+    
+    rtable: Repeater table
+    ctable: Correlation table
+    ftable: Families table
+    clusterNumber: Cluster number from OPTICS
+    opt: Options object describing station/run parameters
+    
+    Uses the column 'alignedTo' to guide  which events are misaligned and skips events
+    which have already been aligned
     """
 
     cores = ftable.attrs.cores
@@ -133,7 +147,7 @@ def alignAll(rtable, ctable, ftable, clusterNumber, opt):
             ccc = ctable.cols.ccc[:]
             C = np.eye(len(rtable))
             rtable_ids = id
-            r = np.zeros((max(rtable_ids)+1,)).astype('int')
+            r = np.zeros((max(rtable_ids)+1,)).astype('uint32')
             r[rtable_ids] = range(len(rtable_ids))
             C[r[cid1], r[cid2]] = ccc
             C[r[cid2], r[cid1]] = ccc
@@ -181,20 +195,28 @@ def alignAll(rtable, ctable, ftable, clusterNumber, opt):
                             rtable.cols.waveform[f], rtable.cols.windowStart[f], opt)
                     rtable.flush()
     
-        rtable.cols.alignedTo[:] = alignedToF
-        rtable.flush()
+            rtable.cols.alignedTo[:] = alignedToF
+            rtable.flush()
 
 
 def mergeCores(rtable, ctable, ftable, opt):
+
     """
+    Attempts to merge families by ensuring their cores are compared to each other
+    
+    rtable: Repeater table
+    ctable: Correlation matrix table
+    ftable: Families table
+    opt: Options object describing station/run parameters
+    
     Compares current cores together and appends any cores that are good matches to
     ctable prior to reclustering.
     """
     
     # Exclude reprocessing core pairs from the last run
     newcores = np.array(np.intersect1d(ftable.attrs.cores,
-        np.setxor1d(ftable.attrs.prevcores, ftable.attrs.cores))).astype(int)
-    cores = np.array(ftable.attrs.cores).astype(int)
+        np.setxor1d(ftable.attrs.prevcores, ftable.attrs.cores))).astype('uint32')
+    cores = np.array(ftable.attrs.cores).astype('uint32')
     for n in newcores:
         for m in cores[np.where(cores>n)[0]]:
             cor, lag = redpy.correlation.xcorr1x1(rtable[n]['windowFFT'],
@@ -215,7 +237,7 @@ def runFullOPTICS(rtable, ctable, ftable, opt):
     ftable: Families table
     opt: Options object describing station/run parameters
     
-    Sets the order column in rtable
+    Also updates clusters and cores, then runs alignAll
     """
     
     mergeCores(rtable, ctable, ftable, opt)
@@ -227,7 +249,7 @@ def runFullOPTICS(rtable, ctable, ftable, opt):
     
     # Convert id to row
     rtable_ids = rtable.cols.id[:]
-    r = np.zeros((max(rtable_ids)+1,)).astype('int')
+    r = np.zeros((max(rtable_ids)+1,)).astype('uint32')
     r[rtable_ids] = range(len(rtable_ids))
     C[r[id1], r[id2]] = ccc
     C[r[id2], r[id1]] = ccc
@@ -238,10 +260,6 @@ def runFullOPTICS(rtable, ctable, ftable, opt):
     prep_optics(ttree,1)
     build_optics(ttree,1)
     order = np.array(ttree._ordered_list)
-
-    # Save the ordering to the repeater table
-    rtable.cols.order[:] = order
-    rtable.flush()
         
     # Update the clusters and cores, too!
     cnum = setClusters(rtable, ftable, order, ttree._reachability, ttree._core_dist, opt)

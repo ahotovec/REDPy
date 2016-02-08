@@ -116,7 +116,7 @@ for event in eventlist[::-1]:
         print("Length of Orphan table: {}".format(len(otable)))
         if len(rtable) > 1:
             print("Number of repeaters: {}".format(len(rtable)))
-            print("Number of clusters: {}".format(max(rtable.cols.clusterNumber[:])+1))
+            print("Number of clusters: {}".format(ftable.attrs.nClust))
 
 if len(rtable) > 1:
     if args.verbose: print("Creating plots...")

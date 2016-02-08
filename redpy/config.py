@@ -44,6 +44,12 @@ class Options(object):
         trigon: Cutoff ratio for triggering STALTA (default 3.0)
         trigoff: Cutoff ratio for ending STALTA trigger (default 2.0)
         mintrig: Minimum spacing between triggers (default 10.0 s)
+        useCoincidence: Use coincidence triggering (default 1 (yes))
+        nsta: Minimum number of stations a trigger must show up on (default 2)
+        stationC: Station list (no spaces) to use to trigger on (default 'HSR,SHW,YEL')
+        channelC: Channel list (no spaces) to use to trigger on (default 'EHZ')
+        networkC: Network list (no spaces) to use to trigger on (default 'UW')
+        locationC: Location list (no spaces) to use to trigger on (default '--')
         kurtmax: Maximum kurtosis allowed for event window, to eliminate spikes, ~80-100
             is appropriate for 5 s window, ~130 for 15 s, ~200 for 25 s (default 80.0)
         kurtfmax: Maximum kurtosis of frequency amplitude spectrum to eliminate
@@ -69,13 +75,16 @@ class Options(object):
         cmin: Minimum correlation to be considered a repeater (default 0.7)
         
         ORPHAN EXPIRATION PARAMETERS
-        minorph: minimum amount of time (days) to keep the smaller orphans alive
+        minorph: Minimum amount of time (days) to keep the smaller orphans alive
             (corresponds to trigon) (default 7 days)
-        maxorph: maximum amount of time (days) to keep the largest orphans alive
+        maxorph: Maximum amount of time (days) to keep the largest orphans alive
             (corresponds to trigon+7) (default 30 days)
             
         PLOTTING PARAMETERS
-        minplot: minimum number of members required in order to be plotted to timeline
+        minplot: Minimum number of members required in order to be plotted to timeline
+        dybin: Width of bin in days for full histogram (default 1 day)
+        hrbin: Width of bin in hours for recent histogram (default 1 hour)
+        recplot: Number of days for 'recent' plot (default 14 days)
     
         This list will likely expand.       
         """
@@ -159,6 +168,7 @@ class Options(object):
             'Settings','networkC') else 'UW'
         self.locationC=config.get('Settings','locationC') if config.has_option(
             'Settings','locationC') else '--'
+
         # Derived Settings
         self.ptrig=2*self.winlen/self.samprate
         self.atrig=4*self.winlen/self.samprate
