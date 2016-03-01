@@ -153,21 +153,24 @@ def Families(opt):
     Defines the columns in the 'Families' table
 
     members: rows in rtable that contain members of the family as ordered string (string)
+    core: row in rtable that corresponds to current core event (int)
+    startTime: MPL datetime denoting the time of the first event in the family (float)
     printme: describes whether the family has been updated since last printing (int)
     
     The members column is a string so that it can be of completely arbitrary length.
     Well, not completely arbitrary. The itemsize set here (1000000) is a guess at how
     big the string might get for really large families. One hopes to never encounter a
     family this big... (100000+ members?)
-    
-    Cores are stored in the ftable header.
-    
+        
     Returns a dictionary defining the table
     """
+    # COULD ADD MORE METRICS HERE SO IT DOESN'T HAVE TO CALCULATE EACH TIME?
     
     dict = {
-        "members" : StringCol(itemsize=1000000, shape=(), pos=0),
-        "printme" : Int32Col(shape=(), pos=2)
+        "members"   : StringCol(itemsize=1000000, shape=(), pos=0),
+        "core"      : Int32Col(shape=(), pos=1),
+        "startTime" : Float64Col(shape=(), pos=2),
+        "printme"   : Int32Col(shape=(), pos=3)
     }
 
     return dict
@@ -218,8 +221,6 @@ def initializeTable(opt):
     ctable.flush()
     
     ftable = h5file.create_table(group, "families", Families(opt), "Families Table")
-    ftable.attrs.cores = []
-    ftable.attrs.prevcores = []
     ftable.attrs.nClust = 0
     ftable.flush()
 
@@ -410,7 +411,8 @@ def removeFamilies(rtable, ctable, dtable, ftable, cnums, opt):
     
     Reruns OPTICS when done deleting
     """
-    
+    # NEED TO REWRITE WITHOUT RUNNING FULL OPTICS
+        
     ids = rtable.cols.id[:]
     members = np.array([])
     for cnum in cnums:
@@ -496,3 +498,77 @@ def appendCorrelation(ctable, id1, id2, ccc, opt):
         corr['ccc'] = ccc
         corr.append()        
         ctable.flush()
+
+
+def createNewFamily(rtable, ftable, members, core, opt):
+    
+    """
+    Creates new family from two or more orphans
+    """
+    
+    f = ftable.row
+    f['members'] = np.array2string(members)[1:-1]
+    f['core'] = core
+    f['startTime'] = np.min(rtable[members]['startTimeMPL'])
+    f['printme'] = 1
+    f.append()
+    ftable.attrs.nClust+=1
+    ftable.flush()
+    
+    if len(ftable)>1:
+        reorderFamilies(ftable, opt)
+    
+    
+def reorderFamilies(ftable, opt):
+
+    """
+    Cleanup function to ensure families are ordered by start time
+    """
+    
+    startTimes = ftable.cols.startTime[:]
+    members = ftable.cols.members[:]
+    cores = ftable.cols.core[:]
+    printme = ftable.cols.printme[:]
+    order = np.argsort(startTimes)
+        
+    if (order!=np.arange(len(ftable))).any():
+        ftable.cols.startTime[:] = startTimes[order]
+        ftable.cols.members[:] = members[order]
+        ftable.cols.core[:] = cores[order]
+        ftable.cols.printme[:] = printme[order]
+        # need to adjust printme here
+        ftable.flush()
+    
+    
+def mergeFamilies(rtable, ctable, ftable, wfam, wlag, opt):
+
+    """
+    Combines families that have been merged by adding a new event
+    """
+    
+    
+    
+    # May need to have some decision-making step here to determine which family to
+    # actually align to (max members? max amplitude?)
+    
+    # Adjust lags
+    for n in range(len(wfam)):
+        if wlag[n]!=0:
+            members = np.fromstring(ftable[wfam[n]]['members'], dtype=int, sep=' ')
+            for m in members:
+                rtable.cols.windowStart[m] = rtable.cols.windowStart[m] - wlag[n]
+                rtable.cols.windowCoeff[m], rtable.cols.windowFFT[m] = redpy.correlation.calcWindow(
+                    rtable.cols.waveform[m], rtable.cols.windowStart[m], opt)
+            rtable.flush()
+    
+    # Perform merge, cluster        
+    f1 = min(wfam)
+    for n in range(len(wfam))[::-1]:
+        f2 = np.sort(wfam)[n]
+        if f2!=f1:            
+            ftable.cols.members[f1]+=' '+ftable[f2]['members']
+            ftable.remove_row(f2)
+            ftable.attrs.nClust-=1            
+    reorderFamilies(ftable, opt)
+    redpy.cluster.runFamOPTICS(rtable, ctable, ftable, f1, opt)
+    

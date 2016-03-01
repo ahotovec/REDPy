@@ -38,7 +38,7 @@ def setClusters(rtable, ftable, order, reach, dist, opt):
         else:
             oclust[x] = cluster_id
 
-    cnum = np.zeros((len(oreach),), dtype=np.int32)
+    cnum = np.zeros((len(oreach),), dtype=np.int)
     cnum[order] = oclust
     
     # Figure out earliest member in each family
@@ -48,7 +48,7 @@ def setClusters(rtable, ftable, order, reach, dist, opt):
         mindt[clustNum] = min(dt[cnum==clustNum])
     
     n = 0
-    clust = np.zeros((len(oreach),), dtype=np.int32)
+    clust = np.zeros((len(oreach),), dtype=np.int)
     for clustNum in np.argsort(mindt):
         clust[cnum==clustNum] = n
         n = n+1
@@ -95,14 +95,14 @@ def setCenters(rtable, ftable, order, reach, clust, opt):
     cutoff = opt.cmin
     oo = np.sort(order) # Unsorted row position
     
-    cluster_id = np.max(clust).astype('uint32')
-    centers = np.zeros((cluster_id + 1,)).astype('uint32')
+    cluster_id = np.max(clust).astype('int')
+    centers = np.zeros((cluster_id + 1,)).astype('int')
     for clusternum in range(cluster_id + 1):
         clustermembers = oo[clust == clusternum]
         centers[clusternum] = clustermembers[np.argmin(reach[clustermembers])]    
 
-    ftable.attrs.prevcores = np.array(copy.copy(ftable.attrs.cores)).astype('uint32')
-    ftable.attrs.cores = np.array(centers).astype('uint32')
+    ftable.attrs.prevcores = np.array(copy.copy(ftable.attrs.cores)).astype('int')
+    ftable.attrs.cores = np.array(centers).astype('int')
     ftable.attrs.nClust = len(centers)
     ftable.flush()
               
@@ -118,7 +118,7 @@ def alignAll(rtable, ctable, ftable, clusterNumber, opt):
     clusterNumber: Cluster number from OPTICS
     opt: Options object describing station/run parameters
     
-    Uses the column 'alignedTo' to guide  which events are misaligned and skips events
+    Uses the column 'alignedTo' to guide which events are misaligned and skips events
     which have already been aligned
     """
 
@@ -147,7 +147,7 @@ def alignAll(rtable, ctable, ftable, clusterNumber, opt):
             ccc = ctable.cols.ccc[:]
             C = np.eye(len(rtable))
             rtable_ids = id
-            r = np.zeros((max(rtable_ids)+1,)).astype('uint32')
+            r = np.zeros((max(rtable_ids)+1,)).astype('int')
             r[rtable_ids] = range(len(rtable_ids))
             C[r[cid1], r[cid2]] = ccc
             C[r[cid2], r[cid1]] = ccc
@@ -215,8 +215,8 @@ def mergeCores(rtable, ctable, ftable, opt):
     
     # Exclude reprocessing core pairs from the last run
     newcores = np.array(np.intersect1d(ftable.attrs.cores,
-        np.setxor1d(ftable.attrs.prevcores, ftable.attrs.cores))).astype('uint32')
-    cores = np.array(ftable.attrs.cores).astype('uint32')
+        np.setxor1d(ftable.attrs.prevcores, ftable.attrs.cores))).astype('int')
+    cores = np.array(ftable.attrs.cores).astype('int')
     for n in newcores:
         for m in cores[np.where(cores>n)[0]]:
             cor, lag = redpy.correlation.xcorr1x1(rtable[n]['windowFFT'],
@@ -249,7 +249,7 @@ def runFullOPTICS(rtable, ctable, ftable, opt):
     
     # Convert id to row
     rtable_ids = rtable.cols.id[:]
-    r = np.zeros((max(rtable_ids)+1,)).astype('uint32')
+    r = np.zeros((max(rtable_ids)+1,)).astype('int')
     r[rtable_ids] = range(len(rtable_ids))
     C[r[id1], r[id2]] = ccc
     C[r[id2], r[id1]] = ccc
@@ -267,3 +267,55 @@ def runFullOPTICS(rtable, ctable, ftable, opt):
     alignAll(rtable, ctable, ftable, cnum, opt)
 
     
+def runFamOPTICS(rtable, ctable, ftable, fnum, opt):
+    
+    """
+    Runs OPTICS ordering within a single family
+    
+    rtable: Repeater table
+    ctable: Correlation matrix table
+    ftable: Families table
+    fnum: Family number to run
+    opt: Options object describing station/run parameters
+    
+    Returns slightly different ordering than full version, but probably better
+    """
+    
+    # Could be sped up if these three don't have to be called every time
+    id1 = ctable.cols.id1[:]
+    id2 = ctable.cols.id2[:]
+    ccc = 1-ctable.cols.ccc[:]
+    
+    fam = np.fromstring(ftable[fnum]['members'], dtype=int, sep=' ')
+    
+    # Create distance matrix
+    ids = rtable[fam]['id']
+    ix = np.where(np.in1d(id1,ids)|np.in1d(id2,ids))
+    r = np.zeros((max(ids)+1,)).astype('int')
+    r[ids] = range(len(ids))
+    D = np.ones((len(ids),len(ids)))
+    D[r[id2[ix]],r[id1[ix]]] = ccc[ix]
+    D[r[id1[ix]],r[id2[ix]]] = ccc[ix]
+    D[range(len(ids)),range(len(ids))] = 0
+    
+    # Sort so most connected event is always considered for core
+    s = np.argsort(sum(D))[::-1]
+    D = D[s,:]
+    D = D[:,s]
+    fam = fam[s]
+    
+    # Run OPTICS
+    ttree = setOfObjects(D)
+    prep_optics(ttree,1)
+    build_optics(ttree,1)
+    order = np.array(ttree._ordered_list)
+    core = fam[np.argmin(ttree._reachability)]
+    
+    # Write to ftable
+    np.set_printoptions(threshold=np.nan)
+    np.set_printoptions(linewidth=np.nan)
+    ftable.cols.members[fnum] = np.array2string(fam[order])[1:-1]
+    ftable.cols.core[fnum] = core
+    ftable.cols.startTime[fnum] = np.min(rtable[fam]['startTimeMPL'])
+    ftable.cols.printme[fnum] = 1
+    ftable.flush()

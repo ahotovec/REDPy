@@ -294,7 +294,7 @@ def plotCores(rtable, ftable, opt):
     
     """
     
-    cores = rtable[ftable.attrs.cores]
+    cores = rtable[ftable.cols.core[:]]
     n = -1
     for r in cores:
         n = n+1
@@ -377,7 +377,7 @@ def plotFamilies(rtable, ctable, ftable, opt):
         fam = np.fromstring(ftable[cnum]['members'], dtype=int, sep=' ')
 
         if ftable.cols.printme[cnum] != 0:
-            core = np.intersect1d(fam, ftable.attrs.cores)[0]
+            core = np.intersect1d(fam, ftable.cols.core[:])[0]
         
             fig = plt.figure(figsize=(10, 11))
         
