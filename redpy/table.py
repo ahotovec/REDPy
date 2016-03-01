@@ -408,18 +408,21 @@ def removeFamilies(rtable, ctable, dtable, ftable, cnums, opt):
     ftable: Families table
     cnums: Families to remove
     opt: Options object describing station/run parameters
-    
-    Reruns OPTICS when done deleting
     """
-    # NEED TO REWRITE WITHOUT RUNNING FULL OPTICS
-        
+
+    cnums = np.sort(cnums)
+    old = range(len(rtable))
+    transform = np.zeros((len(rtable),)).astype(int)    
     ids = rtable.cols.id[:]
     members = np.array([])
-    for cnum in cnums:
+    oldcores = ftable.cols.core[:]
+    for cnum in cnums[::-1]:
         members = np.append(members, np.fromstring(ftable[cnum]['members'], dtype=int, sep=' '))
+        ftable.remove_row(cnum)
+    ftable.attrs.nClust-=len(cnums)
     members = np.sort(members).astype('uint32')
     
-    cores = rtable[np.intersect1d(members, ftable.attrs.cores)]
+    cores = rtable[np.intersect1d(members, oldcores)]
     for core in cores:
         trigger = dtable.row
         trigger['id'] = core['id']
@@ -438,11 +441,20 @@ def removeFamilies(rtable, ctable, dtable, ftable, cnums, opt):
         for c in idxc[::-1]:
             ctable.remove_row(c)
         rtable.remove_row(m)
+        old.remove(m)
     
-    ftable.attrs.prevcores = []
-    ftable.attrs.cores = []    
-    redpy.cluster.runFullOPTICS(rtable, ctable, ftable, opt)
+    new = range(len(rtable))
+    transform[old] = new
     
+    for n in range(len(ftable)):
+        members = np.fromstring(ftable[n]['members'], dtype=int, sep=' ')
+        core = ftable[n]['core']
+        ftable.cols.members[n] = np.array2string(transform[members])[1:-1]
+        ftable.cols.core[n] = transform[core]
+        if n>=min(cnums):
+            ftable.cols.printme[n] = 1
+        ftable.flush()
+        
     rtable.flush()
     dtable.flush()
 
@@ -546,10 +558,12 @@ def mergeFamilies(rtable, ctable, ftable, wfam, wlag, opt):
     Combines families that have been merged by adding a new event
     """
     
-    
-    
-    # May need to have some decision-making step here to determine which family to
-    # actually align to (max members? max amplitude?)
+    # Determine which family is largest, use that as base family
+    nmem = []
+    for n in range(len(wfam)):
+        nmem.append(len(np.fromstring(ftable[wfam[n]]['members'], dtype=int, sep=' ')))
+    wlag = np.array(wlag)
+    wlag = wlag - wlag[np.argmax(nmem)]
     
     # Adjust lags
     for n in range(len(wfam)):
@@ -568,7 +582,8 @@ def mergeFamilies(rtable, ctable, ftable, wfam, wlag, opt):
         if f2!=f1:            
             ftable.cols.members[f1]+=' '+ftable[f2]['members']
             ftable.remove_row(f2)
-            ftable.attrs.nClust-=1            
+            ftable.attrs.nClust-=1
+    ftable.cols.printme[f1:len(ftable)] = np.ones((len(ftable)-f1,))            
     reorderFamilies(ftable, opt)
     redpy.cluster.runFamOPTICS(rtable, ctable, ftable, f1, opt)
     

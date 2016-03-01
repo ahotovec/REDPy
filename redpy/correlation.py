@@ -10,12 +10,10 @@ def calcWindow(waveform, windowStart, opt, winlen=1):
 
     """
     Calculates the amplitude coefficient and FFT for a window of data.
-
     waveform: numpy array of waveform data
     windowStart: starting sample of window
     opt: Options object describing station/run parameters
     winlen: Fraction of window to use (optional)
-
     Returns windowCoeff and windowFFT
     """
     
@@ -34,14 +32,11 @@ def xcorr1x1(windowFFT1, windowFFT2, windowCoeff1, windowCoeff2):
 
     """
     Calculates the cross-correlation coefficient and lag for two windows.
-
     windowFFT1: FFT of first window
     windowFFT2: FFT of second window
     windowCoeff1: amplitude coefficient of first window
     windowCoeff2: amplitude coefficient of second window
-
     Order matters for sign of lag, but not CCC.
-
     Returns maximum cross-correlation and optimal lag (in samples)
     """
 
@@ -148,7 +143,6 @@ def compareGoodOrphans(rtable, otable, ctable, ftable, trig, id, coeffi, ffti, c
     """
     Goes and finds the matches of the new event in the orphan table, appends them to
     the repeater table, and then compares to cores
-
     rtable: Repeater table
     otable: Orphan table
     ctable: Correlation matrix table
@@ -328,7 +322,7 @@ def compareMultipleOrphans2Cores(rtable, ctable, ftable, written, opt):
     
     if found == 0:
         members = np.arange(len(rtable)-written,len(rtable)).astype(int)
-        core = len(rtable)-written #not sure which to use?
+        core = len(rtable)-written
         redpy.table.createNewFamily(rtable, ftable, members, core, opt)
     else:
         if len(wfam)==1:

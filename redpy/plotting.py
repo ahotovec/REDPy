@@ -19,14 +19,7 @@ def createBokehTimelineFigure(rtable, ctable, ftable, opt):
     opt: Options object describing station/run parameters
         
     """
-        
-    # Run plotCores to ensure thumbnails are up to date
-    plotCores(rtable, ftable, opt)
-    plotFamilies(rtable, ctable, ftable, opt)
-    printCatalog(rtable, ftable, opt)
     
-    ftable.cols.printme[:] = np.zeros((len(ftable),))
-
     dt = rtable.cols.startTimeMPL[:]
     amp = np.log10(rtable.cols.windowAmp[:])
     
@@ -280,7 +273,12 @@ def createBokehTimelineFigure(rtable, ctable, ftable, opt):
             title='{0} Timeline - Last {1:.1f} Days'.format(opt.title,opt.recplot))
         r = gridplot([[r0],[r1]])
         save(r)
-         
+
+    # Run plotCores to ensure thumbnails are up to date
+    printCatalog(rtable, ftable, opt)
+    plotCores(rtable, ftable, opt)
+    plotFamilies(rtable, ctable, ftable, opt)
+    ftable.cols.printme[:] = np.zeros((len(ftable),))        
 
 
 def plotCores(rtable, ftable, opt):
