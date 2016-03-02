@@ -33,7 +33,6 @@ def Repeaters(opt):
         "windowCoeff"   : Float64Col(shape=(), pos=5),
         "windowFFT"     : ComplexCol(shape=(opt.winlen,), itemsize=16, pos=6),
         "windowAmp"     : Float64Col(shape=(), pos=7),
-        "alignedTo"     : Int32Col(shape=(), pos=8)
         }
     
     return dict
@@ -249,7 +248,7 @@ def openTable(opt):
     return h5file, rtable, otable, ctable, jtable, dtable, ftable
 
     
-def populateRepeater(rtable, ftable, id, trig, opt, alignedTo, windowStart=-1):
+def populateRepeater(rtable, ftable, id, trig, opt, windowStart=-1):
 
     """
     Initially populates a new row in the 'Repeater Catalog' table.
@@ -259,7 +258,6 @@ def populateRepeater(rtable, ftable, id, trig, opt, alignedTo, windowStart=-1):
     id: integer id number given to this trigger, should be unique
     trig: ObsPy trace from triggering function
     opt: Options object describing station/run parameters
-    alignedTo: id number of repeater this one is aligned to (can be itself)
     windowStart: triggering time (defaults to opt.ptrig seconds)
 
     Appends this row to Repeaters table, but does not update the clustering parameters
@@ -284,7 +282,6 @@ def populateRepeater(rtable, ftable, id, trig, opt, alignedTo, windowStart=-1):
     trigger['windowCoeff'], trigger['windowFFT'] = redpy.correlation.calcWindow(
         trig.data, windowStart, opt)
     trigger['windowAmp'] = max(abs(trig.data[windowStart:int(windowStart+opt.winlen/2)]))
-    trigger['alignedTo'] = alignedTo
     
     trigger.append()  
     rtable.flush()  
@@ -353,7 +350,7 @@ def populateJunk(jtable, trig, isjunk, opt):
     jtable.flush()
 
 
-def moveOrphan(rtable, otable, ftable, oindex, alignedTo, opt):
+def moveOrphan(rtable, otable, ftable, oindex, opt):
     
     """
     Moves a row from the 'Orphans' table to the 'Repeater Catalog' table.
@@ -362,7 +359,6 @@ def moveOrphan(rtable, otable, ftable, oindex, alignedTo, opt):
     otable: Orphan table
     ftable: Families table
     oindex: Row in otable to move
-    alignedTo: ID of event new repeater is aligned to
     opt: Options object describing station/run parameters
     
     """
@@ -386,7 +382,6 @@ def moveOrphan(rtable, otable, ftable, oindex, alignedTo, opt):
         otable.cols.windowCoeff[oindex] = 0
         otable.cols.expires[oindex] = (UTCDateTime(orow['startTime'])-86400).isoformat()
     trigger['windowAmp'] = orow['windowAmp']
-    trigger['alignedTo'] = alignedTo
     
     trigger.append()
         
@@ -548,7 +543,6 @@ def reorderFamilies(ftable, opt):
         ftable.cols.members[:] = members[order]
         ftable.cols.core[:] = cores[order]
         ftable.cols.printme[:] = printme[order]
-        # need to adjust printme here
         ftable.flush()
     
     
