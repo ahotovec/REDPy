@@ -533,16 +533,18 @@ def reorderFamilies(ftable, opt):
     """
     
     startTimes = ftable.cols.startTime[:]
-    members = ftable.cols.members[:]
-    cores = ftable.cols.core[:]
-    printme = ftable.cols.printme[:]
     order = np.argsort(startTimes)
+    x = np.arange(len(ftable))
         
-    if (order!=np.arange(len(ftable))).any():
-        ftable.cols.startTime[:] = startTimes[order]
-        ftable.cols.members[:] = members[order]
-        ftable.cols.core[:] = cores[order]
-        ftable.cols.printme[:] = printme[order]
+    if (x!=order).any():
+        members = ftable.cols.members[:]
+        cores = ftable.cols.core[:]
+        printme = ftable.cols.printme[:]
+        for n in np.where(x!=order)[0]:
+            ftable.cols.startTime[n] = startTimes[order[n]]
+            ftable.cols.members[n] = members[order[n]]
+            ftable.cols.core[n] = cores[order[n]]
+            ftable.cols.printme[n] = printme[order[n]]
         ftable.flush()
     
     
