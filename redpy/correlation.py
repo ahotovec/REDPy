@@ -404,6 +404,7 @@ def compareSingleOrphan2Cores(rtable, otable, ctable, ftable, trig, id, coeffi, 
             members = np.fromstring(ftable[coresNum[np.argmax(cor)]]['members'],
                 dtype=int, sep=' ')
             famtable = rtable[members]
+            idf = famtable['id']
             corx, lagx = xcorr1xtable(coeffi2, ffti2, famtable, opt)
             if max(corx) >= opt.cmin:
                 if written == 0:
@@ -419,8 +420,7 @@ def compareSingleOrphan2Cores(rtable, otable, ctable, ftable, trig, id, coeffi, 
                     wlag.append(lagx[np.argmax(corx)])
                 wfam.append(coresNum[np.argmax(cor)])
                 for x in range(len(corx)):
-                    redpy.table.appendCorrelation(ctable, id, famtable[x]['id'],
-                        corx[x], opt)
+                    redpy.table.appendCorrelation(ctable, id, idf[x], corx[x], opt)
                 
         coresNum = np.delete(coresNum, np.argmax(cor))
         fftjs = np.delete(fftjs, np.argmax(cor))
