@@ -429,12 +429,14 @@ def removeFamilies(rtable, ctable, dtable, ftable, cnums, opt):
         trigger['windowFFT'] = core['windowFFT']
         trigger['windowAmp'] = core['windowAmp']
         trigger.append()
+        
+    ids = ids[members]
+    id2 = ctable.cols.id2[:]
+    idxc = np.where(np.in1d(id2,ids))
+    for c in idxc[::-1]:
+        ctable.remove_row(c)
 
     for m in members[::-1]:
-        id = ids[m]
-        idxc = ctable.get_where_list('(id1=={0}) | (id2=={0})'.format(id))
-        for c in idxc[::-1]:
-            ctable.remove_row(c)
         rtable.remove_row(m)
         old.remove(m)
     
