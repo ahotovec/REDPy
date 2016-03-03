@@ -28,7 +28,7 @@ def runFamOPTICS(rtable, ctable, ftable, fnum, opt):
         
         # Create distance matrix
         ids = rtable[fam]['id']
-        ix = np.where(np.in1d(id1,ids)|np.in1d(id2,ids))
+        ix = np.where(np.in1d(id2,ids))
         r = np.zeros((max(ids)+1,)).astype('int')
         r[ids] = range(len(ids))
         D = np.ones((len(ids),len(ids)))
@@ -57,3 +57,4 @@ def runFamOPTICS(rtable, ctable, ftable, fnum, opt):
         ftable.cols.startTime[fnum] = np.min(rtable[fam]['startTimeMPL'])
         ftable.cols.printme[fnum] = 1
         ftable.flush()
+        
