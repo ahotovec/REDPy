@@ -18,8 +18,8 @@ def runFamOPTICS(rtable, ctable, ftable, fnum, opt):
     
     fam = np.fromstring(ftable[fnum]['members'], dtype=int, sep=' ')
     
-    if len(fam) in (3, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000,
-        50000, 100000, 250000, 500000):
+    if len(fam) in (3, 4, 5, 6, 10, 15, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000,
+        25000, 50000, 100000, 250000, 500000):
     
         # Could be sped up if these three don't have to be called every time
         id1 = ctable.cols.id1[:]
