@@ -432,7 +432,7 @@ def removeFamilies(rtable, ctable, dtable, ftable, cnums, opt):
         
     ids = ids[members]
     id2 = ctable.cols.id2[:]
-    idxc = np.where(np.in1d(id2,ids))
+    idxc = np.where(np.in1d(id2,ids))[0]
     for c in idxc[::-1]:
         ctable.remove_row(c)
 
