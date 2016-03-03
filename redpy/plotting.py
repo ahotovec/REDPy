@@ -339,10 +339,15 @@ def plotFamilies(rtable, ctable, ftable, opt):
     matplotlib.rcParams['font.sans-serif'] = ['Arial']
     matplotlib.rcParams['font.size'] = 8.0
     
+    # Load into memory
     C = np.eye(len(rtable))
     id1 = ctable.cols.id1[:]
     id2 = ctable.cols.id2[:]
-    
+    startTimeMPL = rtable.cols.startTimeMPL[:]
+    startTime = rtable.cols.startTime[:]
+    windowAmp = rtable.cols.windowAmp[:]
+    windowStart = rtable.cols.windowStart[:]
+        
     # Convert id to row
     rtable_ids = rtable.cols.id[:]
     r = np.zeros((max(rtable_ids)+1,)).astype('uint32')
@@ -351,22 +356,23 @@ def plotFamilies(rtable, ctable, ftable, opt):
     C[r[id2], r[id1]] = ctable.cols.ccc[:]
 
     # Get waveform data
+    ### THIS CAN PROBABLY BE OPTIMIZED ###
     n=-1
     data = np.zeros((len(rtable), int(opt.winlen*2)))
     for r in rtable.iterrows():
         n = n+1
         
         # Determine padding        
-        ppad = int(max(0, opt.ptrig*opt.samprate - r['windowStart']))
-        apad = int(max(0, r['windowStart'] - opt.ptrig*opt.samprate - 1))
+        ppad = int(max(0, opt.ptrig*opt.samprate - windowStart[n]))
+        apad = int(max(0, windowStart[n] - opt.ptrig*opt.samprate - 1))
         
-        tmp = r['waveform'][max(0, r['windowStart']-int(
+        tmp = r['waveform'][max(0, windowStart[n]-int(
             opt.ptrig*opt.samprate)):min(len(r['waveform']),
-            r['windowStart']+int(opt.atrig*opt.samprate))]
+            windowStart[n]+int(opt.atrig*opt.samprate))]
             
         tmp = np.hstack((np.zeros(ppad), tmp, np.zeros(apad)))
         data[n, :] = tmp[int(opt.ptrig*opt.samprate - opt.winlen*0.5):int(
-            opt.ptrig*opt.samprate + opt.winlen*1.5)]/r['windowAmp']
+            opt.ptrig*opt.samprate + opt.winlen*1.5)]/windowAmp[n]
 
     cmap = matplotlib.cm.get_cmap('YlOrRd')
     cmap.set_under('k')
@@ -375,7 +381,7 @@ def plotFamilies(rtable, ctable, ftable, opt):
         fam = np.fromstring(ftable[cnum]['members'], dtype=int, sep=' ')
 
         if ftable.cols.printme[cnum] != 0:
-            core = np.intersect1d(fam, ftable.cols.core[:])[0]
+            core = ftable[cnum]['core']
         
             fig = plt.figure(figsize=(10, 11))
         
@@ -415,7 +421,7 @@ def plotFamilies(rtable, ctable, ftable, opt):
         
             # Plot amplitude timeline
             ax3 = fig.add_subplot(3, 3, (4,6))
-            ax3.plot_date(rtable[fam]['startTimeMPL'], rtable[fam]['windowAmp'],
+            ax3.plot_date(startTimeMPL[fam], windowAmp[fam],
                     'ro', alpha=0.5, markeredgecolor='r', markeredgewidth=0.5)
             myFmt = matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M')
             ax3.xaxis.set_major_formatter(myFmt)
@@ -425,8 +431,8 @@ def plotFamilies(rtable, ctable, ftable, opt):
             ax3.set_yscale('log')
         
             # Prep catalog
-            catalogind = np.argsort(rtable[fam]['startTimeMPL'])
-            catalog = rtable[fam]['startTimeMPL'][catalogind]
+            catalogind = np.argsort(startTimeMPL[fam])
+            catalog = startTimeMPL[fam][catalogind]
             longevity = catalog[-1] - catalog[0]
             spacing = np.diff(catalog)*24
             minind = fam[catalogind[0]]
@@ -471,13 +477,11 @@ def plotFamilies(rtable, ctable, ftable, opt):
                     </span> 
                 <img src="fam{0}.png"></br>                
                 """.format(cnum, opt.title, len(fam), (UTCDateTime(
-                    rtable[minind]['startTime']) +
-                    rtable[minind]['windowStart']/opt.samprate).isoformat(), (UTCDateTime(
-                    rtable[maxind]['startTime']) +
-                    rtable[maxind]['windowStart']/opt.samprate).isoformat(), longevity, (UTCDateTime(
-                    rtable[core]['startTime']) +
-                    rtable[core]['windowStart']/opt.samprate).isoformat(), np.mean(spacing),
-                    np.median(spacing)))
+                    startTime[minind]) + windowStart[minind]/opt.samprate).isoformat(),
+                    (UTCDateTime(startTime[maxind]) + windowStart[
+                    maxind]/opt.samprate).isoformat(), longevity, (UTCDateTime(
+                    startTime[core]) + windowStart[core]/opt.samprate).isoformat(),
+                    np.mean(spacing), np.median(spacing)))
                                 
                 f.write("""
                 </center></body></html>
