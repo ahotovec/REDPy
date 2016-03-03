@@ -330,10 +330,7 @@ def compareMultipleOrphans2Cores(rtable, ctable, ftable, written, opt):
         redpy.table.createNewFamily(rtable, ftable, members, core, opt)
     else:
         if len(wfam)==1:
-            if len(np.fromstring(ftable[wfam[0]]['members'], dtype=int, sep=' ')) in (3,
-                5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000,
-                100000, 250000, 500000):
-                redpy.cluster.runFamOPTICS(rtable, ctable, ftable, wfam[0], opt)
+            redpy.cluster.runFamOPTICS(rtable, ctable, ftable, wfam[0], opt)
         else:
             redpy.table.mergeFamilies(rtable, ctable, ftable, wfam, wlag, opt)
         
@@ -434,10 +431,7 @@ def compareSingleOrphan2Cores(rtable, otable, ctable, ftable, trig, id, coeffi, 
         redpy.table.populateOrphan(otable, id, trig, opt)
     else:
         if len(wfam)==1:
-            if len(np.fromstring(ftable[wfam[0]]['members'], dtype=int, sep=' ')) in (3,
-                5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000,
-                100000, 250000, 500000):
-                redpy.cluster.runFamOPTICS(rtable, ctable, ftable, wfam[0], opt)
+            redpy.cluster.runFamOPTICS(rtable, ctable, ftable, wfam[0], opt)
         else:
             redpy.table.mergeFamilies(rtable, ctable, ftable, wfam, wlag, opt)
 
