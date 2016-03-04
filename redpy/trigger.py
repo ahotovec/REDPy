@@ -150,11 +150,13 @@ def trigger(st, stC, rtable, opt):
                     # Slice and save as first trace              
                     trigs = st.slice(ttime - opt.ptrig, ttime + opt.atrig)
                     trigs[ind].stats.maxratio = np.max(cft[n]['cft_peaks'])
+                    trigs[ind].data = trigs[ind].data[0:opt.wshape]
                     ind = ind+1
                 else:
                     # Slice and append to previous traces
                     trigs = trigs.append(tr.slice(ttime - opt.ptrig, ttime + opt.atrig))
                     trigs[ind].stats.maxratio =  np.max(cft[n]['cft_peaks'])
+                    trigs[ind].data = trigs[ind].data[0:opt.wshape]
                     ind = ind+1
                                                          
         if ind is 0:
