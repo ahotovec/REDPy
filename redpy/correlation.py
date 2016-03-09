@@ -17,18 +17,23 @@ def calcWindow(waveform, windowStart, opt, winlen=1):
     Returns windowCoeff and windowFFT
     """
     
-    # Testing: shift window left by 10% of winlen
+    # Shift window left by 10% of winlen
     windowStart = windowStart - opt.winlen/10
+    windowCoeff = []
+    windowFFT = np.zeros(opt.winlen*opt.nsta,).astype(np.complex64)
     
-    windowCoeff = 1/np.sqrt(sum(waveform[windowStart:(windowStart + opt.winlen*winlen)] *
-        waveform[windowStart:(windowStart + opt.winlen*winlen)]))
-    windowFFT = np.reshape(fft(waveform[windowStart:(windowStart + opt.winlen*winlen)]),
-        (opt.winlen*winlen,))
+    for n in range(opt.nsta):
+        winstart = n*opt.wshape + windowStart
+        winend = n*opt.wshape + windowStart + opt.winlen*winlen
+        windowCoeff.append(1/np.sqrt(sum(
+            waveform[winstart:winend] * waveform[winstart:winend])))
+        windowFFT[n*opt.winlen:(n+1)*opt.winlen] = np.reshape(
+            fft(waveform[winstart:winend]),(opt.winlen*winlen,))
 
     return windowCoeff, windowFFT
 
 
-def xcorr1x1(windowFFT1, windowFFT2, windowCoeff1, windowCoeff2):
+def xcorr1x1(windowFFT1, windowFFT2, windowCoeff1, windowCoeff2, opt):
 
     """
     Calculates the cross-correlation coefficient and lag for two windows.
@@ -40,20 +45,32 @@ def xcorr1x1(windowFFT1, windowFFT2, windowCoeff1, windowCoeff2):
     Returns maximum cross-correlation and optimal lag (in samples)
     """
 
-    M = len(windowFFT1)
-    coeff = windowCoeff1 * windowCoeff2
-
-    cors = np.real(ifft(windowFFT1 * np.conj(windowFFT2))) * coeff
-
-    indx = np.argmax(cors)
-    maxcor = cors[indx]
+    M = opt.winlen
     
-    if indx <= M/2:
-        maxlag = indx
-    else:
-        maxlag = indx-M
+    cor = []
+    lag = []
+    for n in range(opt.nsta):
+        coeff = windowCoeff1[n] * windowCoeff2[n]
+        cors = np.real(ifft(windowFFT1[n*M:(n+1)*M] * np.conj(
+            windowFFT2[n*M:(n+1)*M]))) * coeff
 
-    return maxcor, maxlag
+        indx = np.argmax(cors)
+        cor.append(cors[indx])
+
+        if indx <= M/2:
+            lag.append(indx)
+        else:
+            lag.append(indx-M)
+    
+    nthcor = np.sort(np.array(cor))[::-1][opt.ncor-1]
+    maxcor = np.amax(cor)
+    
+    if nthcor >= opt.cmin:
+        maxlag = np.median(np.array(lag)[np.argsort(cor)[::-1][0:opt.ncor]])
+    else:
+        maxlag = lag[np.argmax(cor)]
+
+    return maxcor, maxlag, nthcor
     
 
 def xcorr1xtable(coeffi, ffti, subtable, opt):
@@ -76,13 +93,15 @@ def xcorr1xtable(coeffi, ffti, subtable, opt):
     
     cor = np.zeros((len(subtable),))
     lag = np.zeros((len(subtable),))
+    nthcor = np.zeros((len(subtable),))
 
     j = -1
     for rj in subtable:
         j = j+1
-        cor[j], lag[j] = xcorr1x1(ffti, rj['windowFFT'], coeffi, rj['windowCoeff'])
+        cor[j], lag[j], nthcor[j] = xcorr1x1(
+            ffti, rj['windowFFT'], coeffi, rj['windowCoeff'], opt)
         
-    return cor, lag
+    return cor, lag, nthcor
 
 
 def compare2Family(rtable, ctable, ftable, rnumber, cnum, opt):
@@ -106,12 +125,13 @@ def compare2Family(rtable, ctable, ftable, rnumber, cnum, opt):
     ids = famtable['id']
     rid = rtable[rnumber]['id']
         
-    cor, lag = xcorr1xtable(rtable[rnumber]['windowCoeff'], rtable[rnumber]['windowFFT'],
-        famtable, opt)
+    cor, lag, nthcor = xcorr1xtable(rtable[rnumber]['windowCoeff'],
+        rtable[rnumber]['windowFFT'], famtable, opt)
         
-    if len(np.where(cor>=opt.cmin)[0])>0:
+    if len(np.where(nthcor>=opt.cmin)[0]) > 0:
         for j in range(len(cor)):
-            redpy.table.appendCorrelation(ctable, rid, ids[j], cor[j], opt)
+            if (nthcor[j] >= opt.cmin):
+                redpy.table.appendCorrelation(ctable, rid, ids[j], cor[j], opt)
 
 
 def compareDeleted(trigs, dtable, opt):
@@ -129,7 +149,7 @@ def compareDeleted(trigs, dtable, opt):
     for t in trigs:
     
         coeffi, ffti = calcWindow(t.data, int(opt.ptrig*opt.samprate), opt)  
-        cor, lag = xcorr1xtable(coeffi, ffti, dtable, opt)
+        cor, lag, nthcor = xcorr1xtable(coeffi, ffti, dtable, opt)
         
         if np.where(cor >= opt.cmin - 0.05)[0].any():
             trigs.remove(t)
@@ -138,7 +158,7 @@ def compareDeleted(trigs, dtable, opt):
 
 
 def compareGoodOrphans(rtable, otable, ctable, ftable, trig, id, coeffi, ffti, cor, lag,
-    opt):
+    nthcor, opt):
 
     """
     Goes and finds the matches of the new event in the orphan table, appends them to
@@ -172,10 +192,10 @@ def compareGoodOrphans(rtable, otable, ctable, ftable, trig, id, coeffi, ffti, c
             coeffj2, fftj2 = calcWindow(otable[np.argmax(cor)]['waveform'],
                 int(opt.ptrig*opt.samprate + lagmax - lag[np.argmax(cor)]), opt)
             
-        cor2, lag2 = xcorr1x1(ffti2, fftj2, coeffi2, coeffj2)
+        cor2, lag2, nthcor2 = xcorr1x1(ffti2, fftj2, coeffi2, coeffj2, opt)
         
         # If actually matches...
-        if cor2 >= opt.cmin:
+        if nthcor2 >= opt.cmin:
             # Move both the orphans to the repeater table
             if written == 0:
                 redpy.table.populateRepeater(rtable, ftable, id, trig, opt,
@@ -194,6 +214,7 @@ def compareGoodOrphans(rtable, otable, ctable, ftable, trig, id, coeffi, ffti, c
                 written = written+1
                 
         lag = np.delete(lag, np.argmax(cor))
+        nthcor = np.delete(nthcor, np.argmax(cor))
         cor = np.delete(cor, np.argmax(cor))
     
     # If there are no actual matches in the orphans, check new event with cores
@@ -236,7 +257,7 @@ def compareMultipleOrphans2Cores(rtable, ctable, ftable, written, opt):
         
         coeffi = rtable.cols.windowCoeff[-written]
         ffti = rtable.cols.windowFFT[-written]
-        cor, lag = xcorr1xtable(coeffi, ffti, cores, opt)
+        cor, lag, nthcor = xcorr1xtable(coeffi, ffti, cores, opt)
         
         # Loop through families that match
         while len(cor[cor >= opt.cmin - 0.05]) > 0:    
@@ -245,11 +266,11 @@ def compareMultipleOrphans2Cores(rtable, ctable, ftable, written, opt):
                 lagmax2 = lag[np.argmax(cor)]
                 coeffi2, ffti2 = calcWindow(rtable[-written]['waveform'],
                     int(rtable[-written]['windowStart'] + lagmax2), opt)
-                            
-            cor2, lag2 = xcorr1x1(ffti2, fftjs[np.argmax(cor)], coeffi2,
-                coeffjs[np.argmax(cor)])   
+                           
+            cor2, lag2, nthcor2 = xcorr1x1(ffti2, fftjs[np.argmax(cor)], coeffi2,
+                coeffjs[np.argmax(cor)], opt)
                 
-            if cor2 >= opt.cmin:
+            if nthcor2 >= opt.cmin:
                 if found == 0:
                     found = 1
                     wlag.append(0)
@@ -271,11 +292,12 @@ def compareMultipleOrphans2Cores(rtable, ctable, ftable, written, opt):
                 
                 # Compare to full family, write to correlation table
                 for i in range(-written,0):
-                    cor3, lag3 = xcorr1x1(rtable[i]['windowFFT'],
+                    cor3, lag3, nthcor3 = xcorr1x1(rtable[i]['windowFFT'],
                         fftjs[np.argmax(cor)], rtable[i]['windowCoeff'],
-                        coeffjs[np.argmax(cor)])
-                    redpy.table.appendCorrelation(ctable, rtable[i]['id'],
-                        ids[np.argmax(cor)], cor3, opt)
+                        coeffjs[np.argmax(cor)], opt)
+                    if nthcor3 >= opt.cmin:
+                        redpy.table.appendCorrelation(ctable, rtable[i]['id'],
+                            ids[np.argmax(cor)], cor3, opt)
                     compare2Family(rtable, ctable, ftable, i,
                         coresNum[np.argmax(cor)], opt)
             
@@ -283,8 +305,8 @@ def compareMultipleOrphans2Cores(rtable, ctable, ftable, written, opt):
                 members = np.fromstring(ftable[coresNum[np.argmax(cor)]]['members'],
                     dtype=int, sep=' ')
                 famtable = rtable[members]
-                corx, lagx = xcorr1xtable(coeffi2, ffti2, famtable, opt)
-                if max(corx) >= opt.cmin:
+                corx, lagx, nthcorx = xcorr1xtable(coeffi2, ffti2, famtable, opt)
+                if max(nthcorx) >= opt.cmin:
                     if found == 0:
                         found = 1
                         wlag.append(0)
@@ -307,29 +329,32 @@ def compareMultipleOrphans2Cores(rtable, ctable, ftable, written, opt):
                     wfam.append(coresNum[np.argmax(cor)])
                     
                     for x in range(len(corx)):
-                        redpy.table.appendCorrelation(ctable, rtable[-written]['id'],
-                            famtable[x]['id'], corx[x], opt)
+                        if nthcorx[x] >= opt.cmin:
+                            redpy.table.appendCorrelation(ctable, rtable[-written]['id'],
+                                famtable[x]['id'], corx[x], opt)
                             
             coresNum = np.delete(coresNum, np.argmax(cor))
-            fftjs = np.delete(fftjs, np.argmax(cor))
-            coeffjs = np.delete(coeffjs, np.argmax(cor))
+            fftjs = np.delete(fftjs, np.argmax(cor), axis=0)
+            coeffjs = np.delete(coeffjs, np.argmax(cor), axis=0)
             ids = np.delete(ids, np.argmax(cor))
             lag = np.delete(lag, np.argmax(cor))
             cor = np.delete(cor, np.argmax(cor))
         
     # Make sure to save correlation of new events with each other
     for i in range(-written+1,0):
-        cor4, lag4 = xcorr1x1(rtable[i]['windowFFT'], rtable[-written]['windowFFT'],
-            rtable[i]['windowCoeff'], rtable[-written]['windowCoeff'])
-        redpy.table.appendCorrelation(ctable, rtable[-written]['id'], rtable[i]['id'],
-            cor4, opt)
+        cor4, lag4, nthcor4 = xcorr1x1(rtable[i]['windowFFT'],
+            rtable[-written]['windowFFT'], rtable[i]['windowCoeff'],
+            rtable[-written]['windowCoeff'], opt)
+        if nthcor4 >= opt.cmin:
+            redpy.table.appendCorrelation(ctable, rtable[-written]['id'], rtable[i]['id'],
+                cor4, opt)
     
     if found == 0:
         members = np.arange(len(rtable)-written,len(rtable)).astype(int)
         core = len(rtable)-written
         redpy.table.createNewFamily(rtable, ftable, members, core, opt)
     else:
-        if len(wfam)==1:
+        if len(wfam) == 1:
             redpy.cluster.runFamOPTICS(rtable, ctable, ftable, wfam[0], opt)
         else:
             redpy.table.mergeFamilies(rtable, ctable, ftable, wfam, wlag, opt)
@@ -358,7 +383,7 @@ def compareSingleOrphan2Cores(rtable, otable, ctable, ftable, trig, id, coeffi, 
     ids = cores['id']
     coresNum = np.arange(ftable.attrs.nClust)
          
-    cor, lag = xcorr1xtable(coeffi, ffti, cores, opt)
+    cor, lag, nthcor = xcorr1xtable(coeffi, ffti, cores, opt)
     wfam = []
     wlag = []
     
@@ -370,12 +395,12 @@ def compareSingleOrphan2Cores(rtable, otable, ctable, ftable, trig, id, coeffi, 
             lagmax = lag[np.argmax(cor)]
             coeffi2, ffti2 = calcWindow(trig.data, int(opt.ptrig*opt.samprate + lagmax),
                 opt)
-
-        cor2, lag2 = xcorr1x1(ffti2, fftjs[np.argmax(cor)], coeffi2,
-            coeffjs[np.argmax(cor)])
+        
+        cor2, lag2, nthcor2 = xcorr1x1(ffti2, fftjs[np.argmax(cor)], coeffi2,
+                coeffjs[np.argmax(cor)], opt)
         
         # If it definitely matches a family...
-        if cor2 >= opt.cmin:
+        if nthcor2 >= opt.cmin:
             if written == 0:
                 # Move the orphan to the repeater table
                 redpy.table.populateRepeater(rtable, ftable, id, trig, opt,
@@ -402,8 +427,8 @@ def compareSingleOrphan2Cores(rtable, otable, ctable, ftable, trig, id, coeffi, 
                 dtype=int, sep=' ')
             famtable = rtable[members]
             idf = famtable['id']
-            corx, lagx = xcorr1xtable(coeffi2, ffti2, famtable, opt)
-            if max(corx) >= opt.cmin:
+            corx, lagx, nthcorx = xcorr1xtable(coeffi2, ffti2, famtable, opt)
+            if max(nthcorx) >= opt.cmin:
                 if written == 0:
                     # Move the orphan to the repeater table
                     redpy.table.populateRepeater(rtable, ftable, id, trig, opt,
@@ -417,11 +442,12 @@ def compareSingleOrphan2Cores(rtable, otable, ctable, ftable, trig, id, coeffi, 
                     wlag.append(lagx[np.argmax(corx)])
                 wfam.append(coresNum[np.argmax(cor)])
                 for x in range(len(corx)):
-                    redpy.table.appendCorrelation(ctable, id, idf[x], corx[x], opt)
+                    if nthcorx[x] >= opt.cmin:
+                        redpy.table.appendCorrelation(ctable, id, idf[x], corx[x], opt)
                 
         coresNum = np.delete(coresNum, np.argmax(cor))
-        fftjs = np.delete(fftjs, np.argmax(cor))
-        coeffjs = np.delete(coeffjs, np.argmax(cor))
+        fftjs = np.delete(fftjs, np.argmax(cor), axis=0)
+        coeffjs = np.delete(coeffjs, np.argmax(cor), axis=0)
         ids = np.delete(ids, np.argmax(cor))    
         lag = np.delete(lag, np.argmax(cor))
         cor = np.delete(cor, np.argmax(cor))
@@ -430,7 +456,7 @@ def compareSingleOrphan2Cores(rtable, otable, ctable, ftable, trig, id, coeffi, 
     if written == 0:
         redpy.table.populateOrphan(otable, id, trig, opt)
     else:
-        if len(wfam)==1:
+        if len(wfam) == 1:
             redpy.cluster.runFamOPTICS(rtable, ctable, ftable, wfam[0], opt)
         else:
             redpy.table.mergeFamilies(rtable, ctable, ftable, wfam, wlag, opt)
@@ -468,13 +494,13 @@ def runCorrelation(rtable, otable, ctable, ftable, otimes, rtimes, trig, id, opt
         coeffi, ffti = calcWindow(trig.data, int(opt.ptrig*opt.samprate), opt)
         
         # Correlate with the new event with all the orphans
-        cor, lag = xcorr1xtable(coeffi, ffti, otable, opt)
+        cor, lag, nthcor = xcorr1xtable(coeffi, ffti, otable, opt)
         
 #         try:
             # If there's a match, run the most complex function
         if max(cor) >= opt.cmin - 0.05:
             compareGoodOrphans(rtable, otable, ctable, ftable, trig, id, coeffi, ffti,
-                cor, lag, opt)
+                cor, lag, nthcor, opt)
         else:
             # Compare that orphan to the cores in the repeater table
             if len(rtable) > 0:

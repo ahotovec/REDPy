@@ -1,4 +1,5 @@
 from obspy import UTCDateTime
+import obspy
 from obspy.fdsn import Client
 from obspy.earthworm import Client as EWClient
 from obspy.core.trace import Trace
@@ -19,32 +20,53 @@ def getData(date, opt):
     Returns ObsPy stream objects, one for cutting and the other for triggering
     """    
     
-    # Choose where data are downloaded automatically via options
-    # Download data with padding to account for triggering algorithm
-    # Make overlap symmetric
+    nets = opt.network.split(',')
+    stas = opt.station.split(',')
+    locs = opt.location.split(',')
+    chas = opt.channel.split(',')
     
     if opt.server == "IRIS":
         client = Client("IRIS")
-        st = client.get_waveforms(opt.network, opt.station, opt.location, opt.channel,
-            date - opt.atrig, date + opt.nsec + opt.atrig)
-        if opt.useCoincidence:
-            stC = client.get_waveforms(opt.networkC, opt.stationC, opt.locationC,
-                opt.channelC, date - opt.atrig, date + opt.nsec + opt.atrig)
     else:
         client = EWClient(opt.server, opt.port)
-        st = client.getWaveform(opt.network, opt.station, opt.location, opt.channel,
-            date - opt.atrig, date + opt.nsec + opt.atrig)
-        if opt.useCoincidence:
-            stC = client.getWaveform(opt.networkC, opt.stationC, opt.locationC,
-                opt.channelC, date - opt.atrig, date + opt.nsec + opt.atrig)
-
-    st = st.detrend() # can create noise artifacts??
-    st = st.merge(method=1, fill_value='interpolate')
-    if opt.useCoincidence:
-        stC = stC.detrend()
-        stC = stC.merge(method=1, fill_value='interpolate')
-    else:
-        stC = st
+        
+    st = Stream()
+    for n in range(len(stas)):
+        try:
+            if opt.server == "IRIS":
+                stmp = client.get_waveforms(nets[n], stas[n], locs[n], chas[n],
+                    date - opt.atrig, date + opt.nsec + opt.atrig)
+            else:
+                stmp = client.getWaveform(nets[n], stas[n], locs[n], chas[n],
+                    date - opt.atrig, date + opt.nsec + opt.atrig)
+            stmp = stmp.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax,
+                corners=2, zerophase=True)
+            stmp = stmp.merge(method=1, fill_value='interpolate')
+        except (obspy.fdsn.header.FDSNException):
+            try: # try again
+                if opt.server == "IRIS":
+                    stmp = client.get_waveforms(nets[n], stas[n], locs[n], chas[n],
+                        date - opt.atrig, date + opt.nsec + opt.atrig)
+                else:
+                    stmp = client.getWaveform(nets[n], stas[n], locs[n], chas[n],
+                        date - opt.atrig, date + opt.nsec + opt.atrig)
+                stmp = stmp.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax,
+                    corners=2, zerophase=True)
+                stmp = stmp.merge(method=1, fill_value='interpolate')
+            except (obspy.fdsn.header.FDSNException):
+                print('No data found for {0}.{1}'.format(stas[n],nets[n]))
+                trtmp = Trace()
+                trtmp.stats.sampling_rate = opt.samprate
+                trtmp.stats.station = stas[n]
+                stmp = Stream().extend([trtmp.copy()])
+        # Resample to ensure all traces are same length
+        if stmp[0].stats.sampling_rate != opt.samprate:
+            stmp = stmp.resample(opt.samprate)
+        st.extend(stmp.copy()) 
+    
+    st = st.trim(starttime=date-opt.atrig, endtime=date+opt.nsec+opt.atrig, pad=True,
+        fill_value=0)
+    stC = st.copy()
     
     return st, stC
 
@@ -62,32 +84,53 @@ def getCatData(date, opt):
     Returns ObsPy stream objects, one for cutting and the other for triggering
     """    
     
-    # Choose where data are downloaded automatically via options
-    # Download data with padding to account for triggering algorithm
-    # Make overlap symmetric
+    nets = opt.network.split(',')
+    stas = opt.station.split(',')
+    locs = opt.location.split(',')
+    chas = opt.channel.split(',')
     
     if opt.server == "IRIS":
         client = Client("IRIS")
-        st = client.get_waveforms(opt.network, opt.station, opt.location, opt.channel,
-            date - opt.atrig, date + 3*opt.atrig)
-        if opt.useCoincidence:
-            stC = client.get_waveforms(opt.networkC, opt.stationC, opt.locationC,
-                opt.channelC, date - opt.atrig, date + 3*opt.atrig)
     else:
         client = EWClient(opt.server, opt.port)
-        st = client.getWaveform(opt.network, opt.station, opt.location, opt.channel,
-            date - opt.atrig, date + 3*opt.atrig)
-        if opt.useCoincidence:
-            stC = client.getWaveform(opt.networkC, opt.stationC, opt.locationC,
-                opt.channelC, date - opt.atrig, date + 3*opt.atrig)
-
-    st = st.detrend() # can create noise artifacts??
-    st = st.merge(method=1, fill_value='interpolate')
-    if opt.useCoincidence:
-        stC = stC.detrend()
-        stC = stC.merge(method=1, fill_value='interpolate')
-    else:
-        stC = st.copy()
+        
+    st = Stream()
+    for n in range(len(stas)):
+        try:
+            if opt.server == "IRIS":
+                stmp = client.get_waveforms(nets[n], stas[n], locs[n], chas[n],
+                    date - opt.atrig, date + 3*opt.atrig)
+            else:
+                stmp = client.getWaveform(nets[n], stas[n], locs[n], chas[n],
+                    date - opt.atrig, date + 3*opt.atrig)
+            stmp = stmp.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax,
+                corners=2, zerophase=True)
+            stmp = stmp.merge(method=1, fill_value='interpolate')
+        except (obspy.fdsn.header.FDSNException):
+            try: # try again
+                if opt.server == "IRIS":
+                    stmp = client.get_waveforms(nets[n], stas[n], locs[n], chas[n],
+                        date - opt.atrig, date + 3*opt.atrig)
+                else:
+                    stmp = client.getWaveform(nets[n], stas[n], locs[n], chas[n],
+                        date - opt.atrig, date + 3*opt.atrig)
+                stmp = stmp.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax,
+                    corners=2, zerophase=True)
+                stmp = stmp.merge(method=1, fill_value='interpolate')
+            except (obspy.fdsn.header.FDSNException):
+                print('No data found for {0}.{1}'.format(stas[n],nets[n]))
+                trtmp = Trace()
+                trtmp.stats.sampling_rate = opt.samprate
+                trtmp.stats.station = stas[n]
+                stmp = Stream().extend([trtmp.copy()])
+        # Resample to ensure all traces are same length
+        if stmp[0].stats.sampling_rate != opt.samprate:
+            stmp = stmp.resample(opt.samprate)
+        st.extend(stmp.copy()) 
+    
+    st = st.trim(starttime=date-opt.atrig, endtime=date+3*opt.atrig, pad=True,
+        fill_value=0)
+    stC = st.copy() 
 
     return st, stC
 
@@ -104,25 +147,10 @@ def trigger(st, stC, rtable, opt):
     Returns triggered traces as OBSPy trace object updates ptime for next run 
     """
     
-    # Filter the data for triggering
-    st = st.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax, corners=2,
-               zerophase=True)
-    stC = stC.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax, corners=2,
-               zerophase=True)
-    
-    # Resample
-    st = st.resample(opt.samprate)
-    stC = stC.resample(opt.samprate)
-    
     tr = st[0]
     t = tr.stats.starttime
-    
-    if opt.useCoincidence:
-        nsta = opt.nsta
-    else:
-        nsta = 1
-    
-    cft = coincidenceTrigger("classicstalta", opt.trigon, opt.trigoff, stC, nsta,
+
+    cft = coincidenceTrigger("classicstalta", opt.trigon, opt.trigoff, stC, opt.nstaC,
         sta=opt.swin, lta=opt.lwin, details=True)
     if len(cft) > 0:
         
@@ -146,18 +174,18 @@ def trigger(st, stC, rtable, opt):
                 2*opt.atrig):
                 
                 ptime = ttime - t
+                
+                # Slice and save as first trace              
+                ttmp = st.slice(ttime - opt.ptrig, ttime + opt.atrig)
+                ttmp[0].data = ttmp[0].data[0:opt.wshape]
+                for s in range(1,len(ttmp)):
+                    ttmp[0].data = np.append(ttmp[0].data, ttmp[s].data[0:opt.wshape])
+                ttmp[0].stats.maxratio = np.max(cft[n]['cft_peaks'])
                 if ind is 0:
-                    # Slice and save as first trace              
-                    trigs = st.slice(ttime - opt.ptrig, ttime + opt.atrig)
-                    trigs[ind].stats.maxratio = np.max(cft[n]['cft_peaks'])
-                    trigs[ind].data = trigs[ind].data[0:opt.wshape]
+                    trigs = Stream(ttmp[0])
                     ind = ind+1
                 else:
-                    # Slice and append to previous traces
-                    trigs = trigs.append(tr.slice(ttime - opt.ptrig, ttime + opt.atrig))
-                    trigs[ind].stats.maxratio =  np.max(cft[n]['cft_peaks'])
-                    trigs[ind].data = trigs[ind].data[0:opt.wshape]
-                    ind = ind+1
+                    trigs = trigs.append(ttmp[0])
                                                          
         if ind is 0:
             rtable.attrs.ptime = (t + len(tr.data)/opt.samprate - opt.mintrig).isoformat()
@@ -190,25 +218,46 @@ def dataclean(alltrigs, opt, flag=1):
         #define data
         dat=alltrigs[i].data
         if flag==0:
+        
             datcut=dat
+            #calculate kurtosis in window
+            k = stats.kurtosis(datcut)
+            #compute kurtosis of frequency amplitude spectrum next
+            datf = np.absolute(fft(dat))
+            kf = stats.kurtosis(datf)
+            #calculate outlier ratio using z ((data-median)/mad), outliers have z>4.45
+            mad = np.median(np.absolute(dat - np.median(dat)))
+            z=(dat-np.median(dat))/mad
+            orm = len(z[z>4.45])/len(z)
+            if k<opt.kurtmax and orm<opt.oratiomax and kf<opt.kurtfmax:
+                trigs.append(alltrigs[i])
+            else:
+                junk.append(alltrigs[i])
+            
         else:
-            datcut=alltrigs[i].data[range(int((opt.ptrig-opt.kurtwin/2)*opt.samprate),
-                int((opt.ptrig+opt.kurtwin/2)*opt.samprate))]
+            njunk = 0
+            
+            for n in range(opt.nsta):
+                datcut=alltrigs[i].data[range(int((opt.ptrig-opt.kurtwin/2)*opt.samprate),
+                    int((opt.ptrig+opt.kurtwin/2)*opt.samprate))]
         
-        #calculate kurtosis in window
-        k = stats.kurtosis(datcut)
-        #compute kurtosis of frequency amplitude spectrum next
-        
-        datf = np.absolute(fft(dat))
-        kf = stats.kurtosis(datf)
-        #calculate outlier ratio using z ((data-median)/mad), outliers have z>4.45
-        mad = np.median(np.absolute(dat - np.median(dat)))
-        z=(dat-np.median(dat))/mad
-        orm = len(z[z>4.45])/len(z)
-        if k<opt.kurtmax and orm<opt.oratiomax and kf<opt.kurtfmax:
-            trigs.append(alltrigs[i])
-        else:
-            junk.append(alltrigs[i])
+                #calculate kurtosis in window
+                k = stats.kurtosis(datcut)
+                #compute kurtosis of frequency amplitude spectrum next
+                datf = np.absolute(fft(dat))
+                kf = stats.kurtosis(datf)
+                #calculate outlier ratio using z ((data-median)/mad), outliers have z>4.45
+                mad = np.median(np.absolute(dat - np.median(dat)))
+                z=(dat-np.median(dat))/mad
+                orm = len(z[z>4.45])/len(z)
+                if k>=opt.kurtmax and orm>=opt.oratiomax and kf>=opt.kurtfmax:
+                    njunk+=1
+            
+            # Allow if there are enough stations to correlate
+            if njunk<=(opt.nsta-opt.ncor):
+                trigs.append(alltrigs[i])
+            else:
+                junk.append(alltrigs[i])
                 
     return trigs, junk
 

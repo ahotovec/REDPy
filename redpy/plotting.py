@@ -21,7 +21,7 @@ def createBokehTimelineFigure(rtable, ctable, ftable, opt):
     """
     
     dt = rtable.cols.startTimeMPL[:]
-    amp = np.log10(rtable.cols.windowAmp[:])
+    amp = np.log10(rtable.cols.windowAmp[:][:,opt.printsta])
     
     dy = np.arange(np.floor(min(dt)/opt.dybin),np.ceil(max(dt+opt.dybin)/opt.dybin))*opt.dybin
     dyfams = np.zeros((len(dy),))
@@ -301,14 +301,13 @@ def plotCores(rtable, ftable, opt):
             ax = plt.Axes(fig, [0., 0., 1., 1.])
             ax.set_axis_off()
             fig.add_axes(ax)
-        
-            ppad = int(max(0, opt.ptrig*opt.samprate - r['windowStart']))
-            apad = int(max(0, r['windowStart'] - opt.ptrig*opt.samprate - 1))
-            tmp = r['waveform'][max(0, r['windowStart']-int(
-                opt.ptrig*opt.samprate)):min(len(r['waveform']),
+            
+            waveform = r['waveform'][opt.printsta*opt.wshape:(opt.printsta+1)*opt.wshape]
+            tmp = waveform[max(0, r['windowStart']-int(
+                opt.ptrig*opt.samprate)):min(opt.wshape,
                 r['windowStart']+int(opt.atrig*opt.samprate))]
             dat = tmp[int(opt.ptrig*opt.samprate - opt.winlen*0.5):int(
-                opt.ptrig*opt.samprate + opt.winlen*1.5)]/r['windowAmp']        
+                opt.ptrig*opt.samprate + opt.winlen*1.5)]/r['windowAmp'][opt.printsta]        
             dat[dat>1] = 1
             dat[dat<-1] = -1
         
@@ -345,7 +344,7 @@ def plotFamilies(rtable, ctable, ftable, opt):
     id2 = ctable.cols.id2[:]
     startTimeMPL = rtable.cols.startTimeMPL[:]
     startTime = rtable.cols.startTime[:]
-    windowAmp = rtable.cols.windowAmp[:]
+    windowAmp = rtable.cols.windowAmp[:][:,opt.printsta]
     windowStart = rtable.cols.windowStart[:]
         
     # Convert id to row
@@ -366,8 +365,9 @@ def plotFamilies(rtable, ctable, ftable, opt):
         ppad = int(max(0, opt.ptrig*opt.samprate - windowStart[n]))
         apad = int(max(0, windowStart[n] - opt.ptrig*opt.samprate - 1))
         
-        tmp = r['waveform'][max(0, windowStart[n]-int(
-            opt.ptrig*opt.samprate)):min(len(r['waveform']),
+        waveform = r['waveform'][opt.printsta*opt.wshape:(opt.printsta+1)*opt.wshape]
+        tmp = waveform[max(0, windowStart[n]-int(
+            opt.ptrig*opt.samprate)):min(opt.wshape,
             windowStart[n]+int(opt.atrig*opt.samprate))]
             
         tmp = np.hstack((np.zeros(ppad), tmp, np.zeros(apad)))
@@ -425,7 +425,7 @@ def plotFamilies(rtable, ctable, ftable, opt):
                     'ro', alpha=0.5, markeredgecolor='r', markeredgewidth=0.5)
             myFmt = matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M')
             ax3.xaxis.set_major_formatter(myFmt)
-            ax3.set_ylim(1, max(rtable.cols.windowAmp[:])+500)
+            ax3.set_ylim(1, max(rtable.cols.windowAmp[:][:,opt.printsta])+500)
             ax3.margins(0.05)
             ax3.set_ylabel('Amplitude (Counts)')
             ax3.set_yscale('log')

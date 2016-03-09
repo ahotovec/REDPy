@@ -28,11 +28,11 @@ def Repeaters(opt):
         "id"            : Int32Col(shape=(), pos=0),
         "startTime"     : StringCol(itemsize=32, pos=1),
         "startTimeMPL"  : Float64Col(shape=(), pos=2),
-        "waveform"      : Float64Col(shape=(opt.wshape,), pos=3),
+        "waveform"      : Float64Col(shape=(opt.wshape*opt.nsta,), pos=3),
         "windowStart"   : Int32Col(shape=(), pos=4),
-        "windowCoeff"   : Float64Col(shape=(), pos=5),
-        "windowFFT"     : ComplexCol(shape=(opt.winlen,), itemsize=16, pos=6),
-        "windowAmp"     : Float64Col(shape=(), pos=7),
+        "windowCoeff"   : Float64Col(shape=(opt.nsta,), pos=5),
+        "windowFFT"     : ComplexCol(shape=(opt.winlen*opt.nsta,), itemsize=16, pos=6),
+        "windowAmp"     : Float64Col(shape=(opt.nsta,), pos=7),
         }
     
     return dict
@@ -60,11 +60,11 @@ def Orphans(opt):
         "id"          : Int32Col(shape=(), pos=0),
         "startTime"   : StringCol(itemsize=32, pos=1),
         "startTimeMPL": Float64Col(shape=(), pos=2),
-        "waveform"    : Float64Col(shape=(opt.wshape,), pos=3),
+        "waveform"    : Float64Col(shape=(opt.wshape*opt.nsta,), pos=3),
         "windowStart" : Int32Col(shape=(), pos=4),
-        "windowCoeff" : Float64Col(shape=(), pos=5),
-        "windowFFT"   : ComplexCol(shape=(opt.winlen,), itemsize=16, pos=6),
-        "windowAmp"   : Float64Col(shape=(), pos=7),
+        "windowCoeff" : Float64Col(shape=(opt.nsta,), pos=5),
+        "windowFFT"   : ComplexCol(shape=(opt.winlen*opt.nsta,), itemsize=16, pos=6),
+        "windowAmp"   : Float64Col(shape=(opt.nsta,), pos=7),
         "expires"     : StringCol(itemsize=32, pos=8)
         }
 
@@ -92,11 +92,11 @@ def Deleted(opt):
         "id"          : Int32Col(shape=(), pos=0),
         "startTime"   : StringCol(itemsize=32, pos=1),
         "startTimeMPL": Float64Col(shape=(), pos=2),
-        "waveform"    : Float64Col(shape=(opt.wshape,), pos=3),
+        "waveform"    : Float64Col(shape=(opt.wshape*opt.nsta,), pos=3),
         "windowStart" : Int32Col(shape=(), pos=4),
-        "windowCoeff" : Float64Col(shape=(), pos=5),
-        "windowFFT"   : ComplexCol(shape=(opt.winlen,), itemsize=16, pos=6),
-        "windowAmp"   : Float64Col(shape=(), pos=7)
+        "windowCoeff" : Float64Col(shape=(opt.nsta,), pos=5),
+        "windowFFT"   : ComplexCol(shape=(opt.winlen*opt.nsta,), itemsize=16, pos=6),
+        "windowAmp"   : Float64Col(shape=(opt.nsta,), pos=7)
         }
 
     return dict
@@ -117,7 +117,7 @@ def Junk(opt):
     
     dict = {
         "startTime"   : StringCol(itemsize=32, pos=1),
-        "waveform"    : Float64Col(shape=(opt.wshape,), pos=2),
+        "waveform"    : Float64Col(shape=(opt.wshape*opt.nsta,), pos=2),
         "windowStart" : Int32Col(shape=(), pos=3),
         "isjunk"      : Int32Col(shape=(), pos=0)
         }
@@ -247,6 +247,15 @@ def openTable(opt):
     
     return h5file, rtable, otable, ctable, jtable, dtable, ftable
 
+
+def calcAmps(data, windowStart, opt):
+    
+    amps = []
+    for n in range(opt.nsta):
+        amps.append(max(abs(data[(n*opt.wshape)+windowStart:int(
+            (n*opt.wshape)+windowStart+opt.winlen/2)])))
+    
+    return amps
     
 def populateRepeater(rtable, ftable, id, trig, opt, windowStart=-1):
 
@@ -281,7 +290,7 @@ def populateRepeater(rtable, ftable, id, trig, opt, windowStart=-1):
     trigger['windowStart'] = windowStart
     trigger['windowCoeff'], trigger['windowFFT'] = redpy.correlation.calcWindow(
         trig.data, windowStart, opt)
-    trigger['windowAmp'] = max(abs(trig.data[windowStart:int(windowStart+opt.winlen/2)]))
+    trigger['windowAmp'] = calcAmps(trig.data, windowStart, opt)
     
     trigger.append()  
     rtable.flush()  
@@ -317,7 +326,7 @@ def populateOrphan(otable, id, trig, opt):
     trigger['windowStart'] = windowStart
     trigger['windowCoeff'], trigger['windowFFT'] = redpy.correlation.calcWindow(
         trig.data, windowStart, opt)
-    trigger['windowAmp'] = max(abs(trig.data[windowStart:int(windowStart+opt.winlen/2)]))
+    trigger['windowAmp'] = calcAmps(trig.data, windowStart, opt)
 
     adddays = ((opt.maxorph-opt.minorph)/7.)*(trig.stats.maxratio-opt.trigon)+opt.minorph
     trigger['expires'] = (trig.stats.starttime+adddays*86400).isoformat()

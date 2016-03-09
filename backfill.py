@@ -97,24 +97,19 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
     if args.verbose: print(tstart+n*opt.nsec)
     
     # Download and trigger
-    try:
-        st, stC = redpy.trigger.getData(tstart+n*opt.nsec, opt)
-        alltrigs = redpy.trigger.trigger(st, stC, rtable, opt)
+    st, stC = redpy.trigger.getData(tstart+n*opt.nsec, opt)
+    alltrigs = redpy.trigger.trigger(st, stC, rtable, opt)
         
-		# Clean out data spikes etc.
-        trigs, junk = redpy.trigger.dataclean(alltrigs, opt, flag=1)
+	# Clean out data spikes etc.
+    trigs, junk = redpy.trigger.dataclean(alltrigs, opt, flag=1)
         
-		# Save junk triggers in separate table for quality checking purposes
-        for i in range(len(junk)):
-            redpy.table.populateJunk(jtable,junk[i],0,opt)
+	# Save junk triggers in separate table for quality checking purposes
+    for i in range(len(junk)):
+        redpy.table.populateJunk(jtable,junk[i],0,opt)
             
-        # Check triggers against deleted events
-        if len(dtable) > 0:
-            trigs = redpy.correlation.compareDeleted(trigs, dtable, opt)
-            
-    except (TypeError, obspy.fdsn.header.FDSNException, Exception):
-	    print('Could not download or trigger data... moving on')
-	    trigs = []
+    # Check triggers against deleted events
+    if len(dtable) > 0:
+        trigs = redpy.correlation.compareDeleted(trigs, dtable, opt)
     
     if len(trigs) > 0:        
         id = rtable.attrs.previd        

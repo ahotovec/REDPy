@@ -29,10 +29,13 @@ class Options(object):
         groupDesc: Longer string describing the run (default 'Default Test Run')
     
         STATION PARAMETERS:
-        station: String of station name (default 'HSR')
-        channel: String of channel of interest, no wildcards supported yet (default 'EHZ')
-        network: String of network code (default 'UW')
-        location: String of location code (default '--')
+        nsta: Number of stations (default 8)
+        station: String of ordered station names
+            (default 'SEP,YEL,HSR,SHW,EDM,STD,JUN,SOS')
+        channel: String of channels of interest, no wildcards
+            (default 'EHZ,EHZ,EHZ,EHZ,EHZ,EHZ,EHZ,EHZ')
+        network: String of network code (default 'UW,UW,UW,UW,UW,UW,UW,UW')
+        location: String of location code (default '--,--,--,--,--,--,--,--')
         samprate: Sampling rate of that station (default 100.0 Hz)
         server: Source of data (default "IRIS", otherwise name of waveserver)
         port: Port number for server (default 16017, not used if using IRIS)
@@ -44,12 +47,7 @@ class Options(object):
         trigon: Cutoff ratio for triggering STALTA (default 3.0)
         trigoff: Cutoff ratio for ending STALTA trigger (default 2.0)
         mintrig: Minimum spacing between triggers (default 10.0 s)
-        useCoincidence: Use coincidence triggering (default 1 (yes))
-        nsta: Minimum number of stations a trigger must show up on (default 2)
-        stationC: Station list (no spaces) to use to trigger on (default 'HSR,SHW,YEL')
-        channelC: Channel list (no spaces) to use to trigger on (default 'EHZ')
-        networkC: Network list (no spaces) to use to trigger on (default 'UW')
-        locationC: Location list (no spaces) to use to trigger on (default '--')
+        nstaC: Minimum number of stations a trigger must show up on (default 4)
         kurtmax: Maximum kurtosis allowed for event window, to eliminate spikes, ~80-100
             is appropriate for 5 s window, ~130 for 15 s, ~200 for 25 s (default 80.0)
         kurtfmax: Maximum kurtosis of frequency amplitude spectrum to eliminate
@@ -61,7 +59,7 @@ class Options(object):
             (default 0.06 (6%))
     
         WINDOWING PARAMETERS:
-        winlen: Length of window for cross-correlation (default 512 samples, 2^n is best)
+        winlen: Length of window for cross-correlation (default 1024 samples, 2^n is best)
         ptrig: Length of time cut prior to trigger (default 10.0 s)
         atrig: Length of time cut after trigger (default 20.0 s)
         wshape: A derived value (cannot be explicitly defined) corresponding to the number
@@ -73,6 +71,7 @@ class Options(object):
         
         CLUSTERING PARAMETERS:
         cmin: Minimum correlation to be considered a repeater (default 0.7)
+        ncor: Number of stations correlation must be exceeded on (default 4)
         
         ORPHAN EXPIRATION PARAMETERS
         minorph: Minimum amount of time (days) to keep the smaller orphans alive
@@ -85,6 +84,7 @@ class Options(object):
         dybin: Width of bin in days for full histogram (default 1 day)
         hrbin: Width of bin in hours for recent histogram (default 1 hour)
         recplot: Number of days for 'recent' plot (default 14 days)
+        plotsta: Station index in station list to be plotted (default 2)
     
         This list will likely expand.       
         """
@@ -104,16 +104,22 @@ class Options(object):
             'Settings','groupName') else 'default'
         self.groupDesc=config.get('Settings','groupDesc') if config.has_option(
             'Settings','groupDesc') else 'Default Test Run'
+        self.nsta=config.getint('Settings','nsta') if config.has_option(
+            'Settings','nsta') else 8 
         self.station=config.get('Settings','station') if config.has_option(
-            'Settings','station') else 'HSR'
+            'Settings','station') else 'SEP,YEL,HSR,SHW,EDM,STD,JUN,SOS'
         self.channel=config.get('Settings','channel') if config.has_option(
-            'Settings','channel') else 'EHZ'
+            'Settings','channel') else 'EHZ,EHZ,EHZ,EHZ,EHZ,EHZ,EHZ,EHZ'
         self.network=config.get('Settings','network') if config.has_option(
-            'Settings','network') else 'UW'
+            'Settings','network') else 'UW,UW,UW,UW,UW,UW,UW,UW'
         self.location=config.get('Settings','location') if config.has_option(
-            'Settings','location') else '--'
+            'Settings','location') else '--,--,--,--,--,--,--,--'
         self.samprate=config.getfloat('Settings','samprate') if config.has_option(
             'Settings','samprate') else 100.
+        self.nstaC=config.getint('Settings','nstaC') if config.has_option(
+            'Settings','nstaC') else 3
+        self.printsta=config.getint('Settings','printsta') if config.has_option(
+            'Settings','printsta') else 2
         self.server=config.get('Settings','server') if config.has_option(
             'Settings','server') else 'IRIS'
         self.port=config.getint('Settings','port') if config.has_option(
@@ -144,6 +150,8 @@ class Options(object):
             'Settings','fmax') else 10.
         self.cmin=config.getfloat('Settings','cmin') if config.has_option(
             'Settings','cmin') else 0.7
+        self.ncor=config.getint('Settings','ncor') if config.has_option(
+            'Settings','ncor') else 4
         self.minorph=config.getfloat('Settings','minorph') if config.has_option(
             'Settings','minorph') else 0.05
         self.maxorph=config.getfloat('Settings','maxorph') if config.has_option(
@@ -156,21 +164,9 @@ class Options(object):
             'Settings','hrbin') else 1.
         self.recplot=config.getfloat('Settings','recplot') if config.has_option(
             'Settings','recplot') else 14.
-        self.useCoincidence=config.getint('Settings','useCoincidence') if config.has_option(
-            'Settings','useCoincidence') else 1
-        self.nsta=config.getint('Settings','nsta') if config.has_option(
-            'Settings','nsta') else 2
-        self.stationC=config.get('Settings','stationC') if config.has_option(
-            'Settings','stationC') else 'HSR,SHW,YEL'
-        self.channelC=config.get('Settings','channelC') if config.has_option(
-            'Settings','channelC') else 'EHZ'
-        self.networkC=config.get('Settings','networkC') if config.has_option(
-            'Settings','networkC') else 'UW'
-        self.locationC=config.get('Settings','locationC') if config.has_option(
-            'Settings','locationC') else '--'
-
+        
         # Derived Settings
-        self.ptrig=2*self.winlen/self.samprate
-        self.atrig=4*self.winlen/self.samprate
+        self.ptrig=1.5*self.winlen/self.samprate
+        self.atrig=3*self.winlen/self.samprate
         self.mintrig=self.winlen/self.samprate
         self.wshape = int((self.ptrig + self.atrig)*self.samprate) + 1
