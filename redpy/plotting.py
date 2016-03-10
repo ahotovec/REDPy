@@ -339,20 +339,10 @@ def plotFamilies(rtable, ctable, ftable, opt):
     matplotlib.rcParams['font.size'] = 8.0
     
     # Load into memory
-    C = np.eye(len(rtable))
-    id1 = ctable.cols.id1[:]
-    id2 = ctable.cols.id2[:]
     startTimeMPL = rtable.cols.startTimeMPL[:]
     startTime = rtable.cols.startTime[:]
     windowAmp = rtable.cols.windowAmp[:][:,opt.printsta]
     windowStart = rtable.cols.windowStart[:]
-        
-    # Convert id to row
-    rtable_ids = rtable.cols.id[:]
-    r = np.zeros((max(rtable_ids)+1,)).astype('uint32')
-    r[rtable_ids] = range(len(rtable_ids))
-    C[r[id1], r[id2]] = ctable.cols.ccc[:]
-    C[r[id2], r[id1]] = ctable.cols.ccc[:]
 
     # Get waveform data
     ### THIS CAN PROBABLY BE OPTIMIZED ###
@@ -386,7 +376,7 @@ def plotFamilies(rtable, ctable, ftable, opt):
             fig = plt.figure(figsize=(10, 11))
         
             # Plot waveforms
-            ax1 = fig.add_subplot(3, 3, (1,2))
+            ax1 = fig.add_subplot(3, 1, 1)
             if len(fam) > 12:
                 ax1.imshow(data[fam], aspect='auto', vmin=-1, vmax=1, cmap='RdBu',
                     interpolation='nearest', extent=[-1*opt.winlen*0.5/opt.samprate,
@@ -408,19 +398,8 @@ def plotFamilies(rtable, ctable, ftable, opt):
                     ax1.autoscale(tight=True)
             ax1.set_xlabel('Time Relative to Trigger (sec)')
         
-            # Plot correlation
-            ax2 = fig.add_subplot(3, 3, 3)
-            Co = C[fam,:]
-            Co = Co[:,fam]
-            ax2.imshow(Co, cmap=cmap, aspect='auto',
-                vmin=opt.cmin, vmax=1, interpolation='nearest')
-            ax2.get_yaxis().set_visible(False)
-            ax2.set_xlabel('Event by Time')
-            if len(fam) < 5:
-                ax2.set_xticks(range(0, len(fam)))
-        
             # Plot amplitude timeline
-            ax3 = fig.add_subplot(3, 3, (4,6))
+            ax3 = fig.add_subplot(3, 1, 2)
             ax3.plot_date(startTimeMPL[fam], windowAmp[fam],
                     'ro', alpha=0.5, markeredgecolor='r', markeredgewidth=0.5)
             myFmt = matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M')
@@ -439,7 +418,7 @@ def plotFamilies(rtable, ctable, ftable, opt):
             maxind = fam[catalogind[-1]]
         
             # Plot spacing timeline
-            ax4 = fig.add_subplot(3, 3, (7,9)) 
+            ax4 = fig.add_subplot(3, 1, 3) 
             ax4.plot_date(catalog[1:], spacing, 'ro', alpha=0.5, markeredgecolor='r',
                 markeredgewidth=0.5)
             myFmt = matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M')
