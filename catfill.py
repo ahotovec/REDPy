@@ -62,9 +62,13 @@ for event in eventlist[::-1]:
     if args.verbose: print(etime)
     
     # Download and trigger
-    st, stC = redpy.trigger.getCatData(etime, opt)
-    alltrigs = redpy.trigger.trigger(st, stC, rtable, opt)
-        
+    try:
+        st, stC = redpy.trigger.getCatData(etime, opt)
+        alltrigs = redpy.trigger.trigger(st, stC, rtable, opt)
+    except (TypeError, obspy.fdsn.header.FDSNException, Exception):
+        print('Could not download or trigger data... moving on')
+        alltrigs = []
+    
 	# Clean out data spikes etc.
     trigs, junk = redpy.trigger.dataclean(alltrigs, opt, flag=1)
         
