@@ -215,49 +215,41 @@ def dataclean(alltrigs, opt, flag=1):
     trigs=Stream()
     junk=Stream()
     for i in range(len(alltrigs)):
-        #define data
-        dat=alltrigs[i].data
-        if flag==0:
+            
+        njunk = []
         
-            datcut=dat
-            #calculate kurtosis in window
+        for n in range(opt.nsta):
+            
+            dat = alltrigs[i].data[n*opt.wshape:(n+1)*opt.wshape]
+            
+            if flag == 1:
+                datcut=dat[range(int((opt.ptrig-opt.kurtwin/2)*opt.samprate),
+                    int((opt.ptrig+opt.kurtwin/2)*opt.samprate))]
+            else:
+                datcut=dat
+            
+            
+            # Calculate kurtosis in window
             k = stats.kurtosis(datcut)
-            #compute kurtosis of frequency amplitude spectrum next
+            # Compute kurtosis of frequency amplitude spectrum next
             datf = np.absolute(fft(dat))
             kf = stats.kurtosis(datf)
-            #calculate outlier ratio using z ((data-median)/mad), outliers have z>4.45
+            # Calculate outlier ratio using z ((data-median)/mad); outliers have z > 4.45
             mad = np.median(np.absolute(dat - np.median(dat)))
-            z=(dat-np.median(dat))/mad
+            z = (dat-np.median(dat))/mad
             orm = len(z[z>4.45])/len(z)
-            if k<opt.kurtmax and orm<opt.oratiomax and kf<opt.kurtfmax:
-                trigs.append(alltrigs[i])
-            else:
-                junk.append(alltrigs[i])
             
+            if k >= opt.kurtmax or orm >= opt.oratiomax or kf >= opt.kurtfmax:
+                njunk.append(n)
+          
+        # Allow if there are enough good stations to correlate, but mask bad data
+        if len(njunk) <= (opt.nsta-opt.ncor):
+            for n in njunk:
+                alltrigs[i].data[n*opt.wshape:(n+1)*opt.wshape] = 0
+            trigs.append(alltrigs[i])
         else:
-            njunk = 0
+            junk.append(alltrigs[i])
             
-            for n in range(opt.nsta):
-                datcut=alltrigs[i].data[range(int((opt.ptrig-opt.kurtwin/2)*opt.samprate),
-                    int((opt.ptrig+opt.kurtwin/2)*opt.samprate))]
-        
-                #calculate kurtosis in window
-                k = stats.kurtosis(datcut)
-                #compute kurtosis of frequency amplitude spectrum next
-                datf = np.absolute(fft(dat))
-                kf = stats.kurtosis(datf)
-                #calculate outlier ratio using z ((data-median)/mad), outliers have z>4.45
-                mad = np.median(np.absolute(dat - np.median(dat)))
-                z=(dat-np.median(dat))/mad
-                orm = len(z[z>4.45])/len(z)
-                if k>=opt.kurtmax and orm>=opt.oratiomax and kf>=opt.kurtfmax:
-                    njunk+=1
-            
-            # Allow if there are enough stations to correlate
-            if njunk<=(opt.nsta-opt.ncor):
-                trigs.append(alltrigs[i])
-            else:
-                junk.append(alltrigs[i])
                 
     return trigs, junk
 
