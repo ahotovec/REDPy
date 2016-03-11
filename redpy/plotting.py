@@ -373,6 +373,14 @@ def plotFamilies(rtable, ftable, opt):
 
         fam = np.fromstring(ftable[cnum]['members'], dtype=int, sep=' ')
         core = ftable[cnum]['core']
+        
+        # Prep catalog
+        catalogind = np.argsort(startTimeMPL[fam])
+        catalog = startTimeMPL[fam][catalogind]
+        longevity = catalog[-1] - catalog[0]
+        spacing = np.diff(catalog)*24
+        minind = fam[catalogind[0]]
+        maxind = fam[catalogind[-1]]
 
         if ftable.cols.printme[cnum] != 0:
         
@@ -404,7 +412,7 @@ def plotFamilies(rtable, ftable, opt):
                         -opt.winlen*0.5/opt.samprate,opt.winlen*1.5/opt.samprate,
                         1/opt.samprate)
                     for o in range(len(fam)):
-                        dat=data[fam[o],:]
+                        dat=data[o,:]
                         dat[dat>1] = 1
                         dat[dat<-1] = -1
                         ax1.plot(tvec,dat/2-o,'k',linewidth=0.25)
@@ -448,6 +456,7 @@ def plotFamilies(rtable, ftable, opt):
             ax1.autoscale(tight=True)
             ax1.set_xlabel('Time Relative to Trigger (sec)')
             
+            # Plot mean FFT
             ax2 = fig.add_subplot(3, 3, 3)
             ax2.set_xlabel('Frequency (Hz)')
             ax2.get_yaxis().set_visible(False)
@@ -478,14 +487,6 @@ def plotFamilies(rtable, ftable, opt):
             ax3.margins(0.05)
             ax3.set_ylabel('Amplitude (Counts)')
             ax3.set_yscale('log')
-        
-            # Prep catalog
-            catalogind = np.argsort(startTimeMPL[fam])
-            catalog = startTimeMPL[fam][catalogind]
-            longevity = catalog[-1] - catalog[0]
-            spacing = np.diff(catalog)*24
-            minind = fam[catalogind[0]]
-            maxind = fam[catalogind[-1]]
         
             # Plot spacing timeline
             ax4 = fig.add_subplot(3, 3, (7,9)) 
