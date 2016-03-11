@@ -10,16 +10,39 @@ from obspy import UTCDateTime
 from bokeh.plotting import figure, output_file, save, gridplot
 from bokeh.models import HoverTool, ColumnDataSource, OpenURL, TapTool, Range1d
         
-def createBokehTimelineFigure(rtable, ctable, ftable, opt):
+def createPlots(rtable, ftable, opt):
     
     """
     Creates all output plots (core images, family plots, and two bokeh .html plots)
     
     rtable: Repeater table
-    ctable: Correlation matrix table
     ftable: Families table
     opt: Options object describing station/run parameters
         
+    """
+    
+    plotTimelines(rtable, ftable, opt)
+    printCatalog(rtable, ftable, opt)
+    plotCores(rtable, ftable, opt)
+    plotFamilies(rtable, ftable, opt)
+    ftable.cols.printme[:] = np.zeros((len(ftable),))
+    ftable.cols.lastprint[:] = np.arange(len(ftable))
+    
+    # Rename any .tmp files
+    tmplist = glob.glob('./{0}/clusters/*.tmp'.format(opt.groupName))
+    for tmp in tmplist:
+        os.rename(tmp,tmp[0:-4]) 
+    
+    
+def plotTimelines(rtable, ftable, opt):
+    
+    """
+    Creates the primary .html Bokeh timelines
+    
+    rtable: Repeater table
+    ftable: Families table
+    opt: Options object describing station/run parameters
+    
     """
     
     dt = rtable.cols.startTimeMPL[:]
@@ -169,7 +192,6 @@ def createBokehTimelineFigure(rtable, ctable, ftable, opt):
             
             n = n+1
             
-            
             if max(dt[members])>hr[0]:
             
                 if min(dt[members])<hr[0]:
@@ -252,7 +274,6 @@ def createBokehTimelineFigure(rtable, ctable, ftable, opt):
             title='{} Timeline'.format(opt.title))
         save(p)
         
-        
         sourcer = ColumnDataSource(data=dict(xs=xsr, ys=ysr, famnum=famnumr))
         r1.patches(xs=xsr, ys=ysr, source=sourcer, name="patchr", alpha=0)
         
@@ -274,19 +295,7 @@ def createBokehTimelineFigure(rtable, ctable, ftable, opt):
         output_file('{}/timeline_recent.html'.format(opt.groupName),
             title='{0} Timeline - Last {1:.1f} Days'.format(opt.title,opt.recplot))
         r = gridplot([[r0],[r1]])
-        save(r)
-
-    # Run plotCores to ensure thumbnails are up to date
-    printCatalog(rtable, ftable, opt)
-    plotCores(rtable, ftable, opt)
-    plotFamilies(rtable, ctable, ftable, opt)
-    ftable.cols.printme[:] = np.zeros((len(ftable),))
-    ftable.cols.lastprint[:] = np.arange(len(ftable))
-    
-    # Rename .tmp files
-    tmplist = glob.glob('./{0}/clusters/*.tmp')
-    for tmp in tmplist:
-        os.rename(tmp,tmp[0:-4])        
+        save(r)       
 
 
 def plotCores(rtable, ftable, opt):
@@ -335,17 +344,16 @@ def plotCores(rtable, ftable, opt):
             plt.close(fig)
 
 
-def plotFamilies(rtable, ctable, ftable, opt):
+def plotFamilies(rtable, ftable, opt):
 
     """
     Creates a multi-paneled family plot.
     
     rtable: Repeater table
-    ctable: Correlation matrix table
     ftable: Families table
     opt: Options object describing station/run parameters
     
-    Top row: Ordered waveforms and ordered similarity matrix
+    Top row: Ordered waveforms
     Middle row: Timeline of amplitude
     Bottom row: Timeline of event spacing 
     """

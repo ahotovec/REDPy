@@ -164,7 +164,7 @@ print("End time now: {}".format(tend))
 
 if len(rtable) > rlen:
     if args.verbose: print("Creating plots...")
-    redpy.plotting.createBokehTimelineFigure(rtable, ctable, ftable, opt)
+    redpy.plotting.createPlots(rtable, ftable, opt)
 else:
     if args.verbose: print("No new repeaters to plot.")
 

@@ -46,7 +46,7 @@ h5file, rtable, otable, ctable, jtable, dtable, ftable = redpy.table.openTable(o
 redpy.table.removeFamilies(rtable, ctable, dtable, ftable, args.famnum, opt)
 
 if args.verbose: print("Creating plots...")
-redpy.plotting.createBokehTimelineFigure(rtable, ctable, ftable, opt)
+redpy.plotting.createPlots(rtable, ftable, opt)
 
 if args.verbose: print("Closing table...")
 h5file.close()
