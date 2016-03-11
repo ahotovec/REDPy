@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import matplotlib
 import time
 import redpy.cluster
+import os
+import glob
 from obspy import UTCDateTime
 from bokeh.plotting import figure, output_file, save, gridplot
 from bokeh.models import HoverTool, ColumnDataSource, OpenURL, TapTool, Range1d
@@ -278,7 +280,13 @@ def createBokehTimelineFigure(rtable, ctable, ftable, opt):
     printCatalog(rtable, ftable, opt)
     plotCores(rtable, ftable, opt)
     plotFamilies(rtable, ctable, ftable, opt)
-    ftable.cols.printme[:] = np.zeros((len(ftable),))        
+    ftable.cols.printme[:] = np.zeros((len(ftable),))
+    ftable.cols.lastprint[:] = np.arange(len(ftable))
+    
+    # Rename .tmp files
+    tmplist = glob.glob('./{0}/clusters/*.tmp')
+    for tmp in tmplist:
+        os.rename(tmp,tmp[0:-4])        
 
 
 def plotCores(rtable, ftable, opt):
@@ -291,6 +299,15 @@ def plotCores(rtable, ftable, opt):
     opt: Options object describing station/run parameters
     
     """
+    
+    for n in range(len(ftable))[::-1]:
+        if ftable.cols.lastprint[n] != n and ftable.cols.printme[n] == 0:
+            os.rename('{0}/clusters/{1}.gif'.format(opt.groupName,
+                ftable.cols.lastprint[n]), '{0}/clusters/{1}.gif.tmp'.format(
+                opt.groupName, n))
+            os.rename('{0}/clusters/fam{1}.png'.format(opt.groupName,
+                ftable.cols.lastprint[n]), '{0}/clusters/fam{1}.png.tmp'.format(
+                opt.groupName, n))
     
     cores = rtable[ftable.cols.core[:]]
     n = -1
@@ -435,36 +452,35 @@ def plotFamilies(rtable, ctable, ftable, opt):
                 cnum), dpi=100)
             plt.close(fig)
         
-        
-            # Now write a simple HTML file to show image and catalog
-            with open('{0}/clusters/{1}.html'.format(opt.groupName, cnum), 'w') as f:
-                f.write("""
-                <html><head><title>{1} - Cluster {0}</title>
-                </head>
-                <body><center>
-                <span style="font-size: 20px; font-weight: bold; font-family: Helvetica;">
-                    Cluster {0}</span></br></br>
-                <img src="{0}.gif"></br></br>
-                <span style="font-size: 12px; font-family: Helvetica;">
-                    Number of events: {2}</br>
-                    Longevity: {5:.2f} days</br>
-                    Mean event spacing: {7:.2f} hours</br>
-                    Median event spacing: {8:.2f} hours</br></br>
-                    First event: {3}</br>
-                    Core event: {6}</br>
-                    Last event: {4}</br>
-                    </span> 
-                <img src="fam{0}.png"></br>                
-                """.format(cnum, opt.title, len(fam), (UTCDateTime(
-                    startTime[minind]) + windowStart[minind]/opt.samprate).isoformat(),
-                    (UTCDateTime(startTime[maxind]) + windowStart[
-                    maxind]/opt.samprate).isoformat(), longevity, (UTCDateTime(
-                    startTime[core]) + windowStart[core]/opt.samprate).isoformat(),
-                    np.mean(spacing), np.median(spacing)))
-                                
-                f.write("""
-                </center></body></html>
-                """)
+        # Now write a simple HTML file to show image and catalog
+        with open('{0}/clusters/{1}.html'.format(opt.groupName, cnum), 'w') as f:
+            f.write("""
+            <html><head><title>{1} - Cluster {0}</title>
+            </head>
+            <body><center>
+            <span style="font-size: 20px; font-weight: bold; font-family: Helvetica;">
+                Cluster {0}</span></br></br>
+            <img src="{0}.gif"></br></br>
+            <span style="font-size: 12px; font-family: Helvetica;">
+                Number of events: {2}</br>
+                Longevity: {5:.2f} days</br>
+                Mean event spacing: {7:.2f} hours</br>
+                Median event spacing: {8:.2f} hours</br></br>
+                First event: {3}</br>
+                Core event: {6}</br>
+                Last event: {4}</br>
+                </span> 
+            <img src="fam{0}.png"></br>                
+            """.format(cnum, opt.title, len(fam), (UTCDateTime(
+                startTime[minind]) + windowStart[minind]/opt.samprate).isoformat(),
+                (UTCDateTime(startTime[maxind]) + windowStart[
+                maxind]/opt.samprate).isoformat(), longevity, (UTCDateTime(
+                startTime[core]) + windowStart[core]/opt.samprate).isoformat(),
+                np.mean(spacing), np.median(spacing)))
+                            
+            f.write("""
+            </center></body></html>
+            """)
         
 
 def printCatalog(rtable, ftable, opt):

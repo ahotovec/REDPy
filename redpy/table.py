@@ -155,6 +155,7 @@ def Families(opt):
     core: row in rtable that corresponds to current core event (int)
     startTime: MPL datetime denoting the time of the first event in the family (float)
     printme: describes whether the family has been updated since last printing (int)
+    lastprint: row in table when last printed (int)
     
     The members column is a string so that it can be of completely arbitrary length.
     Well, not completely arbitrary. The itemsize set here (1000000) is a guess at how
@@ -169,7 +170,8 @@ def Families(opt):
         "members"   : StringCol(itemsize=1000000, shape=(), pos=0),
         "core"      : Int32Col(shape=(), pos=1),
         "startTime" : Float64Col(shape=(), pos=2),
-        "printme"   : Int32Col(shape=(), pos=3)
+        "printme"   : Int32Col(shape=(), pos=3),
+        "lastprint" : Int32Col(shape=(), pos=4)
     }
 
     return dict
@@ -457,8 +459,6 @@ def removeFamilies(rtable, ctable, dtable, ftable, cnums, opt):
         core = ftable[n]['core']
         ftable.cols.members[n] = np.array2string(transform[members])[1:-1]
         ftable.cols.core[n] = transform[core]
-        if n>=min(cnums):
-            ftable.cols.printme[n] = 1
         ftable.flush()
         
     rtable.flush()
@@ -529,6 +529,7 @@ def createNewFamily(rtable, ftable, members, core, opt):
     f['core'] = core
     f['startTime'] = np.min(rtable[members]['startTimeMPL'])
     f['printme'] = 1
+    f['lastprint'] = -1
     f.append()
     ftable.attrs.nClust+=1
     ftable.flush()
@@ -551,11 +552,13 @@ def reorderFamilies(ftable, opt):
         members = ftable.cols.members[:]
         cores = ftable.cols.core[:]
         printme = ftable.cols.printme[:]
+        lastprint = ftable.cols.lastprint[:]
         for n in np.where(x!=order)[0]:
             ftable.cols.startTime[n] = startTimes[order[n]]
             ftable.cols.members[n] = members[order[n]]
             ftable.cols.core[n] = cores[order[n]]
             ftable.cols.printme[n] = printme[order[n]]
+            ftable.cols.lastprint[n] = lastprint[order[n]]
         ftable.flush()
     
     
@@ -590,7 +593,8 @@ def mergeFamilies(rtable, ctable, ftable, wfam, wlag, opt):
             ftable.cols.members[f1]+=' '+ftable[f2]['members']
             ftable.remove_row(f2)
             ftable.attrs.nClust-=1
-    ftable.cols.printme[f1:len(ftable)] = np.ones((len(ftable)-f1,))            
+    ftable.cols.printme[f1] = 1
+    ftable.cols.lastprint[f1] = -1            
     reorderFamilies(ftable, opt)
     redpy.cluster.runFamOPTICS(rtable, ctable, ftable, f1, opt)
     
