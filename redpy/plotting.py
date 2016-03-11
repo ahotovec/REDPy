@@ -368,63 +368,108 @@ def plotFamilies(rtable, ftable, opt):
     startTime = rtable.cols.startTime[:]
     windowAmp = rtable.cols.windowAmp[:][:,opt.printsta]
     windowStart = rtable.cols.windowStart[:]
-
-    # Get waveform data
-    ### THIS CAN PROBABLY BE OPTIMIZED ###
-    n=-1
-    data = np.zeros((len(rtable), int(opt.winlen*2)))
-    for r in rtable.iterrows():
-        n = n+1
-        
-        # Determine padding        
-        ppad = int(max(0, opt.ptrig*opt.samprate - windowStart[n]))
-        apad = int(max(0, windowStart[n] - opt.ptrig*opt.samprate - 1))
-        
-        waveform = r['waveform'][opt.printsta*opt.wshape:(opt.printsta+1)*opt.wshape]
-        tmp = waveform[max(0, windowStart[n]-int(
-            opt.ptrig*opt.samprate)):min(opt.wshape,
-            windowStart[n]+int(opt.atrig*opt.samprate))]
-            
-        tmp = np.hstack((np.zeros(ppad), tmp, np.zeros(apad)))
-        data[n, :] = tmp[int(opt.ptrig*opt.samprate - opt.winlen*0.5):int(
-            opt.ptrig*opt.samprate + opt.winlen*1.5)]/windowAmp[n]
-
-    cmap = matplotlib.cm.get_cmap('YlOrRd')
-    cmap.set_under('k')
+    
     for cnum in range(ftable.attrs.nClust):
 
         fam = np.fromstring(ftable[cnum]['members'], dtype=int, sep=' ')
+        core = ftable[cnum]['core']
 
         if ftable.cols.printme[cnum] != 0:
-            core = ftable[cnum]['core']
         
             fig = plt.figure(figsize=(10, 11))
         
             # Plot waveforms
-            ax1 = fig.add_subplot(3, 1, 1)
-            if len(fam) > 12:
-                ax1.imshow(data[fam], aspect='auto', vmin=-1, vmax=1, cmap='RdBu',
-                    interpolation='nearest', extent=[-1*opt.winlen*0.5/opt.samprate,
-                    opt.winlen*1.5/opt.samprate, n + 0.5, -0.5])
-                ax1.axvline(x=-0.1*opt.winlen/opt.samprate, color='k', ls='dotted')
-                ax1.axvline(x=0.9*opt.winlen/opt.samprate, color='k', ls='dotted')
-                ax1.get_yaxis().set_visible(False)
-            else:
-                for o in range(len(fam)):
-                    dat=data[fam[o],:]
-                    dat[dat>1] = 1
-                    dat[dat<-1] = -1
-                    tvec = np.arange(-opt.winlen*0.5/opt.samprate,opt.winlen*1.5/opt.samprate,
+            ax1 = fig.add_subplot(3, 3, (1,2))
+            
+            # If only one station, plot all aligned waveforms
+            if opt.nsta==1:
+            
+                famtable = rtable[fam]
+                n=-1
+                data = np.zeros((len(fam), int(opt.winlen*2)))
+                for r in famtable:
+                    n = n+1        
+                    waveform = r['waveform'][0:opt.wshape]
+                    tmp = waveform[max(0, windowStart[fam[n]]-int(
+                        opt.ptrig*opt.samprate)):min(opt.wshape,
+                        windowStart[fam[n]]+int(opt.atrig*opt.samprate))]
+                    data[n, :] = tmp[int(opt.ptrig*opt.samprate - opt.winlen*0.5):int(
+                        opt.ptrig*opt.samprate + opt.winlen*1.5)]/windowAmp[fam[n]]
+                if len(fam) > 12:
+                    ax1.imshow(data, aspect='auto', vmin=-1, vmax=1, cmap='RdBu',
+                        interpolation='nearest', extent=[-1*opt.winlen*0.5/opt.samprate,
+                        opt.winlen*1.5/opt.samprate, n + 0.5, -0.5])
+                else:
+                    tvec = np.arange(
+                        -opt.winlen*0.5/opt.samprate,opt.winlen*1.5/opt.samprate,
                         1/opt.samprate)
-                    ax1.plot(tvec,dat/2-o,'k',linewidth=0.25)
-                    ax1.axvline(x=-0.1*opt.winlen/opt.samprate, color='k', ls='dotted')
-                    ax1.axvline(x=0.9*opt.winlen/opt.samprate, color='k', ls='dotted')
-                    ax1.get_yaxis().set_visible(False)
-                    ax1.autoscale(tight=True)
+                    for o in range(len(fam)):
+                        dat=data[fam[o],:]
+                        dat[dat>1] = 1
+                        dat[dat<-1] = -1
+                        ax1.plot(tvec,dat/2-o,'k',linewidth=0.25)
+            
+            # Otherwise, plot cores and stacks from all stations            
+            else:
+            
+                r = rtable[core]
+                famtable = rtable[fam]
+                tvec = np.arange(-opt.winlen*0.5/opt.samprate,opt.winlen*1.5/opt.samprate,
+                    1/opt.samprate)
+                for s in range(opt.nsta):
+                    
+                    dats = np.zeros((int(opt.winlen*2),))
+                    waveform = famtable['waveform'][:,s*opt.wshape:(s+1)*opt.wshape]
+                    for n in range(len(fam)):
+                        tmps = waveform[n, max(0, windowStart[fam[n]]-int(
+                            opt.ptrig*opt.samprate)):min(opt.wshape,
+                            windowStart[fam[n]]+int(
+                            opt.atrig*opt.samprate))]/famtable['windowAmp'][n,s]
+                        dats = dats + tmps[int(opt.ptrig*opt.samprate -
+                            opt.winlen*0.5):int(opt.ptrig*opt.samprate + opt.winlen*1.5)]
+                    dats = dats/len(fam)
+                    dats[dats>1] = 1
+                    dats[dats<-1] = -1
+                    ax1.plot(tvec,dats-1.75*s,'r',linewidth=0.5)
+                    
+                    waveformc = r['waveform'][s*opt.wshape:(s+1)*opt.wshape]
+                    tmpc = waveformc[max(0, r['windowStart']-int(
+                        opt.ptrig*opt.samprate)):min(opt.wshape,
+                        r['windowStart']+int(opt.atrig*opt.samprate))]
+                    datc = tmpc[int(opt.ptrig*opt.samprate - opt.winlen*0.5):int(
+                        opt.ptrig*opt.samprate + opt.winlen*1.5)]/r['windowAmp'][s]        
+                    datc[datc>1] = 1
+                    datc[datc<-1] = -1
+                    ax1.plot(tvec,datc-1.75*s,'k',linewidth=0.25)
+            
+            ax1.axvline(x=-0.1*opt.winlen/opt.samprate, color='k', ls='dotted')
+            ax1.axvline(x=0.9*opt.winlen/opt.samprate, color='k', ls='dotted')
+            ax1.get_yaxis().set_visible(False)
+            ax1.autoscale(tight=True)
             ax1.set_xlabel('Time Relative to Trigger (sec)')
-        
+            
+            ax2 = fig.add_subplot(3, 3, 3)
+            ax2.set_xlabel('Frequency (Hz)')
+            ax2.get_yaxis().set_visible(False)
+            r = rtable[core]
+            famtable = rtable[fam]
+            freq = np.linspace(0,opt.samprate/2,opt.winlen/2)
+            fftc = np.zeros((opt.winlen/2,))
+            fftm = np.zeros((opt.winlen/2,))
+            for s in range(opt.nsta):
+                fft = np.abs(np.real(r['windowFFT'][s*opt.winlen:s*opt.winlen+opt.winlen/2]))
+                fft = fft/np.amax(fft)
+                fftc = fftc+fft
+                ffts = np.mean(np.abs(np.real(
+                    famtable['windowFFT'][:,s*opt.winlen:s*opt.winlen+opt.winlen/2])),
+                    axis=0)
+                fftm = fftm + ffts/np.amax(ffts)
+            ax2.plot(freq,fftm,'r', linewidth=0.5)
+            ax2.plot(freq,fftc,'k', linewidth=0.25)
+            ax2.set_xlim(0,opt.fmax*1.5)
+            
             # Plot amplitude timeline
-            ax3 = fig.add_subplot(3, 1, 2)
+            ax3 = fig.add_subplot(3, 3, (4,6))
             ax3.plot_date(startTimeMPL[fam], windowAmp[fam],
                     'ro', alpha=0.5, markeredgecolor='r', markeredgewidth=0.5)
             myFmt = matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M')
@@ -443,7 +488,7 @@ def plotFamilies(rtable, ftable, opt):
             maxind = fam[catalogind[-1]]
         
             # Plot spacing timeline
-            ax4 = fig.add_subplot(3, 1, 3) 
+            ax4 = fig.add_subplot(3, 3, (7,9)) 
             ax4.plot_date(catalog[1:], spacing, 'ro', alpha=0.5, markeredgecolor='r',
                 markeredgewidth=0.5)
             myFmt = matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M')
