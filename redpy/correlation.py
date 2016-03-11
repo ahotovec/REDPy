@@ -25,11 +25,14 @@ def calcWindow(waveform, windowStart, opt, winlen=1):
     for n in range(opt.nsta):
         winstart = n*opt.wshape + windowStart
         winend = n*opt.wshape + windowStart + opt.winlen*winlen
-        windowCoeff.append(1/np.sqrt(sum(
-            waveform[winstart:winend] * waveform[winstart:winend])))
+        if np.median(np.abs(waveform[winstart:winend]))==0:
+            windowCoeff.append(0)
+        else:
+            windowCoeff.append(1/np.sqrt(sum(
+                waveform[winstart:winend] * waveform[winstart:winend])))
         windowFFT[n*opt.winlen:(n+1)*opt.winlen] = np.reshape(
             fft(waveform[winstart:winend]),(opt.winlen*winlen,))
-
+        
     return windowCoeff, windowFFT
 
 
