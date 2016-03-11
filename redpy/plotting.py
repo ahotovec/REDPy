@@ -78,9 +78,9 @@ def createBokehTimelineFigure(rtable, ctable, ftable, opt):
     p1.yaxis.axis_label = 'Cluster by Date ({}+ Members)'.format(opt.minplot)
     
     r0 = figure(plot_width=1250, plot_height=250, x_axis_type='datetime')
-    if opt.hrbin<1:
+    if opt.hrbin>24:
         r0.title = 'Last {0} Days: Active Families and Repeaters by {1:.1f} Day Bin'.format(
-            opt.recplot,opt.hrbin*24)
+            opt.recplot,opt.hrbin/24)
     else:
         r0.title = 'Last {0} Days: Active Families and Repeaters by {1:.1f} Hour Bin'.format(
             opt.recplot,opt.hrbin)
