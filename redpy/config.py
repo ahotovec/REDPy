@@ -48,11 +48,12 @@ class Options(object):
         trigoff: Cutoff ratio for ending STALTA trigger (default 2.0)
         mintrig: Minimum spacing between triggers (default 10.0 s)
         nstaC: Minimum number of stations a trigger must show up on (default 4)
-        kurtmax: Maximum kurtosis allowed for event window, to eliminate spikes, ~80-100
-            is appropriate for 5 s window, ~130 for 15 s, ~200 for 25 s (default 80.0)
+        kurtmax: Maximum kurtosis allowed for event window, to eliminate spikes; ~80-100
+            is appropriate for 5 s window, ~130 for 15 s, ~200 for 25 s, but further
+            testing suggests these are too high (default 10.0)
         kurtfmax: Maximum kurtosis of frequency amplitude spectrum to eliminate
             calibration pulses with unnaturally harmonic signals; be careful not
-            to set too low or you could eliminate real harmonic events (default 150.0)
+            to set too low or you could eliminate real harmonic events (default 100.0)
         kurtwin: Length of window to use for kurtosis, in seconds, around the trigger
             time, will be centered on the trigger time (default 5 s)
         oratiomax: Maximum ratio of outliers to total number of datapoints in trace
@@ -135,9 +136,9 @@ class Options(object):
         self.trigoff=config.getfloat('Settings','trigoff') if config.has_option(
             'Settings','trigoff') else 2.
         self.kurtmax=config.getfloat('Settings','kurtmax') if config.has_option(
-            'Settings','kurtmax') else 80.
+            'Settings','kurtmax') else 10.
         self.kurtfmax=config.getfloat('Settings','kurtfmax') if config.has_option(
-            'Settings','kurtfmax') else 150.
+            'Settings','kurtfmax') else 100.
         self.oratiomax=config.getfloat('Settings','oratiomax') if config.has_option(
             'Settings','oratiomax') else 0.06
         self.kurtwin=config.getfloat('Settings','kurtwin') if config.has_option(

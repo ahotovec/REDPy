@@ -177,9 +177,11 @@ def trigger(st, stC, rtable, opt):
                 
                 # Slice and save as first trace              
                 ttmp = st.slice(ttime - opt.ptrig, ttime + opt.atrig)
-                ttmp[0].data = ttmp[0].data[0:opt.wshape]
+                ttmp[0].data = ttmp[0].data[0:opt.wshape] - np.mean(
+                    ttmp[0].data[0:opt.wshape])
                 for s in range(1,len(ttmp)):
-                    ttmp[0].data = np.append(ttmp[0].data, ttmp[s].data[0:opt.wshape])
+                    ttmp[0].data = np.append(ttmp[0].data, ttmp[s].data[
+                        0:opt.wshape] - np.mean(ttmp[s].data[0:opt.wshape]))
                 ttmp[0].stats.maxratio = np.max(cft[n]['cft_peaks'])
                 if ind is 0:
                     trigs = Stream(ttmp[0])
@@ -221,13 +223,11 @@ def dataclean(alltrigs, opt, flag=1):
         for n in range(opt.nsta):
             
             dat = alltrigs[i].data[n*opt.wshape:(n+1)*opt.wshape]
-            
             if flag == 1:
                 datcut=dat[range(int((opt.ptrig-opt.kurtwin/2)*opt.samprate),
                     int((opt.ptrig+opt.kurtwin/2)*opt.samprate))]
             else:
                 datcut=dat
-            
             
             # Calculate kurtosis in window
             k = stats.kurtosis(datcut)
@@ -237,7 +237,7 @@ def dataclean(alltrigs, opt, flag=1):
             # Calculate outlier ratio using z ((data-median)/mad); outliers have z > 4.45
             mad = np.median(np.absolute(dat - np.median(dat)))
             z = (dat-np.median(dat))/mad
-            orm = len(z[z>4.45])/len(z)
+            orm = len(z[z>4.45])/np.array(len(z)).astype(float)
             
             if k >= opt.kurtmax or orm >= opt.oratiomax or kf >= opt.kurtfmax:
                 njunk.append(n)
