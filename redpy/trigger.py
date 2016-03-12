@@ -242,10 +242,8 @@ def dataclean(alltrigs, opt, flag=1):
             if k >= opt.kurtmax or orm >= opt.oratiomax or kf >= opt.kurtfmax:
                 njunk.append(n)
           
-        # Allow if there are enough good stations to correlate, but mask bad data
+        # Allow if there are enough good stations to correlate
         if len(njunk) <= (opt.nsta-opt.ncor):
-            for n in njunk:
-                alltrigs[i].data[n*opt.wshape:(n+1)*opt.wshape] = 0
             trigs.append(alltrigs[i])
         else:
             junk.append(alltrigs[i])
