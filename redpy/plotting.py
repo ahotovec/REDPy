@@ -47,7 +47,7 @@ def plotTimelines(rtable, ftable, opt):
     
     dt = rtable.cols.startTimeMPL[:]
     amp = np.log10(rtable.cols.windowAmp[:][:,opt.printsta])
-    
+        
     dy = np.arange(np.floor(min(dt)/opt.dybin),np.ceil(max(dt+opt.dybin)/opt.dybin))*opt.dybin
     dyfams = np.zeros((len(dy),))
     dyrept = np.zeros((len(dy),))
@@ -438,7 +438,7 @@ def plotFamilies(rtable, ftable, opt):
                     dats = dats/len(fam)
                     dats[dats>1] = 1
                     dats[dats<-1] = -1
-                    ax1.plot(tvec,dats-1.75*s,'r',linewidth=0.5)
+                    ax1.plot(tvec,dats-1.75*s,'r',linewidth=1)
                     
                     waveformc = r['waveform'][s*opt.wshape:(s+1)*opt.wshape]
                     tmpc = waveformc[max(0, r['windowStart']-int(
@@ -473,7 +473,7 @@ def plotFamilies(rtable, ftable, opt):
                     famtable['windowFFT'][:,s*opt.winlen:s*opt.winlen+opt.winlen/2])),
                     axis=0)
                 fftm = fftm + ffts/np.amax(ffts)
-            ax2.plot(freq,fftm,'r', linewidth=0.5)
+            ax2.plot(freq,fftm,'r', linewidth=1)
             ax2.plot(freq,fftc,'k', linewidth=0.25)
             ax2.set_xlim(0,opt.fmax*1.5)
             
