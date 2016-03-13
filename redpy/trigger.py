@@ -1,10 +1,10 @@
 from obspy import UTCDateTime
 import obspy
-from obspy.fdsn import Client
-from obspy.earthworm import Client as EWClient
+from obspy.clients.fdsn import Client
+from obspy.clients.earthworm import Client as EWClient
 from obspy.core.trace import Trace
 from obspy.core.stream import Stream
-from obspy.signal.trigger import coincidenceTrigger
+from obspy.signal.trigger import coincidence_trigger
 import numpy as np
 from scipy import stats
 from scipy.fftpack import fft
@@ -33,22 +33,14 @@ def getData(date, opt):
     st = Stream()
     for n in range(len(stas)):
         try:
-            if opt.server == "IRIS":
-                stmp = client.get_waveforms(nets[n], stas[n], locs[n], chas[n],
-                    date - opt.atrig, date + opt.nsec + opt.atrig)
-            else:
-                stmp = client.getWaveform(nets[n], stas[n], locs[n], chas[n],
+            stmp = client.get_waveforms(nets[n], stas[n], locs[n], chas[n],
                     date - opt.atrig, date + opt.nsec + opt.atrig)
             stmp = stmp.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax,
                 corners=2, zerophase=True)
             stmp = stmp.merge(method=1, fill_value='interpolate')
         except (obspy.fdsn.header.FDSNException):
             try: # try again
-                if opt.server == "IRIS":
-                    stmp = client.get_waveforms(nets[n], stas[n], locs[n], chas[n],
-                        date - opt.atrig, date + opt.nsec + opt.atrig)
-                else:
-                    stmp = client.getWaveform(nets[n], stas[n], locs[n], chas[n],
+                stmp = client.get_waveforms(nets[n], stas[n], locs[n], chas[n],
                         date - opt.atrig, date + opt.nsec + opt.atrig)
                 stmp = stmp.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax,
                     corners=2, zerophase=True)
@@ -97,22 +89,14 @@ def getCatData(date, opt):
     st = Stream()
     for n in range(len(stas)):
         try:
-            if opt.server == "IRIS":
-                stmp = client.get_waveforms(nets[n], stas[n], locs[n], chas[n],
-                    date - opt.atrig, date + 3*opt.atrig)
-            else:
-                stmp = client.getWaveform(nets[n], stas[n], locs[n], chas[n],
+            stmp = client.get_waveforms(nets[n], stas[n], locs[n], chas[n],
                     date - opt.atrig, date + 3*opt.atrig)
             stmp = stmp.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax,
                 corners=2, zerophase=True)
             stmp = stmp.merge(method=1, fill_value='interpolate')
         except (obspy.fdsn.header.FDSNException):
             try: # try again
-                if opt.server == "IRIS":
-                    stmp = client.get_waveforms(nets[n], stas[n], locs[n], chas[n],
-                        date - opt.atrig, date + 3*opt.atrig)
-                else:
-                    stmp = client.getWaveform(nets[n], stas[n], locs[n], chas[n],
+                stmp = client.get_waveforms(nets[n], stas[n], locs[n], chas[n],
                         date - opt.atrig, date + 3*opt.atrig)
                 stmp = stmp.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax,
                     corners=2, zerophase=True)
@@ -150,7 +134,7 @@ def trigger(st, stC, rtable, opt):
     tr = st[0]
     t = tr.stats.starttime
 
-    cft = coincidenceTrigger("classicstalta", opt.trigon, opt.trigoff, stC, opt.nstaC,
+    cft = coincidence_trigger("classicstalta", opt.trigon, opt.trigoff, stC, opt.nstaC,
         sta=opt.swin, lta=opt.lwin, details=True)
     if len(cft) > 0:
         
