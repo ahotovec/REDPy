@@ -97,7 +97,7 @@ def plotTimelines(rtable, ftable, opt):
     
     p1 = figure(tools=TOOLS, plot_width=1250, plot_height=500, x_axis_type='datetime',
         x_range=p0.x_range)
-    p1.title = 'Occurrence Timeline (Color by log10(Amplitude) within Family)'
+    p1.title = 'Occurrence Timeline (Color by Events per Hour)'
     p1.grid.grid_line_alpha = 0.3
     p1.xaxis.axis_label = 'Date'
     p1.yaxis.axis_label = 'Cluster by Date ({}+ Members)'.format(opt.minplot)
@@ -115,7 +115,7 @@ def plotTimelines(rtable, ftable, opt):
     
     r1 = figure(tools=TOOLSrec, plot_width=1250, plot_height=500, x_axis_type='datetime',
         x_range=r0.x_range)
-    r1.title = 'Last {} Days: Occurrence Timeline (Color by log10(Amplitude) within Family)'.format(
+    r1.title = 'Last {} Days: Occurrence Timeline (Color by Events per Hour)'.format(
         opt.recplot)
     r1.grid.grid_line_alpha = 0.3
     r1.xaxis.axis_label = 'Date'
@@ -124,7 +124,7 @@ def plotTimelines(rtable, ftable, opt):
     # Steal YlOrRd (len=256) colormap from matplotlib
     colormap = matplotlib.cm.get_cmap('YlOrRd')
     bokehpalette = [matplotlib.colors.rgb2hex(m) for m in colormap(
-        np.arange(colormap.N))]
+        np.arange(colormap.N)[::-1])]
 
     # Build the lists and dictionaries    
     n = 0  
@@ -152,19 +152,19 @@ def plotTimelines(rtable, ftable, opt):
             p1.line((matplotlib.dates.num2date(min(dt[members])),
                 matplotlib.dates.num2date(max(dt[members]))), (n, n),
                 color='black')
+
+            # Create histogram of events/hour
+            hist, h = np.histogram(dt[members], bins=np.arange(min(dt[members]),
+                max(dt[members]+1.0/24), 1.0/24))
+            d1 = matplotlib.dates.num2date(h[hist>0])
+            d2 = matplotlib.dates.num2date(h[hist>0]+1.0/24)
+            histlog = np.log10(hist[hist>0])
+            ind = [int(min(255,255*(i/2))) for i in histlog]
+            colors = [bokehpalette[i] for i in ind]
             
-            minamp = min(amp[members])
-            maxamp = max(amp[members])
+            p1.quad(top=n+0.3, bottom=n-0.3, left=d1, right=d2,
+                color=colors)
             
-            if minamp==maxamp:
-                colors = [bokehpalette[-1] for i in range(len(amp[members])+1)]
-            else:
-                ind = [int(255*((amp[i]-minamp)/(maxamp-minamp))) for i in members]
-                colors = [bokehpalette[i] for i in ind]
-               
-            d = matplotlib.dates.num2date(dt[members])                        
-            p1.circle(d, n, color=colors, size=8, line_color='black', line_width=0.5,
-                fill_alpha=1.0)
             
             # Text doesn't understand datetimes, need to convert to a number and subtract
             # about 8 hours
@@ -201,25 +201,17 @@ def plotTimelines(rtable, ftable, opt):
                     r1.text(time.mktime(matplotlib.dates.num2date(
                         hr[0]-opt.hrbin/6).timetuple())*1000 - 28799000, m, text=['<'], 
                         text_font_size='9pt', text_baseline='middle')
-                    dtmp = dt[members]
-                    atmp = amp[members]
-                    amps = atmp[dtmp>hr[0]]
-                    d = matplotlib.dates.num2date(dtmp[dtmp>hr[0]])
 
-                    if minamp==maxamp:
-                        colors = [bokehpalette[-1] for i in range(len(d)+1)]
-                    else:
-                        ind = [int(255*((i-minamp)/(maxamp-minamp))) for i in amps]
-                        colors = [bokehpalette[i] for i in ind]
+                    idx = np.where(h[hist>0]>hr[0])[0]
                         
                 else:
                     r1.line((matplotlib.dates.num2date(min(dt[members])),
                         matplotlib.dates.num2date(max(dt[members]))), (m, m),
                         color='black')
-                    d = matplotlib.dates.num2date(dt[members])   
+                    idx = np.arange(len(d1))
                 
-                r1.circle(d, m, color=colors, size=8, line_color='black', line_width=0.5,
-                    fill_alpha=1.0)                     
+                r1.quad(top=m+0.3, bottom=m-0.3, left=np.array(d1)[idx],
+                    right=np.array(d2)[idx], color=np.array(colors)[idx])                   
                 
                 # Text doesn't understand datetimes, need to convert to a number and subtract
                 # about 8 hours
@@ -506,35 +498,36 @@ def plotFamilies(rtable, ftable, opt):
                 cnum), dpi=100)
             plt.close(fig)
         
-        # Now write a simple HTML file to show image and catalog
-        with open('{0}/clusters/{1}.html'.format(opt.groupName, cnum), 'w') as f:
-            f.write("""
-            <html><head><title>{1} - Cluster {0}</title>
-            </head>
-            <body><center>
-            <span style="font-size: 20px; font-weight: bold; font-family: Helvetica;">
-                Cluster {0}</span></br></br>
-            <img src="{0}.gif"></br></br>
-            <span style="font-size: 12px; font-family: Helvetica;">
-                Number of events: {2}</br>
-                Longevity: {5:.2f} days</br>
-                Mean event spacing: {7:.2f} hours</br>
-                Median event spacing: {8:.2f} hours</br></br>
-                First event: {3}</br>
-                Core event: {6}</br>
-                Last event: {4}</br>
-                </span> 
-            <img src="fam{0}.png"></br>                
-            """.format(cnum, opt.title, len(fam), (UTCDateTime(
-                startTime[minind]) + windowStart[minind]/opt.samprate).isoformat(),
-                (UTCDateTime(startTime[maxind]) + windowStart[
-                maxind]/opt.samprate).isoformat(), longevity, (UTCDateTime(
-                startTime[core]) + windowStart[core]/opt.samprate).isoformat(),
-                np.mean(spacing), np.median(spacing)))
-                            
-            f.write("""
-            </center></body></html>
-            """)
+        if ftable.cols.printme[cnum] != 0 or ftable.cols.lastprint[cnum] != cnum:
+            # Now write a simple HTML file to show image and catalog
+            with open('{0}/clusters/{1}.html'.format(opt.groupName, cnum), 'w') as f:
+                f.write("""
+                <html><head><title>{1} - Cluster {0}</title>
+                </head>
+                <body><center>
+                <span style="font-size: 20px; font-weight: bold; font-family: Helvetica;">
+                    Cluster {0}</span></br></br>
+                <img src="{0}.gif"></br></br>
+                <span style="font-size: 12px; font-family: Helvetica;">
+                    Number of events: {2}</br>
+                    Longevity: {5:.2f} days</br>
+                    Mean event spacing: {7:.2f} hours</br>
+                    Median event spacing: {8:.2f} hours</br></br>
+                    First event: {3}</br>
+                    Core event: {6}</br>
+                    Last event: {4}</br>
+                    </span> 
+                <img src="fam{0}.png"></br>                
+                """.format(cnum, opt.title, len(fam), (UTCDateTime(
+                    startTime[minind]) + windowStart[minind]/opt.samprate).isoformat(),
+                    (UTCDateTime(startTime[maxind]) + windowStart[
+                    maxind]/opt.samprate).isoformat(), longevity, (UTCDateTime(
+                    startTime[core]) + windowStart[core]/opt.samprate).isoformat(),
+                    np.mean(spacing), np.median(spacing)))
+                                
+                f.write("""
+                </center></body></html>
+                """)
         
 
 def printCatalog(rtable, ftable, opt):
