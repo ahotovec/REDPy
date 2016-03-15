@@ -48,6 +48,10 @@ h5file, rtable, otable, ttable, ctable, jtable, dtable, ftable = redpy.table.ope
     
 
 t = time.time()
+if len(ttable) > 0:
+    ttimes = ttable.cols.startTimeMPL[:]
+else:
+    ttimes = 0
 
 # Read in csv file using pandas
 df = pd.read_csv(args.csvfile)
@@ -94,8 +98,7 @@ for event in eventlist[::-1]:
             else:        
                 id = id + 1
                 redpy.correlation.runCorrelation(rtable, otable, ctable, ftable,
-                    otable.cols.startTimeMPL[:], rtable.cols.startTimeMPL[:], trigs[0],
-                    id, opt)
+                    ttimes, trigs[0], id, opt)
         else:
             ostart = 0
             if len(otable) == 0:
@@ -106,8 +109,7 @@ for event in eventlist[::-1]:
             for i in range(ostart,len(trigs)):  
                 id = id + 1
                 redpy.correlation.runCorrelation(rtable, otable, ctable, ftable,
-                    otable.cols.startTimeMPL[:], rtable.cols.startTimeMPL[:], trigs[i],
-                    id, opt)
+                    ttimes, trigs[i], id, opt)
         rtable.attrs.previd = id        
     
     # Don't expire orphans in the catalog?

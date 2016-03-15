@@ -79,14 +79,10 @@ else:
     else:
         tstart = tend-opt.nsec
 
-if len(otable) > 0:
-    otimes = otable.cols.startTimeMPL[:]
+if len(ttable) > 0:
+    ttimes = ttable.cols.startTimeMPL[:]
 else:
-    otimes = 0
-if len(rtable) > 0:
-    rtimes = rtable.cols.startTimeMPL[:]
-else:
-    rtimes = 0
+    ttimes = 0
 
 t = time.time()
 n = 0
@@ -109,10 +105,10 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
         
 	# Save junk triggers in separate table for quality checking purposes
     for i in range(len(junk)):
-        redpy.table.populateJunk(jtable,junk[i],0,opt)
+        redpy.table.populateJunk(jtable, junk[i], 0, opt)
     
     # Append times of triggers to ttable to compare total seismicity later
-    redpy.table.populateTriggers(ttable,trigs,opt)
+    redpy.table.populateTriggers(ttable, trigs, ttimes, opt)
             
     # Check triggers against deleted events
     if len(dtable) > 0:
@@ -128,7 +124,7 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
                 ostart = 1
             else:        
                 id = id + 1
-                redpy.correlation.runCorrelation(rtable, otable, ctable, ftable, otimes, rtimes,
+                redpy.correlation.runCorrelation(rtable, otable, ctable, ftable, ttimes,
                     trigs[0], id, opt)
         else:
             ostart = 0
@@ -139,7 +135,7 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
             # Loop through remaining triggers
             for i in range(ostart,len(trigs)):  
                 id = id + 1
-                redpy.correlation.runCorrelation(rtable, otable, ctable, ftable, otimes, rtimes,
+                redpy.correlation.runCorrelation(rtable, otable, ctable, ftable, ttimes,
                     trigs[i], id, opt)            
         rtable.attrs.previd = id
     

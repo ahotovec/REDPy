@@ -470,7 +470,7 @@ def compareSingleOrphan2Cores(rtable, otable, ctable, ftable, trig, id, coeffi, 
             redpy.table.mergeFamilies(rtable, ctable, ftable, wfam, wlag, opt)
 
 
-def runCorrelation(rtable, otable, ctable, ftable, otimes, rtimes, trig, id, opt):
+def runCorrelation(rtable, otable, ctable, ftable, ttimes, trig, id, opt):
 
     """
     Adds a new trigger to the correct table, runs the correlations and clustering
@@ -478,6 +478,8 @@ def runCorrelation(rtable, otable, ctable, ftable, otimes, rtimes, trig, id, opt
     rtable: Repeater table
     otable: Orphan table
     ctable: Correlation matrix table
+    ftable: Families table
+    ttimes: Trigger times
     trig: New trigger to compare
     id: Unique ID of new trigger
     opt: Options object describing station/run parameters
@@ -494,10 +496,8 @@ def runCorrelation(rtable, otable, ctable, ftable, otimes, rtimes, trig, id, opt
         stime = matplotlib.dates.date2num(datetime.datetime.strptime(
             trig.stats.starttime.isoformat(), '%Y-%m-%dT%H:%M:%S'))
     
-    if not (len(np.intersect1d(np.where(otimes > stime - opt.mintrig/86400), np.where(
-        otimes < stime + opt.mintrig/86400))) or len(np.intersect1d(np.where(
-        rtimes > stime - opt.mintrig/86400), np.where(
-        rtimes < stime + opt.mintrig/86400)))):
+    if not len(np.intersect1d(np.where(ttimes > stime - opt.mintrig/86400), np.where(
+        ttimes < stime + opt.mintrig/86400))):
 
         coeffi, ffti = calcWindow(trig.data, int(opt.ptrig*opt.samprate), opt)
         

@@ -358,7 +358,7 @@ def populateOrphan(otable, id, trig, opt):
     otable.flush()
 
 
-def populateTriggers(ttable, trigs, opt):
+def populateTriggers(ttable, trigs, ttimes, opt):
     
     """
     Produces new rows in the 'Trigger' table from a list of triggers.
@@ -366,23 +366,28 @@ def populateTriggers(ttable, trigs, opt):
     ttable: object pointing to the table to populate
         (e.g., h5file.root.groupName.triggers)
     trigs: A list of ObsPy traces from triggering function
+    ttimes: Times of existing triggers to prevent duplication
     opt: Options object describing station/run parameters
     
     Appends a row to Trigger table for each trigger in trigs
     """
     
     for t in trigs:        
-        trigger = ttable.row
         try:
-            trigger['startTimeMPL'] = matplotlib.dates.date2num(
+            trigtime = matplotlib.dates.date2num(
                 datetime.datetime.strptime(t.stats.starttime.isoformat(),
                 '%Y-%m-%dT%H:%M:%S.%f'))
         except ValueError:
-            trigger['startTimeMPL'] = matplotlib.dates.date2num(
+            trigtime = matplotlib.dates.date2num(
                 datetime.datetime.strptime(t.stats.starttime.isoformat(),
                 '%Y-%m-%dT%H:%M:%S'))
-        trigger.append()
-        ttable.flush()
+        
+        if not len(np.intersect1d(np.where(ttimes > trigtime - opt.mintrig/86400),
+            np.where(ttimes < trigtime + opt.mintrig/86400))):
+            trigger = ttable.row
+            trigger['startTimeMPL'] = trigtime
+            trigger.append()
+            ttable.flush()
 
 
 def populateJunk(jtable, trig, isjunk, opt):
