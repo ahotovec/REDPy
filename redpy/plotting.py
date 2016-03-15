@@ -424,7 +424,10 @@ def plotFamilies(rtable, ftable, opt):
                         tmps = waveform[n, max(0, windowStart[fam[n]]-int(
                             opt.ptrig*opt.samprate)):min(opt.wshape,
                             windowStart[fam[n]]+int(
-                            opt.atrig*opt.samprate))]/famtable['windowAmp'][n,s]
+                            opt.atrig*opt.samprate))]/(famtable['windowAmp'][
+                            n,s]+1.0/1000)
+                        tmps[tmps>1] = 1
+                        tmps[tmps<-1] = -1
                         dats = dats + tmps[int(opt.ptrig*opt.samprate -
                             opt.winlen*0.5):int(opt.ptrig*opt.samprate + opt.winlen*1.5)]
                     dats = dats/len(fam)
@@ -437,7 +440,8 @@ def plotFamilies(rtable, ftable, opt):
                         opt.ptrig*opt.samprate)):min(opt.wshape,
                         r['windowStart']+int(opt.atrig*opt.samprate))]
                     datc = tmpc[int(opt.ptrig*opt.samprate - opt.winlen*0.5):int(
-                        opt.ptrig*opt.samprate + opt.winlen*1.5)]/r['windowAmp'][s]        
+                        opt.ptrig*opt.samprate + opt.winlen*1.5)]/(
+                        r['windowAmp'][s]+1.0/1000)        
                     datc[datc>1] = 1
                     datc[datc<-1] = -1
                     ax1.plot(tvec,datc-1.75*s,'k',linewidth=0.25)
