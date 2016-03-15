@@ -71,6 +71,23 @@ def Orphans(opt):
     return dict
 
 
+def Triggers(opt):
+
+    """
+    Defines the columns in the 'Triggers' table based on the options in opt
+    
+    startTimeMPL: matplotlib number associated with time (float)
+    
+    Returns a dictionary defining the table
+    """
+    
+    dict = {
+        "startTimeMPL": Float64Col(shape=(), pos=0)
+        }
+        
+    return dict
+
+
 def Deleted(opt):
 
     """
@@ -210,6 +227,9 @@ def initializeTable(opt):
         "Orphan Catalog")
     otable.flush()
     
+    ttable = h5file.create_table(group, "triggers", Triggers(opt), "Trigger Catalog")
+    ttable.flush()
+    
     jtable = h5file.create_table(group, "junk", Junk(opt), "Junk Catalog")
     jtable.flush()
     
@@ -243,11 +263,12 @@ def openTable(opt):
     rtable = eval('h5file.root.'+ opt.groupName + '.repeaters')
     otable = eval('h5file.root.'+ opt.groupName + '.orphans')
     ctable = eval('h5file.root.'+ opt.groupName + '.correlation')
+    ttable = eval('h5file.root.'+ opt.groupName + '.triggers')
     jtable = eval('h5file.root.'+ opt.groupName + '.junk')
     dtable = eval('h5file.root.'+ opt.groupName + '.deleted')
     ftable = eval('h5file.root.'+ opt.groupName + '.families')
     
-    return h5file, rtable, otable, ctable, jtable, dtable, ftable
+    return h5file, rtable, otable, ttable, ctable, jtable, dtable, ftable
 
 
 def calcAmps(data, windowStart, opt):
@@ -258,6 +279,7 @@ def calcAmps(data, windowStart, opt):
             (n*opt.wshape)+windowStart+opt.winlen/2)])))
     
     return amps
+    
     
 def populateRepeater(rtable, ftable, id, trig, opt, windowStart=-1):
 
@@ -334,6 +356,33 @@ def populateOrphan(otable, id, trig, opt):
     trigger['expires'] = (trig.stats.starttime+adddays*86400).isoformat()
     trigger.append()
     otable.flush()
+
+
+def populateTriggers(ttable, trigs, opt):
+    
+    """
+    Produces new rows in the 'Trigger' table from a list of triggers.
+    
+    ttable: object pointing to the table to populate
+        (e.g., h5file.root.groupName.triggers)
+    trigs: A list of ObsPy traces from triggering function
+    opt: Options object describing station/run parameters
+    
+    Appends a row to Trigger table for each trigger in trigs
+    """
+    
+    for t in trigs:        
+        trigger = ttable.row
+        try:
+            trigger['startTimeMPL'] = matplotlib.dates.date2num(
+                datetime.datetime.strptime(t.stats.starttime.isoformat(),
+                '%Y-%m-%dT%H:%M:%S.%f'))
+        except ValueError:
+            trigger['startTimeMPL'] = matplotlib.dates.date2num(
+                datetime.datetime.strptime(t.stats.starttime.isoformat(),
+                '%Y-%m-%dT%H:%M:%S'))
+        trigger.append()
+        ttable.flush()
 
 
 def populateJunk(jtable, trig, isjunk, opt):

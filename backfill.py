@@ -64,7 +64,7 @@ if args.nsec:
     opt.nsec = args.nsec
 
 if args.verbose: print("Opening hdf5 table: {0}".format(opt.filename))
-h5file, rtable, otable, ctable, jtable, dtable, ftable = redpy.table.openTable(opt)
+h5file, rtable, otable, ttable, ctable, jtable, dtable, ftable = redpy.table.openTable(opt)
     
 if args.endtime:
     tend = UTCDateTime(args.endtime)
@@ -110,6 +110,9 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
 	# Save junk triggers in separate table for quality checking purposes
     for i in range(len(junk)):
         redpy.table.populateJunk(jtable,junk[i],0,opt)
+    
+    # Append times of triggers to ttable to compare total seismicity later
+    redpy.table.populateTriggers(ttable,trigs,opt)
             
     # Check triggers against deleted events
     if len(dtable) > 0:
