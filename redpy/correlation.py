@@ -10,10 +10,12 @@ def calcWindow(waveform, windowStart, opt, winlen=1):
 
     """
     Calculates the amplitude coefficient and FFT for a window of data.
+    
     waveform: numpy array of waveform data
     windowStart: starting sample of window
     opt: Options object describing station/run parameters
     winlen: Fraction of window to use (optional)
+    
     Returns windowCoeff and windowFFT
     """
     
@@ -40,11 +42,13 @@ def xcorr1x1(windowFFT1, windowFFT2, windowCoeff1, windowCoeff2, opt):
 
     """
     Calculates the cross-correlation coefficient and lag for two windows.
+    
     windowFFT1: FFT of first window
     windowFFT2: FFT of second window
     windowCoeff1: amplitude coefficient of first window
     windowCoeff2: amplitude coefficient of second window
     Order matters for sign of lag, but not CCC.
+    
     Returns maximum cross-correlation and optimal lag (in samples)
     """
 
@@ -166,6 +170,7 @@ def compareGoodOrphans(rtable, otable, ctable, ftable, trig, id, coeffi, ffti, c
     """
     Goes and finds the matches of the new event in the orphan table, appends them to
     the repeater table, and then compares to cores
+    
     rtable: Repeater table
     otable: Orphan table
     ctable: Correlation matrix table
@@ -499,19 +504,19 @@ def runCorrelation(rtable, otable, ctable, ftable, otimes, rtimes, trig, id, opt
         # Correlate with the new event with all the orphans
         cor, lag, nthcor = xcorr1xtable(coeffi, ffti, otable, opt)
         
-#         try:
+        try:
             # If there's a match, run the most complex function
-        if max(cor) >= opt.cmin - 0.05:
-            compareGoodOrphans(rtable, otable, ctable, ftable, trig, id, coeffi, ffti,
-                cor, lag, nthcor, opt)
-        else:
-            # Compare that orphan to the cores in the repeater table
-            if len(rtable) > 0:
-                compareSingleOrphan2Cores(rtable, otable, ctable, ftable, trig, id,
-                    coeffi, ffti, opt)
-            # Populate as an orphan if there are no repeaters yet
+            if max(cor) >= opt.cmin - 0.05:
+                compareGoodOrphans(rtable, otable, ctable, ftable, trig, id, coeffi, ffti,
+                    cor, lag, nthcor, opt)
             else:
-                redpy.table.populateOrphan(otable, id, trig, opt)
-#         except ValueError:
-#             print('Could not properly correlate, moving on...')
-#             redpy.table.populateOrphan(otable, id, trig, opt)
+                # Compare that orphan to the cores in the repeater table
+                if len(rtable) > 0:
+                    compareSingleOrphan2Cores(rtable, otable, ctable, ftable, trig, id,
+                        coeffi, ffti, opt)
+                # Populate as an orphan if there are no repeaters yet
+                else:
+                    redpy.table.populateOrphan(otable, id, trig, opt)
+        except ValueError:
+            print('Could not properly correlate, moving on...')
+            redpy.table.populateOrphan(otable, id, trig, opt)
