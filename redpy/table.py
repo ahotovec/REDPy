@@ -181,14 +181,14 @@ def Families(opt):
         
     Returns a dictionary defining the table
     """
-    # COULD ADD MORE METRICS HERE SO IT DOESN'T HAVE TO CALCULATE EACH TIME?
     
     dict = {
         "members"   : StringCol(itemsize=1000000, shape=(), pos=0),
         "core"      : Int32Col(shape=(), pos=1),
         "startTime" : Float64Col(shape=(), pos=2),
-        "printme"   : Int32Col(shape=(), pos=3),
-        "lastprint" : Int32Col(shape=(), pos=4)
+        "longevity" : Float64Col(shape=(), pos=3),
+        "printme"   : Int32Col(shape=(), pos=4),
+        "lastprint" : Int32Col(shape=(), pos=5)
     }
 
     return dict
@@ -582,6 +582,8 @@ def createNewFamily(rtable, ftable, members, core, opt):
     f['members'] = np.array2string(members)[1:-1]
     f['core'] = core
     f['startTime'] = np.min(rtable[members]['startTimeMPL'])
+    f['longevity'] = np.max(rtable[members]['startTimeMPL']) - np.min(
+        rtable[members]['startTimeMPL'])
     f['printme'] = 1
     f['lastprint'] = -1
     f.append()

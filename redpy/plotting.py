@@ -369,7 +369,7 @@ def plotFamilies(rtable, ftable, opt):
         # Prep catalog
         catalogind = np.argsort(startTimeMPL[fam])
         catalog = startTimeMPL[fam][catalogind]
-        longevity = catalog[-1] - catalog[0]
+        longevity = ftable[cnum]['longevity']
         spacing = np.diff(catalog)*24
         minind = fam[catalogind[0]]
         maxind = fam[catalogind[-1]]
