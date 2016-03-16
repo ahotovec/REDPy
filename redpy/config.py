@@ -69,6 +69,12 @@ class Options(object):
         fmin: Lower band of bandpass filter (default 1.0 Hz)
         fmax: Upper band of bandpass filter (default 10.0 Hz)
         
+        FREQUENCY INDEX WINDOWS:
+        filomin: Lower bound on low window (default 2.0 Hz)
+        filomax: Upper bound on low window (default 4.0 Hz)
+        fiupmin: Lower bound on upper window (default 7.0 Hz)
+        fiupmax: Upper bound on upper window (default 9.0 Hz)
+        
         CLUSTERING PARAMETERS:
         cmin: Minimum correlation to be considered a repeater (default 0.7)
         ncor: Number of stations correlation must be exceeded on (default 4)
@@ -117,7 +123,7 @@ class Options(object):
         self.samprate=config.getfloat('Settings','samprate') if config.has_option(
             'Settings','samprate') else 100.
         self.nstaC=config.getint('Settings','nstaC') if config.has_option(
-            'Settings','nstaC') else 3
+            'Settings','nstaC') else 5
         self.printsta=config.getint('Settings','printsta') if config.has_option(
             'Settings','printsta') else 2
         self.server=config.get('Settings','server') if config.has_option(
@@ -148,6 +154,14 @@ class Options(object):
             'Settings','fmin') else 1.
         self.fmax=config.getfloat('Settings','fmax') if config.has_option(
             'Settings','fmax') else 10.
+        self.filomin=config.getfloat('Settings','filomin') if config.has_option(
+            'Settings','filomin') else 1.
+        self.filomax=config.getfloat('Settings','filomax') if config.has_option(
+            'Settings','filomax') else 2.5
+        self.fiupmin=config.getfloat('Settings','fiupmin') if config.has_option(
+            'Settings','fiupmin') else 5.
+        self.fiupmax=config.getfloat('Settings','fiupmax') if config.has_option(
+            'Settings','fiupmax') else 10.    
         self.cmin=config.getfloat('Settings','cmin') if config.has_option(
             'Settings','cmin') else 0.7
         self.ncor=config.getint('Settings','ncor') if config.has_option(

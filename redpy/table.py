@@ -33,6 +33,7 @@ def Repeaters(opt):
         "windowCoeff"   : Float64Col(shape=(opt.nsta,), pos=5),
         "windowFFT"     : ComplexCol(shape=(opt.winlen*opt.nsta,), itemsize=16, pos=6),
         "windowAmp"     : Float64Col(shape=(opt.nsta,), pos=7),
+        "FI"            : Float64Col(shape=(opt.nsta,), pos=8)
         }
     
     return dict
@@ -65,7 +66,8 @@ def Orphans(opt):
         "windowCoeff" : Float64Col(shape=(opt.nsta,), pos=5),
         "windowFFT"   : ComplexCol(shape=(opt.winlen*opt.nsta,), itemsize=16, pos=6),
         "windowAmp"   : Float64Col(shape=(opt.nsta,), pos=7),
-        "expires"     : StringCol(itemsize=32, pos=8)
+        "FI"          : Float64Col(shape=(opt.nsta,), pos=8),
+        "expires"     : StringCol(itemsize=32, pos=9)
         }
 
     return dict
@@ -113,7 +115,8 @@ def Deleted(opt):
         "windowStart" : Int32Col(shape=(), pos=4),
         "windowCoeff" : Float64Col(shape=(opt.nsta,), pos=5),
         "windowFFT"   : ComplexCol(shape=(opt.winlen*opt.nsta,), itemsize=16, pos=6),
-        "windowAmp"   : Float64Col(shape=(opt.nsta,), pos=7)
+        "windowAmp"   : Float64Col(shape=(opt.nsta,), pos=7),
+        "FI"          : Float64Col(shape=(opt.nsta,), pos=8)
         }
 
     return dict
@@ -312,7 +315,7 @@ def populateRepeater(rtable, ftable, id, trig, opt, windowStart=-1):
             trig.stats.starttime.isoformat(), '%Y-%m-%dT%H:%M:%S'))
     trigger['waveform'] = trig.data
     trigger['windowStart'] = windowStart
-    trigger['windowCoeff'], trigger['windowFFT'] = redpy.correlation.calcWindow(
+    trigger['windowCoeff'], trigger['windowFFT'], trigger['FI'] = redpy.correlation.calcWindow(
         trig.data, windowStart, opt)
     trigger['windowAmp'] = calcAmps(trig.data, windowStart, opt)
     
@@ -348,7 +351,7 @@ def populateOrphan(otable, id, trig, opt):
             trig.stats.starttime.isoformat(), '%Y-%m-%dT%H:%M:%S'))
     trigger['waveform'] = trig.data
     trigger['windowStart'] = windowStart
-    trigger['windowCoeff'], trigger['windowFFT'] = redpy.correlation.calcWindow(
+    trigger['windowCoeff'], trigger['windowFFT'], trigger['FI'] = redpy.correlation.calcWindow(
         trig.data, windowStart, opt)
     trigger['windowAmp'] = calcAmps(trig.data, windowStart, opt)
 
@@ -440,10 +443,11 @@ def moveOrphan(rtable, otable, ftable, oindex, opt):
         trigger['windowCoeff'] = orow['windowCoeff']
         trigger['windowFFT'] = orow['windowFFT']
     else:
-        coeff, fft = redpy.correlation.calcWindow(orow['waveform'], orow['windowStart'],
+        coeff, fft, fi = redpy.correlation.calcWindow(orow['waveform'], orow['windowStart'],
             opt)
         trigger['windowCoeff'] = coeff
         trigger['windowFFT'] = fft
+        trigger['FI'] = fi
         otable.cols.windowCoeff[oindex] = 0
         otable.cols.expires[oindex] = (UTCDateTime(orow['startTime'])-86400).isoformat()
     trigger['windowAmp'] = orow['windowAmp']
@@ -493,6 +497,7 @@ def removeFamilies(rtable, ctable, dtable, ftable, cnums, opt):
         trigger['windowCoeff'] = core['windowCoeff']
         trigger['windowFFT'] = core['windowFFT']
         trigger['windowAmp'] = core['windowAmp']
+        trigger['FI'] = core['FI']
         trigger.append()
         
     ids = ids[members]
@@ -637,7 +642,7 @@ def mergeFamilies(rtable, ctable, ftable, wfam, wlag, opt):
             members = np.fromstring(ftable[wfam[n]]['members'], dtype=int, sep=' ')
             for m in members:
                 rtable.cols.windowStart[m] = rtable.cols.windowStart[m] - wlag[n]
-                rtable.cols.windowCoeff[m], rtable.cols.windowFFT[m] = redpy.correlation.calcWindow(
+                rtable.cols.windowCoeff[m], rtable.cols.windowFFT[m], rtable.cols.FI[m] = redpy.correlation.calcWindow(
                     rtable.cols.waveform[m], rtable.cols.windowStart[m], opt)
             rtable.flush()
     

@@ -45,7 +45,7 @@ def remove(*args):
         
     if len(removethese) > 0:
         print("Creating plots...")
-        redpy.plotting.createPlots(rtable, ftable, opt)
+        redpy.plotting.createPlots(rtable, ftable, ttable, opt)
 
 def close(*args):
     """

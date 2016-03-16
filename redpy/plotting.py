@@ -10,7 +10,7 @@ from obspy import UTCDateTime
 from bokeh.plotting import figure, output_file, save, gridplot
 from bokeh.models import HoverTool, ColumnDataSource, OpenURL, TapTool, Range1d
         
-def createPlots(rtable, ftable, opt):
+def createPlots(rtable, ftable, ttable, opt):
     
     """
     Creates all output plots (core images, family plots, and two bokeh .html plots)
@@ -21,7 +21,7 @@ def createPlots(rtable, ftable, opt):
         
     """
     
-    plotTimelines(rtable, ftable, opt)
+    plotTimelines(rtable, ftable, ttable, opt)
     printCatalog(rtable, ftable, opt)
     plotCores(rtable, ftable, opt)
     plotFamilies(rtable, ftable, opt)
@@ -34,7 +34,7 @@ def createPlots(rtable, ftable, opt):
         os.rename(tmp,tmp[0:-4]) 
     
     
-def plotTimelines(rtable, ftable, opt):
+def plotTimelines(rtable, ftable, ttable, opt):
     
     """
     Creates the primary .html Bokeh timelines
@@ -46,8 +46,112 @@ def plotTimelines(rtable, ftable, opt):
     """
     
     dt = rtable.cols.startTimeMPL[:]
-    amp = np.log10(rtable.cols.windowAmp[:][:,opt.printsta])
+    fi = np.mean(rtable.cols.FI[:], axis=1)
+    longevity = ftable.cols.longevity[:]
+    famstarts = ftable.cols.startTime[:]
+    alltrigs = ttable.cols.startTimeMPL[:]
+    
+    ### OVERVIEW TIMELINES ###
+    
+    # Create histogram of events/dybin
+    histT, hT = np.histogram(alltrigs, bins=np.arange(min(alltrigs),
+        max(alltrigs+opt.dybin), opt.dybin))
+    histR, hR = np.histogram(dt, bins=np.arange(min(alltrigs),
+        max(alltrigs+opt.dybin), opt.dybin))
         
+    # Create histogram of events/hrbin
+    histTr, hTr = np.histogram(alltrigs, bins=np.arange(max(alltrigs)-opt.recplot,
+        max(alltrigs+opt.hrbin/24), opt.hrbin/24))
+    histRr, hRr = np.histogram(dt, bins=np.arange(max(alltrigs)-opt.recplot,
+        max(alltrigs+opt.hrbin/24), opt.hrbin/24))
+    
+    oTOOLS = ['pan,box_zoom,reset,resize,save,tap']
+    
+    o0 = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime')
+    if opt.dybin>=1:
+        o0.title = 'Triggers vs. Repeaters by {:.1f} Day Bin'.format(opt.dybin)
+    else:
+        o0.title = 'Triggers vs. Repeaters by {:.1f} Hour Bin'.format(opt.dybin*24)
+    o0.grid.grid_line_alpha = 0.3
+    o0.xaxis.axis_label = 'Date'
+    o0.yaxis.axis_label = 'Events'
+    
+    o0.line(matplotlib.dates.num2date(hT[0:-1]+opt.dybin/2), histT, color='black',
+        legend='All Triggers')
+    o0.line(matplotlib.dates.num2date(hR[0:-1]+opt.dybin/2), histR, color='red',
+        legend='Repeaters')
+    o0.legend.orientation = "top_left"
+    
+    o0r = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime')
+    if opt.hrbin<24:
+        o0r.title = 'Triggers vs. Repeaters by {:.1f} Hour Bin'.format(opt.hrbin)
+    else:
+        o0r.title = 'Triggers vs. Repeaters by {:.1f} Day Bin'.format(opt.hrbin/24)
+    o0r.grid.grid_line_alpha = 0.3
+    o0r.xaxis.axis_label = 'Date'
+    o0r.yaxis.axis_label = 'Events'
+    
+    o0r.line(matplotlib.dates.num2date(hTr[0:-1]+opt.hrbin/48), histTr, color='black',
+        legend='All Triggers')
+    o0r.line(matplotlib.dates.num2date(hRr[0:-1]+opt.hrbin/48), histRr, color='red',
+        legend='Repeaters')
+    o0r.legend.orientation = "top_left"
+    
+    
+    o1 = figure(plot_width=1250, plot_height=250, x_axis_type='datetime',
+        x_range=o0.x_range)
+    o1.title = 'Frequency Index vs. Time'
+    o1.grid.grid_line_alpha = 0.3
+    o1.xaxis.axis_label = 'Date of Repeater'
+    o1.yaxis.axis_label = 'FI'
+    o1.circle(matplotlib.dates.num2date(dt), fi, color='red', line_alpha=0,
+        size=3, fill_alpha=0.5)
+        
+    o1r = figure(plot_width=1250, plot_height=250, x_axis_type='datetime',
+        x_range=o0r.x_range)
+    o1r.title = 'Frequency Index vs. Time'
+    o1r.grid.grid_line_alpha = 0.3
+    o1r.xaxis.axis_label = 'Date of Repeater'
+    o1r.yaxis.axis_label = 'FI'
+    o1r.circle(matplotlib.dates.num2date(dt[dt>(max(alltrigs)-opt.recplot)]),
+        fi[dt>(max(alltrigs)-opt.recplot)], color='red', line_alpha=0,
+        size=3, fill_alpha=0.5)
+    
+    
+    o2 = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime',
+        x_range=o0.x_range)
+    o2.title = 'Cluster Longevity'
+    o2.grid.grid_line_alpha = 0.3
+    o2.xaxis.axis_label = 'Start Date'
+    o2.yaxis.axis_label = 'Days'
+    o2.circle(matplotlib.dates.num2date(famstarts), longevity, color='red',
+        line_alpha=0, size=8, fill_alpha=0.5)
+    
+    o2r = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime',
+        x_range=o0r.x_range)
+    o2r.title = 'Cluster Longevity'
+    o2r.grid.grid_line_alpha = 0.3
+    o2r.xaxis.axis_label = 'Start Date'
+    o2r.yaxis.axis_label = 'Days'
+    o2r.circle(matplotlib.dates.num2date(famstarts[famstarts>(max(alltrigs)-opt.recplot)]),
+        longevity[famstarts>(max(alltrigs)-opt.recplot)], color='red', line_alpha=0,
+        size=8, fill_alpha=0.5)
+    
+        
+    o = gridplot([[o0],[o1],[o2]])
+    o_recent = gridplot([[o0r],[o1r],[o2r]])
+        
+    output_file('{}/overview.html'.format(opt.groupName),
+        title='{} Overview'.format(opt.title))
+    save(o)
+    
+    output_file('{}/overview_recent.html'.format(opt.groupName),
+            title='{0} Overview - Last {1:.1f} Days'.format(opt.title,opt.recplot))
+    save(o_recent)
+    
+    
+    ### OCCURRENCE TIMELINES ###
+    
     dy = np.arange(np.floor(min(dt)/opt.dybin),np.ceil(max(dt+opt.dybin)/opt.dybin))*opt.dybin
     dyfams = np.zeros((len(dy),))
     dyrept = np.zeros((len(dy),))
@@ -360,6 +464,7 @@ def plotFamilies(rtable, ftable, opt):
     startTime = rtable.cols.startTime[:]
     windowAmp = rtable.cols.windowAmp[:][:,opt.printsta]
     windowStart = rtable.cols.windowStart[:]
+    fi = rtable.cols.FI[:]
     
     for cnum in range(ftable.attrs.nClust):
 
@@ -516,7 +621,8 @@ def plotFamilies(rtable, ftable, opt):
                     Number of events: {2}</br>
                     Longevity: {5:.2f} days</br>
                     Mean event spacing: {7:.2f} hours</br>
-                    Median event spacing: {8:.2f} hours</br></br>
+                    Median event spacing: {8:.2f} hours</br>
+                    Mean Frequency Index: {9:.2f}<br></br>
                     First event: {3}</br>
                     Core event: {6}</br>
                     Last event: {4}</br>
@@ -527,7 +633,8 @@ def plotFamilies(rtable, ftable, opt):
                     (UTCDateTime(startTime[maxind]) + windowStart[
                     maxind]/opt.samprate).isoformat(), longevity, (UTCDateTime(
                     startTime[core]) + windowStart[core]/opt.samprate).isoformat(),
-                    np.mean(spacing), np.median(spacing)))
+                    np.mean(spacing), np.median(spacing), np.mean(np.mean(fi[fam],
+                    axis=1))))
                                 
                 f.write("""
                 </center></body></html>

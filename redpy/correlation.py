@@ -9,33 +9,41 @@ from scipy.fftpack import fft, ifft
 def calcWindow(waveform, windowStart, opt, winlen=1):
 
     """
-    Calculates the amplitude coefficient and FFT for a window of data.
+    Calculates the amplitude coefficient, FFT, and frequency index for a window of data.
     
     waveform: numpy array of waveform data
     windowStart: starting sample of window
     opt: Options object describing station/run parameters
     winlen: Fraction of window to use (optional)
     
-    Returns windowCoeff and windowFFT
+    Returns windowCoeff, windowFFT, and 
     """
     
     # Shift window left by 10% of winlen
     windowStart = windowStart - opt.winlen/10
     windowCoeff = []
     windowFFT = np.zeros(opt.winlen*opt.nsta,).astype(np.complex64)
+    windowFI = []
     
     for n in range(opt.nsta):
         winstart = n*opt.wshape + windowStart
         winend = n*opt.wshape + windowStart + opt.winlen*winlen
+        fftwin = np.reshape(fft(waveform[winstart:winend]),(opt.winlen*winlen,))
         if np.median(np.abs(waveform[winstart:winend]))==0:
             windowCoeff.append(0)
+            windowFI.append(0)
         else:
             windowCoeff.append(1/np.sqrt(sum(
                 waveform[winstart:winend] * waveform[winstart:winend])))
-        windowFFT[n*opt.winlen:(n+1)*opt.winlen] = np.reshape(
-            fft(waveform[winstart:winend]),(opt.winlen*winlen,))
+            windowFI.append(np.log10(np.mean(np.abs(np.real(
+                fftwin[int(opt.fiupmin*opt.winlen*winlen/opt.samprate):int(
+                opt.fiupmax*opt.winlen*winlen/opt.samprate)])))/np.mean(np.abs(np.real(
+                fftwin[int(opt.filomin*opt.winlen*winlen/opt.samprate):int(
+                opt.filomax*opt.winlen*winlen/opt.samprate)])))))
         
-    return windowCoeff, windowFFT
+        windowFFT[n*opt.winlen:(n+1)*opt.winlen] = fftwin
+        
+    return windowCoeff, windowFFT, windowFI
 
 
 def xcorr1x1(windowFFT1, windowFFT2, windowCoeff1, windowCoeff2, opt):
@@ -155,7 +163,7 @@ def compareDeleted(trigs, dtable, opt):
     
     for t in trigs:
     
-        coeffi, ffti = calcWindow(t.data, int(opt.ptrig*opt.samprate), opt)  
+        coeffi, ffti, fii = calcWindow(t.data, int(opt.ptrig*opt.samprate), opt)  
         cor, lag, nthcor = xcorr1xtable(coeffi, ffti, dtable, opt)
         
         if np.where(cor >= opt.cmin - 0.05)[0].any():
@@ -191,13 +199,14 @@ def compareGoodOrphans(rtable, otable, ctable, ftable, trig, id, coeffi, ffti, c
         # If not written to rtable yet, realign new event
         if written == 0:
             lagmax = lag[np.argmax(cor)]
-            coeffi2, ffti2 = calcWindow(trig.data, int(opt.ptrig*opt.samprate + lagmax),
-                opt)
+            coeffi2, ffti2, fii2 = calcWindow(trig.data, int(
+                opt.ptrig*opt.samprate + lagmax), opt)
             coeffj2 = otable[np.argmax(cor)]['windowCoeff']
             fftj2 = otable[np.argmax(cor)]['windowFFT']
+            fij2 = otable[np.argmax(cor)]['FI']
         # If written already, realign older orphan to new event
         else:
-            coeffj2, fftj2 = calcWindow(otable[np.argmax(cor)]['waveform'],
+            coeffj2, fftj2, fij2 = calcWindow(otable[np.argmax(cor)]['waveform'],
                 int(opt.ptrig*opt.samprate + lagmax - lag[np.argmax(cor)]), opt)
             
         cor2, lag2, nthcor2 = xcorr1x1(ffti2, fftj2, coeffi2, coeffj2, opt)
@@ -215,6 +224,7 @@ def compareGoodOrphans(rtable, otable, ctable, ftable, trig, id, coeffi, ffti, c
             else:
                 otable.cols.windowFFT[np.argmax(cor)] = fftj2
                 otable.cols.windowCoeff[np.argmax(cor)] = coeffj2
+                otable.cols.FI[np.argmax(cor)] = fij2
                 otable.cols.windowStart[np.argmax(cor)] = int(opt.ptrig*opt.samprate +
                     lagmax - lag[np.argmax(cor)])
                 redpy.table.moveOrphan(rtable, otable, ftable, np.argmax(cor), opt)
@@ -272,7 +282,7 @@ def compareMultipleOrphans2Cores(rtable, ctable, ftable, written, opt):
         
             if found == 0:
                 lagmax2 = lag[np.argmax(cor)]
-                coeffi2, ffti2 = calcWindow(rtable[-written]['waveform'],
+                coeffi2, ffti2, fii2 = calcWindow(rtable[-written]['waveform'],
                     int(rtable[-written]['windowStart'] + lagmax2), opt)
                            
             cor2, lag2, nthcor2 = xcorr1x1(ffti2, fftjs[np.argmax(cor)], coeffi2,
@@ -284,7 +294,7 @@ def compareMultipleOrphans2Cores(rtable, ctable, ftable, written, opt):
                     wlag.append(0)
                     # Realign all new events in the repeater catalog to the matched family
                     for i in range(-written,0):
-                        rtable.cols.windowCoeff[i], rtable.cols.windowFFT[i] = calcWindow(
+                        rtable.cols.windowCoeff[i], rtable.cols.windowFFT[i], rtable.cols.FI[i] = calcWindow(
                             rtable.cols.waveform[i], int(rtable.cols.windowStart[i] +
                             lagmax2), opt)
                         rtable.cols.windowStart[i] = int(rtable.cols.windowStart[i] + lagmax2)
@@ -320,7 +330,7 @@ def compareMultipleOrphans2Cores(rtable, ctable, ftable, written, opt):
                         wlag.append(0)
                         # Realign all new events in the repeater catalog to the matched family
                         for i in range(-written,0):
-                            rtable.cols.windowCoeff[i], rtable.cols.windowFFT[i] = calcWindow(
+                            rtable.cols.windowCoeff[i], rtable.cols.windowFFT[i], rtable.cols.FI[i] = calcWindow(
                                 rtable.cols.waveform[i], int(rtable.cols.windowStart[i] +
                                 lagmax2 + lagx[np.argmax(corx)]), opt)
                             rtable.cols.windowStart[i] = int(
@@ -401,7 +411,7 @@ def compareSingleOrphan2Cores(rtable, otable, ctable, ftable, trig, id, coeffi, 
 
         if written == 0:
             lagmax = lag[np.argmax(cor)]
-            coeffi2, ffti2 = calcWindow(trig.data, int(opt.ptrig*opt.samprate + lagmax),
+            coeffi2, ffti2, fii2 = calcWindow(trig.data, int(opt.ptrig*opt.samprate + lagmax),
                 opt)
         
         cor2, lag2, nthcor2 = xcorr1x1(ffti2, fftjs[np.argmax(cor)], coeffi2,
@@ -499,7 +509,7 @@ def runCorrelation(rtable, otable, ctable, ftable, ttimes, trig, id, opt):
     if not len(np.intersect1d(np.where(ttimes > stime - opt.mintrig/86400), np.where(
         ttimes < stime + opt.mintrig/86400))):
 
-        coeffi, ffti = calcWindow(trig.data, int(opt.ptrig*opt.samprate), opt)
+        coeffi, ffti, fii = calcWindow(trig.data, int(opt.ptrig*opt.samprate), opt)
         
         # Correlate with the new event with all the orphans
         cor, lag, nthcor = xcorr1xtable(coeffi, ffti, otable, opt)
