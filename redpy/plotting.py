@@ -568,12 +568,12 @@ def plotFamilies(rtable, ftable, opt):
             fftm = np.zeros((opt.winlen/2,))
             for s in range(opt.nsta):
                 fft = np.abs(np.real(r['windowFFT'][s*opt.winlen:s*opt.winlen+opt.winlen/2]))
-                fft = fft/np.amax(fft)
+                fft = fft/(np.amax(fft)+1.0/1000)
                 fftc = fftc+fft
                 ffts = np.mean(np.abs(np.real(
                     famtable['windowFFT'][:,s*opt.winlen:s*opt.winlen+opt.winlen/2])),
                     axis=0)
-                fftm = fftm + ffts/np.amax(ffts)
+                fftm = fftm + ffts/(np.amax(ffts)+1.0/1000)
             ax2.plot(freq,fftm,'r', linewidth=1)
             ax2.plot(freq,fftc,'k', linewidth=0.25)
             ax2.set_xlim(0,opt.fmax*1.5)
