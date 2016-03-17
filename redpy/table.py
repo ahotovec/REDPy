@@ -442,6 +442,7 @@ def moveOrphan(rtable, otable, ftable, oindex, opt):
     if len(otable) > 1:
         trigger['windowCoeff'] = orow['windowCoeff']
         trigger['windowFFT'] = orow['windowFFT']
+        trigger['FI'] = orow['FI']
     else:
         coeff, fft, fi = redpy.correlation.calcWindow(orow['waveform'], orow['windowStart'],
             opt)

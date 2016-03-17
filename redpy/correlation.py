@@ -31,7 +31,7 @@ def calcWindow(waveform, windowStart, opt, winlen=1):
         fftwin = np.reshape(fft(waveform[winstart:winend]),(opt.winlen*winlen,))
         if np.median(np.abs(waveform[winstart:winend]))==0:
             windowCoeff.append(0)
-            windowFI.append(0)
+            windowFI.append(np.nan) #?
         else:
             windowCoeff.append(1/np.sqrt(sum(
                 waveform[winstart:winend] * waveform[winstart:winend])))

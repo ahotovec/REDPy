@@ -46,7 +46,7 @@ def plotTimelines(rtable, ftable, ttable, opt):
     """
     
     dt = rtable.cols.startTimeMPL[:]
-    fi = np.mean(rtable.cols.FI[:], axis=1)
+    fi = np.nanmean(rtable.cols.FI[:], axis=1)
     longevity = ftable.cols.longevity[:]
     famstarts = ftable.cols.startTime[:]
     alltrigs = ttable.cols.startTimeMPL[:]
@@ -638,7 +638,7 @@ def plotFamilies(rtable, ftable, opt):
                     (UTCDateTime(startTime[maxind]) + windowStart[
                     maxind]/opt.samprate).isoformat(), longevity, (UTCDateTime(
                     startTime[core]) + windowStart[core]/opt.samprate).isoformat(),
-                    np.mean(spacing), np.median(spacing), np.mean(np.mean(fi[fam],
+                    np.mean(spacing), np.median(spacing), np.mean(np.nanmean(fi[fam],
                     axis=1))))
                                 
                 f.write("""
