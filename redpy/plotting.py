@@ -113,6 +113,8 @@ def plotTimelines(rtable, ftable, ttable, opt):
     o1r.grid.grid_line_alpha = 0.3
     o1r.xaxis.axis_label = 'Date of Repeater'
     o1r.yaxis.axis_label = 'FI'
+    # Put invisible point in for case that there are no events
+    o1r.circle(matplotlib.dates.num2date(hTr[0:2]), [0, 0], line_alpha=0, fill_alpha=0)
     o1r.circle(matplotlib.dates.num2date(dt[dt>(max(alltrigs)-opt.recplot)]),
         fi[dt>(max(alltrigs)-opt.recplot)], color='red', line_alpha=0,
         size=3, fill_alpha=0.5)
@@ -133,6 +135,8 @@ def plotTimelines(rtable, ftable, ttable, opt):
     o2r.grid.grid_line_alpha = 0.3
     o2r.xaxis.axis_label = 'Start Date'
     o2r.yaxis.axis_label = 'Days'
+    # Put invisible point in for case that there are no events
+    o2r.circle(matplotlib.dates.num2date(hTr[0:2]), [0, 0], line_alpha=0, fill_alpha=0)
     o2r.circle(matplotlib.dates.num2date(famstarts[famstarts>(max(alltrigs)-opt.recplot)]),
         longevity[famstarts>(max(alltrigs)-opt.recplot)], color='red', line_alpha=0,
         size=8, fill_alpha=0.5)
@@ -370,28 +374,29 @@ def plotTimelines(rtable, ftable, ttable, opt):
             title='{} Timeline'.format(opt.title))
         save(p)
         
-        sourcer = ColumnDataSource(data=dict(xs=xsr, ys=ysr, famnum=famnumr))
-        r1.patches(xs=xsr, ys=ysr, source=sourcer, name="patchr", alpha=0)
+        if m > 0:
+            sourcer = ColumnDataSource(data=dict(xs=xsr, ys=ysr, famnum=famnumr))
+            r1.patches(xs=xsr, ys=ysr, source=sourcer, name="patchr", alpha=0)
         
-        renderer = r1.select(name="patchr")[0]
-        renderer.nonselection_glyph=renderer.glyph.clone()
-        taptool = r1.select(dict(type=TapTool))[0]
-        taptool.names.append("patchr")
-        taptool.callback = OpenURL(url=url)
+            renderer = r1.select(name="patchr")[0]
+            renderer.nonselection_glyph=renderer.glyph.clone()
+            taptool = r1.select(dict(type=TapTool))[0]
+            taptool.names.append("patchr")
+            taptool.callback = OpenURL(url=url)
         
-        r0.line(matplotlib.dates.num2date(hr), hrfams, color='red', line_width=1.5,
-            legend='Families')
-        r0.line(matplotlib.dates.num2date(hr), hrrept, color='black', line_width=0.5,
-            legend='Repeaters')
-        r0.legend.orientation = "top_left"
+            r0.line(matplotlib.dates.num2date(hr), hrfams, color='red', line_width=1.5,
+                legend='Families')
+            r0.line(matplotlib.dates.num2date(hr), hrrept, color='black', line_width=0.5,
+                legend='Repeaters')
+            r0.legend.orientation = "top_left"
+            
+            if m > 30:
+                r1.set(plot_height=m*15, y_range=Range1d(-1, m))
         
-        if m > 30:
-            r1.set(plot_height=m*15, y_range=Range1d(-1, m))
-        
-        output_file('{}/timeline_recent.html'.format(opt.groupName),
-            title='{0} Timeline - Last {1:.1f} Days'.format(opt.title,opt.recplot))
-        r = gridplot([[r0],[r1]])
-        save(r)       
+            output_file('{}/timeline_recent.html'.format(opt.groupName),
+                title='{0} Timeline - Last {1:.1f} Days'.format(opt.title,opt.recplot))
+            r = gridplot([[r0],[r1]])
+            save(r)       
 
 
 def plotCores(rtable, ftable, opt):
