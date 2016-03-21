@@ -1,3 +1,7 @@
+import matplotlib
+matplotlib.use('TkAgg')
+# ^ Not sure why this needs to be here, but apparently Tk hates me otherwise...
+
 import tkinter as tk
 import redpy.config
 import redpy.table
