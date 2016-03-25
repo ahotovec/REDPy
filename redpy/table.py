@@ -484,6 +484,7 @@ def removeFamilies(rtable, ctable, dtable, ftable, cnums, opt):
     for cnum in cnums[::-1]:
         members = np.append(members, np.fromstring(ftable[cnum]['members'], dtype=int, sep=' '))
         ftable.remove_row(cnum)
+        ftable.flush()
     ftable.attrs.nClust-=len(cnums)
     members = np.sort(members).astype('uint32')
     
@@ -514,13 +515,15 @@ def removeFamilies(rtable, ctable, dtable, ftable, cnums, opt):
     new = range(len(rtable))
     transform[old] = new
     
+    np.set_printoptions(threshold=np.nan)
+    np.set_printoptions(linewidth=np.nan)
     for n in range(len(ftable)):
-        members = np.fromstring(ftable[n]['members'], dtype=int, sep=' ')
+        fmembers = np.fromstring(ftable[n]['members'], dtype=int, sep=' ')
         core = ftable[n]['core']
-        ftable.cols.members[n] = np.array2string(transform[members])[1:-1]
+        ftable.cols.members[n] = np.array2string(transform[fmembers])[1:-1]
         ftable.cols.core[n] = transform[core]
         ftable.flush()
-        
+    
     rtable.flush()
     dtable.flush()
 
