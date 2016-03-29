@@ -54,10 +54,10 @@ def runFamOPTICS(rtable, ctable, ftable, fnum, opt):
         np.set_printoptions(linewidth=np.nan)
         ftable.cols.members[fnum] = np.array2string(fam[order])[1:-1]
         ftable.cols.core[fnum] = core
-        ftable.cols.startTime[fnum] = np.min(rtable[fam]['startTimeMPL'])
-        ftable.cols.longevity[fnum] = np.max(rtable[fam]['startTimeMPL']) - np.min(
-            rtable[fam]['startTimeMPL'])
         
+    ftable.cols.startTime[fnum] = np.min(rtable[fam]['startTimeMPL'])
+    ftable.cols.longevity[fnum] = np.max(rtable[fam]['startTimeMPL']) - np.min(
+        rtable[fam]['startTimeMPL'])
     ftable.cols.printme[fnum] = 1
     ftable.flush()
         
