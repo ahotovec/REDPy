@@ -202,7 +202,8 @@ def dataclean(alltrigs, opt, flag=1):
     junk=Stream()
     for i in range(len(alltrigs)):
             
-        njunk = []
+        njunk = 0
+        ntele = 0
         
         for n in range(opt.nsta):
             
@@ -224,10 +225,22 @@ def dataclean(alltrigs, opt, flag=1):
             orm = len(z[z>4.45])/np.array(len(z)).astype(float)
             
             if k >= opt.kurtmax or orm >= opt.oratiomax or kf >= opt.kurtfmax:
-                njunk.append(n)
-          
+                njunk+=1
+                
+            winstart = opt.ptrig*opt.samprate - opt.winlen/10
+            winend = opt.ptrig*opt.samprate - opt.winlen/10 + opt.winlen
+            fftwin = np.reshape(fft(dat[winstart:winend]),(opt.winlen,))
+            if np.median(np.abs(dat[winstart:winend]))!=0:
+                fi = np.log10(np.mean(np.abs(np.real(
+                    fftwin[int(opt.fiupmin*opt.winlen/opt.samprate):int(
+                    opt.fiupmax*opt.winlen/opt.samprate)])))/np.mean(np.abs(np.real(
+                    fftwin[int(opt.filomin*opt.winlen/opt.samprate):int(
+                    opt.filomax*opt.winlen/opt.samprate)]))))
+                if fi<opt.telefi:
+                    ntele+=1
+        
         # Allow if there are enough good stations to correlate
-        if len(njunk) <= (opt.nsta-opt.ncor):
+        if njunk <= (opt.nsta-opt.ncor) and ntele <= opt.teleok:
             trigs.append(alltrigs[i])
         else:
             junk.append(alltrigs[i])

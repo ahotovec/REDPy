@@ -161,7 +161,11 @@ class Options(object):
         self.fiupmin=config.getfloat('Settings','fiupmin') if config.has_option(
             'Settings','fiupmin') else 5.
         self.fiupmax=config.getfloat('Settings','fiupmax') if config.has_option(
-            'Settings','fiupmax') else 10.    
+            'Settings','fiupmax') else 10.
+        self.telefi=config.getfloat('Settings','telefi') if config.has_option(
+            'Settings','telefi') else -1.
+        self.teleok=config.getint('Settings','teleok') if config.has_option(
+            'Settings','teleok') else 1    
         self.cmin=config.getfloat('Settings','cmin') if config.has_option(
             'Settings','cmin') else 0.7
         self.ncor=config.getint('Settings','ncor') if config.has_option(
