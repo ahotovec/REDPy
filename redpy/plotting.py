@@ -126,9 +126,11 @@ def plotTimelines(rtable, ftable, ttable, opt):
     o2.grid.grid_line_alpha = 0.3
     o2.xaxis.axis_label = 'Start Date'
     o2.yaxis.axis_label = 'Days'
-    o2.circle(matplotlib.dates.num2date(famstarts), longevity, color='red',
-        line_alpha=0, size=8, fill_alpha=0.5)
-    
+    for n in range(len(famstarts)):
+        o2.line((matplotlib.dates.num2date(famstarts[n]), matplotlib.dates.num2date(
+            famstarts[n]+longevity[n])), (longevity[n], longevity[n]), color='red',
+            line_alpha=0.5)
+        
     o2r = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime',
         x_range=o0r.x_range)
     o2r.title = 'Cluster Longevity'
@@ -137,9 +139,20 @@ def plotTimelines(rtable, ftable, ttable, opt):
     o2r.yaxis.axis_label = 'Days'
     # Put invisible point in for case that there are no events
     o2r.circle(matplotlib.dates.num2date(hTr[0:2]), [0, 0], line_alpha=0, fill_alpha=0)
-    o2r.circle(matplotlib.dates.num2date(famstarts[famstarts>(max(alltrigs)-opt.recplot)]),
-        longevity[famstarts>(max(alltrigs)-opt.recplot)], color='red', line_alpha=0,
-        size=8, fill_alpha=0.5)
+    for n in range(len(famstarts)):
+        if famstarts[n]>(max(alltrigs)-opt.recplot) and famstarts[n]+longevity[n]<max(alltrigs):
+            o2r.line((matplotlib.dates.num2date(famstarts[n]), matplotlib.dates.num2date(
+                famstarts[n]+longevity[n])), (longevity[n], longevity[n]), color='red',
+                line_alpha=0.5)
+        elif famstarts[n]+longevity[n]>(max(alltrigs)-opt.recplot):
+            o2r.line((matplotlib.dates.num2date(hTr[0]), matplotlib.dates.num2date(
+                famstarts[n]+longevity[n])), (longevity[n], longevity[n]), color='red',
+                line_alpha=0.5)
+            o2r.text(time.mktime(matplotlib.dates.num2date(
+                    hTr[0]).timetuple())*1000 - 28799000, longevity[n], text=['<'], 
+                    text_font_size='9pt', text_baseline='middle', text_color='red',
+                    text_alpha=0.5)
+            
     
         
     o = gridplot([[o0],[o1],[o2]])
@@ -254,25 +267,24 @@ def plotTimelines(rtable, ftable, ttable, opt):
                 t0 = np.argmin(np.abs(d-hr))
                 hrrept[t0] = hrrept[t0]+1
         
+        # Create histogram of events/hour
+        hist, h = np.histogram(dt[members], bins=np.arange(min(dt[members]),
+            max(dt[members]+1.0/24), 1.0/24))
+        d1 = matplotlib.dates.num2date(h[hist>0])
+        d2 = matplotlib.dates.num2date(h[hist>0]+1.0/24)
+        histlog = np.log10(hist[hist>0])
+        ind = [int(min(255,255*(i/2))) for i in histlog]
+        colors = [bokehpalette[i] for i in ind]
+        
         if len(dt[members]) >= opt.minplot:
         
             # Date is required as datenum
             p1.line((matplotlib.dates.num2date(min(dt[members])),
                 matplotlib.dates.num2date(max(dt[members]))), (n, n),
                 color='black')
-
-            # Create histogram of events/hour
-            hist, h = np.histogram(dt[members], bins=np.arange(min(dt[members]),
-                max(dt[members]+1.0/24), 1.0/24))
-            d1 = matplotlib.dates.num2date(h[hist>0])
-            d2 = matplotlib.dates.num2date(h[hist>0]+1.0/24)
-            histlog = np.log10(hist[hist>0])
-            ind = [int(min(255,255*(i/2))) for i in histlog]
-            colors = [bokehpalette[i] for i in ind]
             
             p1.quad(top=n+0.3, bottom=n-0.3, left=d1, right=d2,
-                color=colors)
-            
+                color=colors)            
             
             # Text doesn't understand datetimes, need to convert to a number and subtract
             # about 8 hours
@@ -300,51 +312,51 @@ def plotTimelines(rtable, ftable, ttable, opt):
             
             n = n+1
             
-            if max(dt[members])>hr[0]:
+        if max(dt[members])>hr[0]:
             
-                if min(dt[members])<hr[0]:
-                    r1.line((matplotlib.dates.num2date(hr[0]-opt.hrbin/6),
-                    matplotlib.dates.num2date(max(dt[members]))), (m, m),
-                        color='black')
-                    r1.text(time.mktime(matplotlib.dates.num2date(
-                        hr[0]-opt.hrbin/6).timetuple())*1000 - 28799000, m, text=['<'], 
-                        text_font_size='9pt', text_baseline='middle')
-
-                    idx = np.where(h[hist>0]>hr[0])[0]
-                        
-                else:
-                    r1.line((matplotlib.dates.num2date(min(dt[members])),
-                        matplotlib.dates.num2date(max(dt[members]))), (m, m),
-                        color='black')
-                    idx = np.arange(len(d1))
-                
-                r1.quad(top=m+0.3, bottom=m-0.3, left=np.array(d1)[idx],
-                    right=np.array(d2)[idx], color=np.array(colors)[idx])                   
-                
-                # Text doesn't understand datetimes, need to convert to a number and subtract
-                # about 8 hours
+            if min(dt[members])<hr[0]:
+                r1.line((matplotlib.dates.num2date(hr[0]-opt.hrbin/6),
+                matplotlib.dates.num2date(max(dt[members]))), (m, m),
+                    color='black')
                 r1.text(time.mktime(matplotlib.dates.num2date(
-                    max(dt[members])).timetuple())*1000 - 28799000, m,
-                    text=['   {}'.format(len(dt[members]))], text_font_size='9pt',
-                    text_baseline='middle')
+                    hr[0]-opt.hrbin/6).timetuple())*1000 - 28799000, m, text=['<'], 
+                    text_font_size='9pt', text_baseline='middle')
+
+                idx = np.where(h[hist>0]>hr[0])[0]
+                        
+            else:
+                r1.line((matplotlib.dates.num2date(min(dt[members])),
+                    matplotlib.dates.num2date(max(dt[members]))), (m, m),
+                    color='black')
+                idx = np.arange(len(d1))
+                
+            r1.quad(top=m+0.3, bottom=m-0.3, left=np.array(d1)[idx],
+                right=np.array(d2)[idx], color=np.array(colors)[idx])                   
+                
+            # Text doesn't understand datetimes, need to convert to a number and subtract
+            # about 8 hours
+            r1.text(time.mktime(matplotlib.dates.num2date(
+                max(dt[members])).timetuple())*1000 - 28799000, m,
+                text=['   {}'.format(len(dt[members]))], text_font_size='9pt',
+                text_baseline='middle')
                  
-                # Build source for hover patches
-                fnumr = clustNum
-                if m == 0:
-                    xsr=[[matplotlib.dates.num2date(max(min(dt[members]),hr[0])),
-                        matplotlib.dates.num2date(max(min(dt[members]),hr[0])),
-                        matplotlib.dates.num2date(max(dt[members])),
-                        matplotlib.dates.num2date(max(dt[members]))]]
-                    ysr=[[m-0.5, m+0.5, m+0.5, m-0.5]]
-                    famnumr=[fnumr]
-                else:
-                    xsr.append([matplotlib.dates.num2date(max(min(dt[members]),hr[0])),
-                               matplotlib.dates.num2date(max(min(dt[members]),hr[0])),
-                               matplotlib.dates.num2date(max(dt[members])),
-                               matplotlib.dates.num2date(max(dt[members]))])
-                    ysr.append([m-0.5, m+0.5, m+0.5, m-0.5])
-                    famnumr.append([fnumr])
-                m = m+1
+            # Build source for hover patches
+            fnumr = clustNum
+            if m == 0:
+                xsr=[[matplotlib.dates.num2date(max(min(dt[members]),hr[0])+1),
+                    matplotlib.dates.num2date(max(min(dt[members]),hr[0])-1),
+                    matplotlib.dates.num2date(max(dt[members])+1),
+                    matplotlib.dates.num2date(max(dt[members])-1)]]
+                ysr=[[m-0.5, m+0.5, m+0.5, m-0.5]]
+                famnumr=[fnumr]
+            else:
+                xsr.append([matplotlib.dates.num2date(max(min(dt[members]),hr[0])+1),
+                           matplotlib.dates.num2date(max(min(dt[members]),hr[0])-1),
+                           matplotlib.dates.num2date(max(dt[members])+1),
+                           matplotlib.dates.num2date(max(dt[members])-1)])
+                ysr.append([m-0.5, m+0.5, m+0.5, m-0.5])
+                famnumr.append([fnumr])
+            m = m+1
             
     if n > 0:
         # Patches allow hovering for image of core and cluster number
@@ -374,29 +386,29 @@ def plotTimelines(rtable, ftable, ttable, opt):
             title='{} Timeline'.format(opt.title))
         save(p)
         
-        if m > 0:
-            sourcer = ColumnDataSource(data=dict(xs=xsr, ys=ysr, famnum=famnumr))
-            r1.patches(xs=xsr, ys=ysr, source=sourcer, name="patchr", alpha=0)
+    if m > 0:
+        sourcer = ColumnDataSource(data=dict(xs=xsr, ys=ysr, famnum=famnumr))
+        r1.patches(xs=xsr, ys=ysr, source=sourcer, name="patchr", alpha=0)
         
-            renderer = r1.select(name="patchr")[0]
-            renderer.nonselection_glyph=renderer.glyph.clone()
-            taptool = r1.select(dict(type=TapTool))[0]
-            taptool.names.append("patchr")
-            taptool.callback = OpenURL(url=url)
+        renderer = r1.select(name="patchr")[0]
+        renderer.nonselection_glyph=renderer.glyph.clone()
+        taptool = r1.select(dict(type=TapTool))[0]
+        taptool.names.append("patchr")
+        taptool.callback = OpenURL(url=url)
         
-            r0.line(matplotlib.dates.num2date(hr), hrfams, color='red', line_width=1.5,
-                legend='Families')
-            r0.line(matplotlib.dates.num2date(hr), hrrept, color='black', line_width=0.5,
-                legend='Repeaters')
-            r0.legend.orientation = "top_left"
+        r0.line(matplotlib.dates.num2date(hr), hrfams, color='red', line_width=1.5,
+            legend='Families')
+        r0.line(matplotlib.dates.num2date(hr), hrrept, color='black', line_width=0.5,
+            legend='Repeaters')
+        r0.legend.orientation = "top_left"
             
-            if m > 30:
-                r1.set(plot_height=m*15, y_range=Range1d(-1, m))
+        if m > 30:
+            r1.set(plot_height=m*15, y_range=Range1d(-1, m))
         
-            output_file('{}/timeline_recent.html'.format(opt.groupName),
-                title='{0} Timeline - Last {1:.1f} Days'.format(opt.title,opt.recplot))
-            r = gridplot([[r0],[r1]])
-            save(r)       
+        output_file('{}/timeline_recent.html'.format(opt.groupName),
+            title='{0} Timeline - Last {1:.1f} Days'.format(opt.title,opt.recplot))
+        r = gridplot([[r0],[r1]])
+        save(r)       
 
 
 def plotCores(rtable, ftable, opt):
