@@ -390,6 +390,7 @@ def plotTimelines(rtable, ftable, ttable, opt):
         sourcer = ColumnDataSource(data=dict(xs=xsr, ys=ysr, famnum=famnumr))
         r1.patches(xs=xsr, ys=ysr, source=sourcer, name="patchr", alpha=0)
         
+        url = "./clusters/@famnum.html"
         renderer = r1.select(name="patchr")[0]
         renderer.nonselection_glyph=renderer.glyph.clone()
         taptool = r1.select(dict(type=TapTool))[0]
