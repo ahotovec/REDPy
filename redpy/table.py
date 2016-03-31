@@ -616,14 +616,17 @@ def reorderFamilies(ftable, opt):
     if (x!=order).any():
         members = ftable.cols.members[:]
         cores = ftable.cols.core[:]
+        longevity = ftable.cols.longevity[:]
         printme = ftable.cols.printme[:]
         lastprint = ftable.cols.lastprint[:]
         for n in np.where(x!=order)[0]:
             ftable.cols.startTime[n] = startTimes[order[n]]
             ftable.cols.members[n] = members[order[n]]
+            ftable.cols.longevity[n] = longevity[order[n]]
             ftable.cols.core[n] = cores[order[n]]
             ftable.cols.printme[n] = printme[order[n]]
             ftable.cols.lastprint[n] = lastprint[order[n]]
+            
         ftable.flush()
     
     
