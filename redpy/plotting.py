@@ -21,12 +21,15 @@ def createPlots(rtable, ftable, ttable, opt):
         
     """
     
-    plotTimelines(rtable, ftable, ttable, opt)
-    printCatalog(rtable, ftable, opt)
-    plotCores(rtable, ftable, opt)
-    plotFamilies(rtable, ftable, opt)
-    ftable.cols.printme[:] = np.zeros((len(ftable),))
-    ftable.cols.lastprint[:] = np.arange(len(ftable))
+    if len(rtable)>1:
+        plotTimelines(rtable, ftable, ttable, opt)
+        printCatalog(rtable, ftable, opt)
+        plotCores(rtable, ftable, opt)
+        plotFamilies(rtable, ftable, opt)
+        ftable.cols.printme[:] = np.zeros((len(ftable),))
+        ftable.cols.lastprint[:] = np.arange(len(ftable))
+    else:
+        print('Nothing to plot!')
     
     # Rename any .tmp files
     tmplist = glob.glob('./{0}/clusters/*.tmp'.format(opt.groupName))
@@ -51,7 +54,6 @@ def plotTimelines(rtable, ftable, ttable, opt):
     famstarts = ftable.cols.startTime[:]
     alltrigs = ttable.cols.startTimeMPL[:]
     
-    ### OVERVIEW TIMELINES ###
     
     # Create histogram of events/dybin
     histT, hT = np.histogram(alltrigs, bins=np.arange(min(alltrigs),
@@ -96,8 +98,7 @@ def plotTimelines(rtable, ftable, ttable, opt):
     o0r.line(matplotlib.dates.num2date(hRr[0:-1]+opt.hrbin/48), histRr, color='red',
         legend='Repeaters')
     o0r.legend.orientation = "top_left"
-    
-    
+        
     o1 = figure(plot_width=1250, plot_height=250, x_axis_type='datetime',
         x_range=o0.x_range)
     o1.title = 'Frequency Index vs. Time'
@@ -113,15 +114,14 @@ def plotTimelines(rtable, ftable, ttable, opt):
     o1r.grid.grid_line_alpha = 0.3
     o1r.xaxis.axis_label = 'Date of Repeater'
     o1r.yaxis.axis_label = 'FI'
-    # Put invisible point in for case that there are no events
-    o1r.circle(matplotlib.dates.num2date(hTr[0:2]), [0, 0], line_alpha=0, fill_alpha=0)
+    # Put invisible points in for case that there are no events
+    o1r.circle(matplotlib.dates.num2date(hTr[0:2]), [1, 1], line_alpha=0, fill_alpha=0)
     o1r.circle(matplotlib.dates.num2date(dt[dt>(max(alltrigs)-opt.recplot)]),
         fi[dt>(max(alltrigs)-opt.recplot)], color='red', line_alpha=0,
         size=3, fill_alpha=0.5)
-    
-    
+        
     o2 = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime',
-        x_range=o0.x_range)
+        x_range=o0.x_range, y_axis_type='log', y_range=[0.5, 10**3.6])
     o2.title = 'Cluster Longevity'
     o2.grid.grid_line_alpha = 0.3
     o2.xaxis.axis_label = 'Start Date'
@@ -132,19 +132,19 @@ def plotTimelines(rtable, ftable, ttable, opt):
             line_alpha=0.5)
         
     o2r = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime',
-        x_range=o0r.x_range)
+        x_range=o0r.x_range, y_axis_type='log', y_range=[0.5, 10**3.6])
     o2r.title = 'Cluster Longevity'
     o2r.grid.grid_line_alpha = 0.3
     o2r.xaxis.axis_label = 'Start Date'
     o2r.yaxis.axis_label = 'Days'
-    # Put invisible point in for case that there are no events
-    o2r.circle(matplotlib.dates.num2date(hTr[0:2]), [0, 0], line_alpha=0, fill_alpha=0)
+    # Put invisible points in for case that there are no events
+    o2r.circle(matplotlib.dates.num2date(hTr[0:2]), [1, 1], line_alpha=0, fill_alpha=0)
     for n in range(len(famstarts)):
-        if famstarts[n]>(max(alltrigs)-opt.recplot) and famstarts[n]+longevity[n]<max(alltrigs):
+        if (max(alltrigs)-opt.recplot)<=famstarts[n]:
             o2r.line((matplotlib.dates.num2date(famstarts[n]), matplotlib.dates.num2date(
                 famstarts[n]+longevity[n])), (longevity[n], longevity[n]), color='red',
                 line_alpha=0.5)
-        elif famstarts[n]+longevity[n]>(max(alltrigs)-opt.recplot):
+        elif (max(alltrigs)-opt.recplot)<=famstarts[n]+longevity[n]:
             o2r.line((matplotlib.dates.num2date(hTr[0]), matplotlib.dates.num2date(
                 famstarts[n]+longevity[n])), (longevity[n], longevity[n]), color='red',
                 line_alpha=0.5)
@@ -152,23 +152,8 @@ def plotTimelines(rtable, ftable, ttable, opt):
                     hTr[0]).timetuple())*1000 - 28799000, longevity[n], text=['<'], 
                     text_font_size='9pt', text_baseline='middle', text_color='red',
                     text_alpha=0.5)
-            
     
-        
-    o = gridplot([[o0],[o1],[o2]])
-    o_recent = gridplot([[o0r],[o1r],[o2r]])
-        
-    output_file('{}/overview.html'.format(opt.groupName),
-        title='{} Overview'.format(opt.title))
-    save(o)
-    
-    output_file('{}/overview_recent.html'.format(opt.groupName),
-            title='{0} Overview - Last {1:.1f} Days'.format(opt.title,opt.recplot))
-    save(o_recent)
-    
-    
-    ### OCCURRENCE TIMELINES ###
-    
+    # Build occurrence timeline
     dy = np.arange(np.floor(min(dt)/opt.dybin),np.ceil(max(dt+opt.dybin)/opt.dybin))*opt.dybin
     dyfams = np.zeros((len(dy),))
     dyrept = np.zeros((len(dy),))
@@ -206,41 +191,21 @@ def plotTimelines(rtable, ftable, ttable, opt):
         """, names=["patchr"])
     
     TOOLSrec = [hoverr,'pan,box_zoom,reset,resize,save,tap']
-    
-    p0 = figure(plot_width=1250, plot_height=250, x_axis_type='datetime')
-    if opt.dybin>=1:
-        p0.title = 'Active Families and Repeaters by {:.1f} Day Bin'.format(opt.dybin)
-    else:
-        p0.title = 'Active Families and Repeaters by {:.1f} Hour Bin'.format(opt.dybin*24)
-    p0.grid.grid_line_alpha = 0.3
-    p0.xaxis.axis_label = 'Date'
-    p0.yaxis.axis_label = 'Count'
-    
+        
     p1 = figure(tools=TOOLS, plot_width=1250, plot_height=500, x_axis_type='datetime',
-        x_range=p0.x_range)
+        x_range=o0.x_range)
     p1.title = 'Occurrence Timeline (Color by Events per Hour)'
     p1.grid.grid_line_alpha = 0.3
     p1.xaxis.axis_label = 'Date'
     p1.yaxis.axis_label = 'Cluster by Date ({}+ Members)'.format(opt.minplot)
     
-    r0 = figure(plot_width=1250, plot_height=250, x_axis_type='datetime')
-    if opt.hrbin>24:
-        r0.title = 'Last {0} Days: Active Families and Repeaters by {1:.1f} Day Bin'.format(
-            opt.recplot,opt.hrbin/24)
-    else:
-        r0.title = 'Last {0} Days: Active Families and Repeaters by {1:.1f} Hour Bin'.format(
-            opt.recplot,opt.hrbin)
-    r0.grid.grid_line_alpha = 0.3
-    r0.xaxis.axis_label = 'Date'
-    r0.yaxis.axis_label = 'Count'
-    
     r1 = figure(tools=TOOLSrec, plot_width=1250, plot_height=500, x_axis_type='datetime',
-        x_range=r0.x_range)
+        x_range=o0r.x_range)
     r1.title = 'Last {} Days: Occurrence Timeline (Color by Events per Hour)'.format(
         opt.recplot)
     r1.grid.grid_line_alpha = 0.3
     r1.xaxis.axis_label = 'Date'
-    r1.yaxis.axis_label = 'Cluster by Date ({}+ Members)'.format(opt.minplot)    
+    r1.yaxis.axis_label = 'Cluster by Date'    
     
     # Steal YlOrRd (len=256) colormap from matplotlib
     colormap = matplotlib.cm.get_cmap('YlOrRd')
@@ -253,19 +218,6 @@ def plotTimelines(rtable, ftable, ttable, opt):
     for clustNum in range(ftable.attrs.nClust):
         
         members = np.fromstring(ftable[clustNum]['members'], dtype=int, sep=' ')
-        t1 = np.argmin(np.abs(min(dt[members])-dy))
-        t2 = np.argmin(np.abs(max(dt[members])-dy))+1
-        dyfams[t1:t2] = dyfams[t1:t2]+1
-        if max(dt[members])>hr[0]:
-            t1 = np.argmin(np.abs(min(dt[members])-hr))
-            t2 = np.argmin(np.abs(max(dt[members])-hr))+1
-            hrfams[t1:t2] = hrfams[t1:t2]+1
-        for d in dt[members]:
-            t0 = np.argmin(np.abs(d-dy))
-            dyrept[t0] = dyrept[t0]+1
-            if d>hr[0]:
-                t0 = np.argmin(np.abs(d-hr))
-                hrrept[t0] = hrrept[t0]+1
         
         # Create histogram of events/hour
         hist, h = np.histogram(dt[members], bins=np.arange(min(dt[members]),
@@ -296,17 +248,17 @@ def plotTimelines(rtable, ftable, ttable, opt):
             # Build source for hover patches
             fnum = clustNum
             if n == 0:
-                xs=[[matplotlib.dates.num2date(min(dt[members])),
-                    matplotlib.dates.num2date(min(dt[members])),
-                    matplotlib.dates.num2date(max(dt[members])),
-                    matplotlib.dates.num2date(max(dt[members]))]]
+                xs=[[matplotlib.dates.num2date(min(dt[members])-1),
+                    matplotlib.dates.num2date(min(dt[members])-1),
+                    matplotlib.dates.num2date(max(dt[members])+1),
+                    matplotlib.dates.num2date(max(dt[members])+1)]]
                 ys=[[n-0.5, n+0.5, n+0.5, n-0.5]]
                 famnum=[fnum]
             else:
-                xs.append([matplotlib.dates.num2date(min(dt[members])),
-                           matplotlib.dates.num2date(min(dt[members])),
-                           matplotlib.dates.num2date(max(dt[members])),
-                           matplotlib.dates.num2date(max(dt[members]))])
+                xs.append([matplotlib.dates.num2date(min(dt[members])-1),
+                           matplotlib.dates.num2date(min(dt[members])-1),
+                           matplotlib.dates.num2date(max(dt[members])+1),
+                           matplotlib.dates.num2date(max(dt[members])+1)])
                 ys.append([n-0.5, n+0.5, n+0.5, n-0.5])
                 famnum.append([fnum])
             
@@ -343,17 +295,17 @@ def plotTimelines(rtable, ftable, ttable, opt):
             # Build source for hover patches
             fnumr = clustNum
             if m == 0:
-                xsr=[[matplotlib.dates.num2date(max(min(dt[members]),hr[0])+1),
+                xsr=[[matplotlib.dates.num2date(max(min(dt[members]),hr[0])-1),
                     matplotlib.dates.num2date(max(min(dt[members]),hr[0])-1),
                     matplotlib.dates.num2date(max(dt[members])+1),
-                    matplotlib.dates.num2date(max(dt[members])-1)]]
+                    matplotlib.dates.num2date(max(dt[members])+1)]]
                 ysr=[[m-0.5, m+0.5, m+0.5, m-0.5]]
                 famnumr=[fnumr]
             else:
-                xsr.append([matplotlib.dates.num2date(max(min(dt[members]),hr[0])+1),
+                xsr.append([matplotlib.dates.num2date(max(min(dt[members]),hr[0])-1),
                            matplotlib.dates.num2date(max(min(dt[members]),hr[0])-1),
                            matplotlib.dates.num2date(max(dt[members])+1),
-                           matplotlib.dates.num2date(max(dt[members])-1)])
+                           matplotlib.dates.num2date(max(dt[members])+1)])
                 ysr.append([m-0.5, m+0.5, m+0.5, m-0.5])
                 famnumr.append([fnumr])
             m = m+1
@@ -372,19 +324,11 @@ def plotTimelines(rtable, ftable, ttable, opt):
         taptool.names.append("patch")
         taptool.callback = OpenURL(url=url)
         
-        p0.line(matplotlib.dates.num2date(dy), dyfams, color='red', line_width=1.5,
-            legend='Families')
-        p0.line(matplotlib.dates.num2date(dy), dyrept, color='black', line_width=0.5,
-            legend='Repeaters')
-        p0.legend.orientation = "top_left"
-        
         if n > 30:
             p1.set(plot_height=n*15, y_range=Range1d(-1, n))
-        p = gridplot([[p0],[p1]])
-        
-        output_file('{}/timeline.html'.format(opt.groupName),
-            title='{} Timeline'.format(opt.title))
-        save(p)
+    
+    else:
+        p1.circle(matplotlib.dates.num2date(hTr[0:2]), [0, 0], line_alpha=0, fill_alpha=0)
         
     if m > 0:
         sourcer = ColumnDataSource(data=dict(xs=xsr, ys=ysr, famnum=famnumr))
@@ -396,20 +340,23 @@ def plotTimelines(rtable, ftable, ttable, opt):
         taptool = r1.select(dict(type=TapTool))[0]
         taptool.names.append("patchr")
         taptool.callback = OpenURL(url=url)
-        
-        r0.line(matplotlib.dates.num2date(hr), hrfams, color='red', line_width=1.5,
-            legend='Families')
-        r0.line(matplotlib.dates.num2date(hr), hrrept, color='black', line_width=0.5,
-            legend='Repeaters')
-        r0.legend.orientation = "top_left"
-            
+                    
         if m > 30:
             r1.set(plot_height=m*15, y_range=Range1d(-1, m))
         
-        output_file('{}/timeline_recent.html'.format(opt.groupName),
-            title='{0} Timeline - Last {1:.1f} Days'.format(opt.title,opt.recplot))
-        r = gridplot([[r0],[r1]])
-        save(r)       
+    else: 
+        r1.circle(matplotlib.dates.num2date(hTr[0:2]), [0, 0], line_alpha=0, fill_alpha=0)
+        
+    o = gridplot([[o0],[o1],[p1],[o2]])
+    o_recent = gridplot([[o0r],[o1r],[r1],[o2r]])
+        
+    output_file('{}/overview.html'.format(opt.groupName),
+        title='{} Overview'.format(opt.title))
+    save(o)
+    
+    output_file('{}/overview_recent.html'.format(opt.groupName),
+            title='{0} Overview - Last {1:.1f} Days'.format(opt.title,opt.recplot))
+    save(o_recent)
 
 
 def plotCores(rtable, ftable, opt):
