@@ -71,48 +71,48 @@ def plotTimelines(rtable, ftable, ttable, opt):
     
     o0 = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime')
     if opt.dybin>=1:
-        o0.title = 'Triggers vs. Repeaters by {:.1f} Day Bin'.format(opt.dybin)
+        o0.title = 'Repeaters vs. Orphans by {:.1f} Day Bin'.format(opt.dybin)
     else:
-        o0.title = 'Triggers vs. Repeaters by {:.1f} Hour Bin'.format(opt.dybin*24)
+        o0.title = 'Repeaters vs. Orphans by {:.1f} Hour Bin'.format(opt.dybin*24)
     o0.grid.grid_line_alpha = 0.3
     o0.xaxis.axis_label = 'Date'
     o0.yaxis.axis_label = 'Events'
     
-    o0.line(matplotlib.dates.num2date(hT[0:-1]+opt.dybin/2), histT, color='black',
-        legend='All Triggers')
+    o0.line(matplotlib.dates.num2date(hT[0:-1]+opt.dybin/2), histT-histR, color='black',
+        legend='Orphans')
     o0.line(matplotlib.dates.num2date(hR[0:-1]+opt.dybin/2), histR, color='red',
         legend='Repeaters')
     o0.legend.orientation = "top_left"
     
     o0r = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime')
     if opt.hrbin<24:
-        o0r.title = 'Triggers vs. Repeaters by {:.1f} Hour Bin'.format(opt.hrbin)
+        o0r.title = 'Repeaters vs. Orphans by {:.1f} Hour Bin'.format(opt.hrbin)
     else:
-        o0r.title = 'Triggers vs. Repeaters by {:.1f} Day Bin'.format(opt.hrbin/24)
+        o0r.title = 'Repeaters vs. Orphans by {:.1f} Day Bin'.format(opt.hrbin/24)
     o0r.grid.grid_line_alpha = 0.3
     o0r.xaxis.axis_label = 'Date'
     o0r.yaxis.axis_label = 'Events'
     
-    o0r.line(matplotlib.dates.num2date(hTr[0:-1]+opt.hrbin/48), histTr, color='black',
-        legend='All Triggers')
+    o0r.line(matplotlib.dates.num2date(hTr[0:-1]+opt.hrbin/48), histTr-histRr,
+        color='black', legend='Orphans')
     o0r.line(matplotlib.dates.num2date(hRr[0:-1]+opt.hrbin/48), histRr, color='red',
         legend='Repeaters')
     o0r.legend.orientation = "top_left"
         
     o1 = figure(plot_width=1250, plot_height=250, x_axis_type='datetime',
         x_range=o0.x_range)
-    o1.title = 'Frequency Index vs. Time'
+    o1.title = 'Frequency Index'
     o1.grid.grid_line_alpha = 0.3
-    o1.xaxis.axis_label = 'Date of Repeater'
+    o1.xaxis.axis_label = 'Date'
     o1.yaxis.axis_label = 'FI'
     o1.circle(matplotlib.dates.num2date(dt), fi, color='red', line_alpha=0,
         size=3, fill_alpha=0.5)
         
     o1r = figure(plot_width=1250, plot_height=250, x_axis_type='datetime',
         x_range=o0r.x_range)
-    o1r.title = 'Frequency Index vs. Time'
+    o1r.title = 'Frequency Index'
     o1r.grid.grid_line_alpha = 0.3
-    o1r.xaxis.axis_label = 'Date of Repeater'
+    o1r.xaxis.axis_label = 'Dater'
     o1r.yaxis.axis_label = 'FI'
     # Put invisible points in for case that there are no events
     o1r.circle(matplotlib.dates.num2date(hTr[0:2]), [1, 1], line_alpha=0, fill_alpha=0)
@@ -121,10 +121,10 @@ def plotTimelines(rtable, ftable, ttable, opt):
         size=3, fill_alpha=0.5)
         
     o2 = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime',
-        x_range=o0.x_range, y_axis_type='log', y_range=[0.5, 10**3.6])
+        x_range=o0.x_range, y_axis_type='log', y_range=[0.1, alltrigs[-1]-alltrigs[0]])
     o2.title = 'Cluster Longevity'
     o2.grid.grid_line_alpha = 0.3
-    o2.xaxis.axis_label = 'Start Date'
+    o2.xaxis.axis_label = 'Date'
     o2.yaxis.axis_label = 'Days'
     for n in range(len(famstarts)):
         o2.line((matplotlib.dates.num2date(famstarts[n]), matplotlib.dates.num2date(
@@ -132,10 +132,10 @@ def plotTimelines(rtable, ftable, ttable, opt):
             line_alpha=0.5)
         
     o2r = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime',
-        x_range=o0r.x_range, y_axis_type='log', y_range=[0.5, 10**3.6])
+        x_range=o0r.x_range, y_axis_type='log', y_range=[0.1, alltrigs[-1]-alltrigs[0]])
     o2r.title = 'Cluster Longevity'
     o2r.grid.grid_line_alpha = 0.3
-    o2r.xaxis.axis_label = 'Start Date'
+    o2r.xaxis.axis_label = 'Date'
     o2r.yaxis.axis_label = 'Days'
     # Put invisible points in for case that there are no events
     o2r.circle(matplotlib.dates.num2date(hTr[0:2]), [1, 1], line_alpha=0, fill_alpha=0)
