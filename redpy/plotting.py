@@ -86,9 +86,11 @@ def plotTimelines(rtable, ftable, ttable, opt):
     
     o0r = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime')
     if opt.hrbin<24:
-        o0r.title = 'Repeaters vs. Orphans by {:.1f} Hour Bin'.format(opt.hrbin)
+        o0r.title = 'Last {0} Days: Repeaters vs. Orphans by {1:.1f} Hour Bin'.format(
+            opt.recplot, opt.hrbin)
     else:
-        o0r.title = 'Repeaters vs. Orphans by {:.1f} Day Bin'.format(opt.hrbin/24)
+        o0r.title = 'Last {0} Days: Repeaters vs. Orphans by {1:.1f} Day Bin'.format(
+            opt.recplot, opt.hrbin/24)
     o0r.grid.grid_line_alpha = 0.3
     o0r.xaxis.axis_label = 'Date'
     o0r.yaxis.axis_label = 'Events'
@@ -201,8 +203,7 @@ def plotTimelines(rtable, ftable, ttable, opt):
     
     r1 = figure(tools=TOOLSrec, plot_width=1250, plot_height=500, x_axis_type='datetime',
         x_range=o0r.x_range)
-    r1.title = 'Last {} Days: Occurrence Timeline (Color by Events per Hour)'.format(
-        opt.recplot)
+    r1.title = 'Occurrence Timeline (Color by Events per Hour)'
     r1.grid.grid_line_alpha = 0.3
     r1.xaxis.axis_label = 'Date'
     r1.yaxis.axis_label = 'Cluster by Date'    
