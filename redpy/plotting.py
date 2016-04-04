@@ -574,15 +574,26 @@ def plotFamilies(rtable, ftable, opt):
             plt.close(fig)
         
         if ftable.cols.printme[cnum] != 0 or ftable.cols.lastprint[cnum] != cnum:
+            if cnum>0:
+                prev = "<a href='{0}.html'>&lt; Cluster {0}</a>".format(cnum-1)
+            else:
+                prev = " "
+            if cnum<len(ftable)-1:
+                next = "<a href='{0}.html'>Cluster {0} &gt;</a>".format(cnum+1)
+            else:
+                next = " "   
             # Now write a simple HTML file to show image and catalog
             with open('{0}/clusters/{1}.html'.format(opt.groupName, cnum), 'w') as f:
                 f.write("""
                 <html><head><title>{1} - Cluster {0}</title>
                 </head>
-                <body><center>
+                <body><center>  
+                <span style="font-size: 12px; font-family: Helvetica;">
+                {10} &nbsp; | &nbsp; {11}</span></br></br>              
                 <span style="font-size: 20px; font-weight: bold; font-family: Helvetica;">
-                    Cluster {0}</span></br></br>
-                <img src="{0}.gif"></br></br>
+                    Cluster {0}</span>                
+                </br></br>
+                <img src="{0}.gif" width=500 height=100></br></br>
                 <span style="font-size: 12px; font-family: Helvetica;">
                     Number of events: {2}</br>
                     Longevity: {5:.2f} days</br>
@@ -600,7 +611,7 @@ def plotFamilies(rtable, ftable, opt):
                     maxind]/opt.samprate).isoformat(), longevity, (UTCDateTime(
                     startTime[core]) + windowStart[core]/opt.samprate).isoformat(),
                     np.mean(spacing), np.median(spacing), np.mean(np.nanmean(fi[fam],
-                    axis=1))))
+                    axis=1)),prev,next))
                                 
                 f.write("""
                 </center></body></html>
