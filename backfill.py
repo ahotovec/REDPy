@@ -39,6 +39,8 @@ optional arguments:
   -n NSEC, --nsec NSEC  overwrite opt.nsec from configuration file with NSEC this run only
 """
 
+t = time.time()
+
 parser = argparse.ArgumentParser(description=
     "Backfills table with data from the past")
 parser.add_argument("-s", "--starttime",
@@ -84,7 +86,6 @@ if len(ttable) > 0:
 else:
     ttimes = 0
 
-t = time.time()
 n = 0
 rlen = len(rtable)
 while tstart+n*opt.nsec <= tend-opt.nsec:
@@ -161,11 +162,8 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
 print("Caught up to: {}".format(tstart+n*opt.nsec))
 print("End time now: {}".format(tend))
 
-if len(rtable) > rlen:
-    if args.verbose: print("Creating plots...")
-    redpy.plotting.createPlots(rtable, ftable, ttable, opt)
-else:
-    if args.verbose: print("No new repeaters to plot.")
+if args.verbose: print("Updating plots...")
+redpy.plotting.createPlots(rtable, ftable, ttable, opt)
 
 if args.verbose: print("Closing table...")
 h5file.close()
