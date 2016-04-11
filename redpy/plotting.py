@@ -23,11 +23,12 @@ def createPlots(rtable, ftable, ttable, opt):
     
     if len(rtable)>1:
         plotTimelines(rtable, ftable, ttable, opt)
-        printCatalog(rtable, ftable, opt)
-        plotCores(rtable, ftable, opt)
-        plotFamilies(rtable, ftable, opt)
-        ftable.cols.printme[:] = np.zeros((len(ftable),))
-        ftable.cols.lastprint[:] = np.arange(len(ftable))
+        if np.sum(ftable.cols.printme[:]):
+            printCatalog(rtable, ftable, opt)
+            plotCores(rtable, ftable, opt)
+            plotFamilies(rtable, ftable, opt)
+            ftable.cols.printme[:] = np.zeros((len(ftable),))
+            ftable.cols.lastprint[:] = np.arange(len(ftable))
     else:
         print('Nothing to plot!')
     
@@ -154,16 +155,7 @@ def plotTimelines(rtable, ftable, ttable, opt):
                     hTr[0]).timetuple())*1000 - 28799000, longevity[n], text=['<'], 
                     text_font_size='9pt', text_baseline='middle', text_color='red',
                     text_alpha=0.5)
-    
-    # Build occurrence timeline
-    dy = np.arange(np.floor(min(dt)/opt.dybin),np.ceil(max(dt+opt.dybin)/opt.dybin))*opt.dybin
-    dyfams = np.zeros((len(dy),))
-    dyrept = np.zeros((len(dy),))
-    hr = np.arange(np.floor(max(dt-opt.recplot)/(opt.hrbin/24)),np.ceil(
-        max(dt+opt.hrbin/24)/(opt.hrbin/24)))*(opt.hrbin/24)
-    hrfams = np.zeros((len(hr),))
-    hrrept = np.zeros((len(hr),))
-        
+            
     # Build hover to show an image of the cluster core
     hover = HoverTool(
         tooltips="""
@@ -265,17 +257,17 @@ def plotTimelines(rtable, ftable, ttable, opt):
             
             n = n+1
             
-        if max(dt[members])>hr[0]:
+        if max(dt[members])>hRr[0]:
             
-            if min(dt[members])<hr[0]:
-                r1.line((matplotlib.dates.num2date(hr[0]-opt.hrbin/6),
+            if min(dt[members])<hRr[0]:
+                r1.line((matplotlib.dates.num2date(hRr[0]-opt.hrbin/6),
                 matplotlib.dates.num2date(max(dt[members]))), (m, m),
                     color='black')
                 r1.text(time.mktime(matplotlib.dates.num2date(
-                    hr[0]-opt.hrbin/6).timetuple())*1000 - 28799000, m, text=['<'], 
+                    hRr[0]-opt.hrbin/6).timetuple())*1000 - 28799000, m, text=['<'], 
                     text_font_size='9pt', text_baseline='middle')
 
-                idx = np.where(h[hist>0]>hr[0])[0]
+                idx = np.where(h[hist>0]>hRr[0])[0]
                         
             else:
                 r1.line((matplotlib.dates.num2date(min(dt[members])),
@@ -296,15 +288,15 @@ def plotTimelines(rtable, ftable, ttable, opt):
             # Build source for hover patches
             fnumr = clustNum
             if m == 0:
-                xsr=[[matplotlib.dates.num2date(max(min(dt[members]),hr[0])-1),
-                    matplotlib.dates.num2date(max(min(dt[members]),hr[0])-1),
+                xsr=[[matplotlib.dates.num2date(max(min(dt[members]),hRr[0])-1),
+                    matplotlib.dates.num2date(max(min(dt[members]),hRr[0])-1),
                     matplotlib.dates.num2date(max(dt[members])+1),
                     matplotlib.dates.num2date(max(dt[members])+1)]]
                 ysr=[[m-0.5, m+0.5, m+0.5, m-0.5]]
                 famnumr=[fnumr]
             else:
-                xsr.append([matplotlib.dates.num2date(max(min(dt[members]),hr[0])-1),
-                           matplotlib.dates.num2date(max(min(dt[members]),hr[0])-1),
+                xsr.append([matplotlib.dates.num2date(max(min(dt[members]),hRr[0])-1),
+                           matplotlib.dates.num2date(max(min(dt[members]),hRr[0])-1),
                            matplotlib.dates.num2date(max(dt[members])+1),
                            matplotlib.dates.num2date(max(dt[members])+1)])
                 ysr.append([m-0.5, m+0.5, m+0.5, m-0.5])
