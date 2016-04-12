@@ -174,13 +174,13 @@ def trigger(st, stC, rtable, opt):
                     trigs = trigs.append(ttmp[0])
                                                          
         if ind is 0:
-            rtable.attrs.ptime = (t + len(tr.data)/opt.samprate - opt.mintrig).isoformat()
+            rtable.attrs.ptime = (t - opt.mintrig).isoformat()
             return []
         else:
             rtable.attrs.ptime = (t + ptime).isoformat()
             return trigs
     else:
-        rtable.attrs.ptime = (t + len(tr.data)/opt.samprate - opt.mintrig).isoformat()
+        rtable.attrs.ptime = (t - opt.mintrig).isoformat()
         return []
 
 
