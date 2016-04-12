@@ -91,7 +91,7 @@ rlen = len(rtable)
 while tstart+n*opt.nsec <= tend-opt.nsec:
     
     ti = time.time()
-    if args.verbose: print(tstart+n*opt.nsec)
+    print(tstart+n*opt.nsec)
     
     # Download and trigger
     try:
@@ -168,5 +168,5 @@ redpy.plotting.createPlots(rtable, ftable, ttable, opt)
 if args.verbose: print("Closing table...")
 h5file.close()
 
-if args.verbose: print("Total time spent: {} minutes".format((time.time()-t)/60))
+print("Total time spent: {} minutes".format((time.time()-t)/60))
 if args.verbose: print("Done")
