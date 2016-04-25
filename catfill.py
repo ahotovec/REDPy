@@ -26,6 +26,8 @@ optional arguments:
                         default settings.cfg
 """
 
+t = time.time()
+
 parser = argparse.ArgumentParser(description=
     "Backfills table with data from the past")
 parser.add_argument("csvfile",
@@ -46,8 +48,6 @@ else:
 if args.verbose: print("Opening hdf5 table: {0}".format(opt.filename))
 h5file, rtable, otable, ttable, ctable, jtable, dtable, ftable = redpy.table.openTable(opt)
     
-
-t = time.time()
 if len(ttable) > 0:
     ttimes = ttable.cols.startTimeMPL[:]
 else:
@@ -81,7 +81,7 @@ for event in eventlist[::-1]:
         redpy.table.populateJunk(jtable,junk[i],0,opt)
     
     # Append times of triggers to ttable to compare total seismicity later
-    redpy.table.populateTriggers(ttable,trigs,opt)
+    redpy.table.populateTriggers(ttable, trigs, ttimes, opt)
             
     # Check triggers against deleted events
     if len(dtable) > 0:
