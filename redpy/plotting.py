@@ -1,7 +1,8 @@
 from tables import *
 import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 import time
 import redpy.cluster
 import os
