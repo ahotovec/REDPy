@@ -1,7 +1,7 @@
 from tables import *
 import numpy as np
 import matplotlib
-# matplotlib.use('Agg')
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import time
 import redpy.cluster
@@ -162,7 +162,7 @@ def plotTimelines(rtable, ftable, ttable, opt):
         tooltips="""
         <div>
         <div>
-            <img src="./clusters/@famnum.gif" style="height: 100px; width: 500px;
+            <img src="./clusters/@famnum.png" style="height: 100px; width: 500px;
                 vertical-align: middle;" />
             <span style="font-size: 9px; font-family: Helvetica;">Cluster ID: </span>
             <span style="font-size: 12px; font-family: Helvetica;">@famnum</span>
@@ -177,7 +177,7 @@ def plotTimelines(rtable, ftable, ttable, opt):
         tooltips="""
         <div>
         <div>
-            <img src="./clusters/@famnum.gif" style="height: 100px; width: 500px;
+            <img src="./clusters/@famnum.png" style="height: 100px; width: 500px;
                 vertical-align: middle;" />
             <span style="font-size: 9px; font-family: Helvetica;">Cluster ID: </span>
             <span style="font-size: 12px; font-family: Helvetica;">@famnum</span>
@@ -356,7 +356,7 @@ def plotTimelines(rtable, ftable, ttable, opt):
 def plotCores(rtable, ftable, opt):
 
     """
-    Plots core waveforms as .gif for hovering in timeline
+    Plots core waveforms as .png for hovering in timeline
     
     rtable: Repeater table
     ftable: Families table
@@ -366,8 +366,8 @@ def plotCores(rtable, ftable, opt):
     
     for n in range(len(ftable))[::-1]:
         if ftable.cols.lastprint[n] != n and ftable.cols.printme[n] == 0:
-            os.rename('{0}/clusters/{1}.gif'.format(opt.groupName,
-                ftable.cols.lastprint[n]), '{0}/clusters/{1}.gif.tmp'.format(
+            os.rename('{0}/clusters/{1}.png'.format(opt.groupName,
+                ftable.cols.lastprint[n]), '{0}/clusters/{1}.png.tmp'.format(
                 opt.groupName, n))
             os.rename('{0}/clusters/fam{1}.png'.format(opt.groupName,
                 ftable.cols.lastprint[n]), '{0}/clusters/fam{1}.png.tmp'.format(
@@ -394,7 +394,7 @@ def plotCores(rtable, ftable, opt):
         
             ax.plot(dat,'k',linewidth=0.25)
             plt.autoscale(tight=True)
-            plt.savefig('{0}/clusters/{1}.gif'.format(opt.groupName,n),
+            plt.savefig('{0}/clusters/{1}.png'.format(opt.groupName,n),
                 dpi=100)
             plt.close(fig)
 
@@ -586,7 +586,7 @@ def plotFamilies(rtable, ftable, opt):
                 <span style="font-size: 20px; font-weight: bold; font-family: Helvetica;">
                     Cluster {0}</span>                
                 </br></br>
-                <img src="{0}.gif" width=500 height=100></br></br>
+                <img src="{0}.png" width=500 height=100></br></br>
                 <span style="font-size: 12px; font-family: Helvetica;">
                     Number of events: {2}</br>
                     Longevity: {5:.2f} days</br>

@@ -6,6 +6,9 @@ import tkinter as tk
 import redpy.config
 import redpy.table
 import argparse
+from PIL import Image
+import os
+import glob
 
 # Added this to remove the slew of warnings obspy/numpy was throwing at me
 import warnings
@@ -119,6 +122,8 @@ check = []
 var = []
 for n in fams:
     if n >= args.minclust:
+        im = Image.open('{0}/clusters/{1}.png'.format(opt.groupName,n))
+        im.save('{0}/clusters/{1}.gif'.format(opt.groupName,n))
         imgobj.append(tk.PhotoImage(file='{0}/clusters/{1}.gif'.format(opt.groupName,n)))
         var.append(tk.IntVar())
         check.append(tk.Checkbutton(frame, image=imgobj[n-m],
@@ -128,9 +133,9 @@ for n in fams:
             c = 1
             r = r+1
             if r > 255:
-                print('Ran out of rows. Use -n or -m flags to view more...')
+                print("Ran out of rows. Use -n or -m flags to view more...")
 
-print('\nIgnore these warning things:')
+print("\nIgnore these warning things:")
 
 # Add buttons
 tk.Button(frame, text="Remove Checked", background="#ffffff", command=remove).grid(
@@ -148,6 +153,12 @@ for child in frame.winfo_children(): child.grid_configure(padx=15, pady=15)
 
 # Go!
 root.mainloop()
-print("\nClosing table...")
+
+# Clean up
+print("\nCleaning up .gif files...")
+dlist = glob.glob('./{0}/clusters/*.gif'.format(opt.groupName))
+for tmp in dlist:
+    os.remove(tmp) 
+print("Closing table...")
 h5file.close()
 print("Done")
