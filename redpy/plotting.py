@@ -425,6 +425,12 @@ def plotFamilies(rtable, ftable, opt):
     windowStart = rtable.cols.windowStart[:]
     fi = rtable.cols.FI[:]
     
+    # Station names
+    nets = opt.network.split(',')
+    stas = opt.station.split(',')
+    locs = opt.location.split(',')
+    chas = opt.channel.split(',')
+    
     for cnum in range(ftable.attrs.nClust):
 
         fam = np.fromstring(ftable[cnum]['members'], dtype=int, sep=' ')
@@ -509,6 +515,9 @@ def plotFamilies(rtable, ftable, opt):
                     datc[datc>1] = 1
                     datc[datc<-1] = -1
                     ax1.plot(tvec,datc-1.75*s,'k',linewidth=0.25)
+                    ax1.text(np.min(tvec)+0.5,np.mean(datc)-1.75*s,
+                        '{0}.{1}.{2}.{3}'.format(stas[s],nets[s],chas[s],locs[s]),
+                        bbox=dict(boxstyle='round', facecolor='white'))
             
             ax1.axvline(x=-0.1*opt.winlen/opt.samprate, color='k', ls='dotted')
             ax1.axvline(x=0.9*opt.winlen/opt.samprate, color='k', ls='dotted')
