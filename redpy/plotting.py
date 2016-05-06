@@ -83,7 +83,7 @@ def plotTimelines(rtable, ftable, ttable, opt):
     o0.line(matplotlib.dates.num2date(hT[0:-1]+opt.dybin/2), histT-histR, color='black',
         legend='Orphans')
     o0.line(matplotlib.dates.num2date(hR[0:-1]+opt.dybin/2), histR, color='red',
-        legend='Repeaters')
+        legend='Repeaters', line_width=2)
     o0.legend.orientation = "top_left"
     
     o0r = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime')
@@ -100,7 +100,7 @@ def plotTimelines(rtable, ftable, ttable, opt):
     o0r.line(matplotlib.dates.num2date(hTr[0:-1]+opt.hrbin/48), histTr-histRr,
         color='black', legend='Orphans')
     o0r.line(matplotlib.dates.num2date(hRr[0:-1]+opt.hrbin/48), histRr, color='red',
-        legend='Repeaters')
+        legend='Repeaters', line_width=2)
     o0r.legend.orientation = "top_left"
         
     o1 = figure(plot_width=1250, plot_height=250, x_axis_type='datetime',
@@ -426,9 +426,7 @@ def plotFamilies(rtable, ftable, opt):
     fi = rtable.cols.FI[:]
     
     # Station names
-    nets = opt.network.split(',')
     stas = opt.station.split(',')
-    locs = opt.location.split(',')
     chas = opt.channel.split(',')
     
     for cnum in range(ftable.attrs.nClust):
@@ -515,9 +513,8 @@ def plotFamilies(rtable, ftable, opt):
                     datc[datc>1] = 1
                     datc[datc<-1] = -1
                     ax1.plot(tvec,datc-1.75*s,'k',linewidth=0.25)
-                    ax1.text(np.min(tvec)-1.5,np.mean(datc)+0.25-1.75*s,
-                        '{0}.{1}.{2}.{3}'.format(stas[s],nets[s],chas[s],locs[s]),
-                        bbox=dict(boxstyle='round', facecolor='white'))
+                    ax1.text(np.min(tvec)-0.1,-1.75*s,'{0}\n{1}'.format(stas[s],chas[s]),
+                        horizontalalignment='right', verticalalignment='center')
             
             ax1.axvline(x=-0.1*opt.winlen/opt.samprate, color='k', ls='dotted')
             ax1.axvline(x=0.9*opt.winlen/opt.samprate, color='k', ls='dotted')
