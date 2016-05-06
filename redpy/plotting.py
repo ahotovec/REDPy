@@ -515,14 +515,15 @@ def plotFamilies(rtable, ftable, opt):
                     datc[datc>1] = 1
                     datc[datc<-1] = -1
                     ax1.plot(tvec,datc-1.75*s,'k',linewidth=0.25)
-                    ax1.text(np.min(tvec)+0.5,np.mean(datc)-1.75*s,
+                    ax1.text(np.min(tvec)-1.5,np.mean(datc)+0.25-1.75*s,
                         '{0}.{1}.{2}.{3}'.format(stas[s],nets[s],chas[s],locs[s]),
                         bbox=dict(boxstyle='round', facecolor='white'))
             
             ax1.axvline(x=-0.1*opt.winlen/opt.samprate, color='k', ls='dotted')
             ax1.axvline(x=0.9*opt.winlen/opt.samprate, color='k', ls='dotted')
             ax1.get_yaxis().set_visible(False)
-            ax1.autoscale(tight=True)
+            ax1.set_xlim((np.min(tvec),np.max(tvec)))
+            ax1.set_ylim((-1.75*s-1,1))
             ax1.set_xlabel('Time Relative to Trigger (sec)')
             
             # Plot mean FFT
