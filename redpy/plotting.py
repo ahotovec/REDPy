@@ -586,15 +586,15 @@ def plotFamilies(rtable, ftable, opt):
             with open('{0}/clusters/{1}.html'.format(opt.groupName, cnum), 'w') as f:
                 f.write("""
                 <html><head><title>{1} - Cluster {0}</title>
-                </head>
-                <body><center>  
-                <span style="font-size: 12px; font-family: Helvetica;">
-                {10} &nbsp; | &nbsp; {11}</span></br></br>              
-                <span style="font-size: 20px; font-weight: bold; font-family: Helvetica;">
-                    Cluster {0}</span>                
-                </br></br>
+                </head><style>
+                a {{color:red;}}
+                body {{font-family:Helvetica; font-size:12px}}
+                h1 {{font-size: 20px;}}
+                </style>
+                <body><center>
+                {10} &nbsp; | &nbsp; {11}</br>             
+                <h1>Cluster {0}</h1>                
                 <img src="{0}.png" width=500 height=100></br></br>
-                <span style="font-size: 12px; font-family: Helvetica;">
                     Number of events: {2}</br>
                     Longevity: {5:.2f} days</br>
                     Mean event spacing: {7:.2f} hours</br>
@@ -603,7 +603,6 @@ def plotFamilies(rtable, ftable, opt):
                     First event: {3}</br>
                     Core event: {6}</br>
                     Last event: {4}</br>
-                    </span> 
                 <img src="fam{0}.png"></br>                
                 """.format(cnum, opt.title, len(fam), (UTCDateTime(
                     startTime[minind]) + windowStart[minind]/opt.samprate).isoformat(),
