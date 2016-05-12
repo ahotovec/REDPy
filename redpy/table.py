@@ -524,6 +524,7 @@ def removeFamilies(rtable, ctable, dtable, ftable, cnums, opt):
         ftable.cols.core[n] = transform[core]
         ftable.flush()
     
+    ftable.cols.printme[-1] = 1
     rtable.flush()
     dtable.flush()
 
