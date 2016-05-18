@@ -602,8 +602,8 @@ def createNewFamily(rtable, ftable, members, core, opt):
     
     if len(ftable)>1:
         reorderFamilies(ftable, opt)
-    # Always reprint second to last family (so html navigation updates)
-    ftable.cols.printme[-2] = 1
+        # Reprint second to last family (so html navigation updates)
+        ftable.cols.printme[-2] = 1        
     
     
 def reorderFamilies(ftable, opt):
