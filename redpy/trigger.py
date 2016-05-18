@@ -8,13 +8,18 @@ from obspy.signal.trigger import coincidence_trigger
 import numpy as np
 from scipy import stats
 from scipy.fftpack import fft
+import glob
 
-def getData(date, opt):
+def getData(tstart, tend, opt):
 
     """
-    Download data from IRIS or Earthworm waveserver with padding and filter it.
+    Download data from SAC files in a folder, from IRIS, or a Earthworm waveserver
+    
+    A note on SAC files: as this makes no assumptions about the naming scheme of your
+    data files, please ensure that your SAC headers contain the correct SCNL information!
 
-    date: UTCDateTime of beginning of period of interest
+    tstart: UTCDateTime of beginning of period of interest
+    tend: UTCDateTime of end of period of interest
     opt: Options object describing station/run parameters
     
     Returns ObsPy stream objects, one for cutting and the other for triggering
@@ -25,97 +30,85 @@ def getData(date, opt):
     locs = opt.location.split(',')
     chas = opt.channel.split(',')
     
-    if opt.server == "IRIS":
-        client = Client("IRIS")
-    else:
-        client = EWClient(opt.server, opt.port)
-        
     st = Stream()
-    for n in range(len(stas)):
-        try:
-            stmp = client.get_waveforms(nets[n], stas[n], locs[n], chas[n],
-                    date - opt.atrig, date + opt.nsec + opt.atrig)
-            stmp = stmp.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax,
-                corners=2, zerophase=True)
-            stmp = stmp.merge(method=1, fill_value='interpolate')
-        except (obspy.fdsn.header.FDSNException):
-            try: # try again
-                stmp = client.get_waveforms(nets[n], stas[n], locs[n], chas[n],
-                        date - opt.atrig, date + opt.nsec + opt.atrig)
-                stmp = stmp.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax,
-                    corners=2, zerophase=True)
-                stmp = stmp.merge(method=1, fill_value='interpolate')
-            except (obspy.fdsn.header.FDSNException):
-                print('No data found for {0}.{1}'.format(stas[n],nets[n]))
+    
+    if opt.server == "SAC":
+        # Generate list of SAC files
+        flist = glob.glob(opt.sacdir+'*.sac')+glob.glob(opt.sacdir+'*.SAC')
+    
+        # Load data from file
+        stmp = Stream()
+        for f in flist:
+            tmp = obspy.read(f, starttime=tstart, endtime=tend)
+            if len(tmp) > 0:
+                stmp = stmp.extend(tmp)
+    
+        # Filter and merge
+        stmp = stmp.filter('bandpass', freqmin=opt.fmin, freqmax=opt.fmax, corners=2,
+            zerophase=True)
+        stmp = stmp.merge(method=1, fill_value='interpolate')
+    
+        # Only grab stations/channels that we want and in order
+        netlist = []
+        stalist = []
+        chalist = []
+        loclist = []
+        for s in stmp:
+            stalist.append(s.stats.station)
+            chalist.append(s.stats.channel)
+            netlist.append(s.stats.network)
+            loclist.append(s.stats.location)
+    
+        # Find match of SCNL in header or fill empty
+        for n in range(len(stas)):
+            for m in range(len(stalist)):
+                if (stas[n] in stalist[m] and chas[n] in chalist[m] and nets[n] in
+                    netlist[m] and locs[n] in loclist[m]):
+                    if stmp[m].stats.sampling_rate != opt.samprate:
+                        stmp[m] = stmp[m].resample(opt.samprate)
+                    st = st.append(stmp[m])
+            if len(st) == n:
+                print("Couldn't find "+stas[n]+'.'+chas[n]+'.'+nets[n]+'.'+locs[n])
                 trtmp = Trace()
                 trtmp.stats.sampling_rate = opt.samprate
                 trtmp.stats.station = stas[n]
-                stmp = Stream().extend([trtmp.copy()])
-        # Resample to ensure all traces are same length
-        if stmp[0].stats.sampling_rate != opt.samprate:
-            stmp = stmp.resample(opt.samprate)
-        st.extend(stmp.copy()) 
+                st = st.append(trtmp.copy())
     
-    st = st.trim(starttime=date-opt.atrig, endtime=date+opt.nsec+opt.atrig, pad=True,
-        fill_value=0)
+    else:   
+     
+        if opt.server == "IRIS":
+            client = Client("IRIS")
+        else:
+            client = EWClient(opt.server, opt.port)
+        
+        for n in range(len(stas)):
+            try:
+                stmp = client.get_waveforms(nets[n], stas[n], locs[n], chas[n],
+                        tstart, tend)
+                stmp = stmp.filter('bandpass', freqmin=opt.fmin, freqmax=opt.fmax,
+                    corners=2, zerophase=True)
+                stmp = stmp.merge(method=1, fill_value='interpolate')
+            except (obspy.fdsn.header.FDSNException):
+                try: # try again
+                    stmp = client.get_waveforms(nets[n], stas[n], locs[n], chas[n],
+                            tstart, tend)
+                    stmp = stmp.filter('bandpass', freqmin=opt.fmin, freqmax=opt.fmax,
+                        corners=2, zerophase=True)
+                    stmp = stmp.merge(method=1, fill_value='interpolate')
+                except (obspy.fdsn.header.FDSNException):
+                    print('No data found for {0}.{1}'.format(stas[n],nets[n]))
+                    trtmp = Trace()
+                    trtmp.stats.sampling_rate = opt.samprate
+                    trtmp.stats.station = stas[n]
+                    stmp = Stream().extend([trtmp.copy()])
+            # Resample to ensure all traces are same length
+            if stmp[0].stats.sampling_rate != opt.samprate:
+                stmp = stmp.resample(opt.samprate)
+            st.extend(stmp.copy()) 
+    
+    st = st.trim(starttime=tstart, endtime=tend, pad=True, fill_value=0)
     stC = st.copy()
     
-    return st, stC
-
-
-def getCatData(date, opt):
-
-    """
-    Download data from IRIS or Earthworm waveserver with padding and filter it. This is
-    a specialized version getData() for catalog events, pulling a smaller amount of time
-    around a known event.
-
-    date: UTCDateTime of known catalog event
-    opt: Options object describing station/run parameters
-    
-    Returns ObsPy stream objects, one for cutting and the other for triggering
-    """    
-    
-    nets = opt.network.split(',')
-    stas = opt.station.split(',')
-    locs = opt.location.split(',')
-    chas = opt.channel.split(',')
-    
-    if opt.server == "IRIS":
-        client = Client("IRIS")
-    else:
-        client = EWClient(opt.server, opt.port)
-        
-    st = Stream()
-    for n in range(len(stas)):
-        try:
-            stmp = client.get_waveforms(nets[n], stas[n], locs[n], chas[n],
-                    date - opt.atrig, date + 3*opt.atrig)
-            stmp = stmp.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax,
-                corners=2, zerophase=True)
-            stmp = stmp.merge(method=1, fill_value='interpolate')
-        except (obspy.fdsn.header.FDSNException):
-            try: # try again
-                stmp = client.get_waveforms(nets[n], stas[n], locs[n], chas[n],
-                        date - opt.atrig, date + 3*opt.atrig)
-                stmp = stmp.filter("bandpass", freqmin=opt.fmin, freqmax=opt.fmax,
-                    corners=2, zerophase=True)
-                stmp = stmp.merge(method=1, fill_value='interpolate')
-            except (obspy.fdsn.header.FDSNException):
-                print('No data found for {0}.{1}'.format(stas[n],nets[n]))
-                trtmp = Trace()
-                trtmp.stats.sampling_rate = opt.samprate
-                trtmp.stats.station = stas[n]
-                stmp = Stream().extend([trtmp.copy()])
-        # Resample to ensure all traces are same length
-        if stmp[0].stats.sampling_rate != opt.samprate:
-            stmp = stmp.resample(opt.samprate)
-        st.extend(stmp.copy()) 
-    
-    st = st.trim(starttime=date-opt.atrig, endtime=date+3*opt.atrig, pad=True,
-        fill_value=0)
-    stC = st.copy() 
-
     return st, stC
 
 
