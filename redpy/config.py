@@ -37,8 +37,10 @@ class Options(object):
         network: String of network code (default 'UW,UW,UW,UW,UW,UW,UW,UW')
         location: String of location code (default '--,--,--,--,--,--,--,--')
         samprate: Sampling rate of that station (default 100.0 Hz)
-        server: Source of data (default "IRIS", otherwise name of waveserver)
+        server: Source of data (default "IRIS", otherwise "SAC" or name of waveserver)
         port: Port number for server (default 16017, not used if using IRIS)
+        sacdir: Path to directory with SAC files ending in / (default './', not used if
+            using IRIS or waveserver)
         nsec: Number of seconds to download from server at a time (default 3600 s) 
                 
         TRIGGERING PARAMETERS:
@@ -130,6 +132,8 @@ class Options(object):
             'Settings','server') else 'IRIS'
         self.port=config.getint('Settings','port') if config.has_option(
             'Settings','port') else 16017
+        self.sacdir=config.get('Settings','sacdir') if config.has_option(
+            'Settings','sacdir') else './'
         self.nsec=config.getint('Settings','nsec') if config.has_option(
             'Settings','nsec') else 3600
         self.lwin=config.getfloat('Settings','lwin') if config.has_option(
