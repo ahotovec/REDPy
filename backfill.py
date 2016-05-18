@@ -20,9 +20,6 @@ left off if a chunk is missed, but will not run until a full chunk of time has e
 since the last trigger. Use -n if you are backfilling with a large amount of time; it will
 consume less time downloading the data in small chunks if NSEC is an hour or a day instead
 of a few minutes.
-
-WARNING: Does not currently check for duplicates, do not run with any overlap of previous
-runs!
  
 usage: backfill.py [-h] [-v] [-s STARTTIME] [-e ENDTIME] [-c CONFIGFILE] [-n NSEC]
 
@@ -88,14 +85,17 @@ else:
 
 n = 0
 rlen = len(rtable)
-while tstart+n*opt.nsec <= tend-opt.nsec:
+while tstart+n*opt.nsec < tend:
     
     ti = time.time()
     print(tstart+n*opt.nsec)
     
     # Download and trigger
     try:
-        st, stC = redpy.trigger.getData(tstart+n*opt.nsec, opt)
+        endtime = tstart+(n+1)*opt.nsec+opt.atrig
+        if endtime > tend:
+            endtime = tend
+        st, stC = redpy.trigger.getData(tstart+n*opt.nsec-opt.atrig, endtime, opt)
         alltrigs = redpy.trigger.trigger(st, stC, rtable, opt)
     except (TypeError, obspy.fdsn.header.FDSNException, Exception):
         print('Could not download or trigger data... moving on')
@@ -159,8 +159,7 @@ while tstart+n*opt.nsec <= tend-opt.nsec:
     if args.verbose: print("Time spent this iteration: {} minutes".format(
         (time.time()-ti)/60))
 
-print("Caught up to: {}".format(tstart+n*opt.nsec))
-print("End time now: {}".format(tend))
+print("Caught up to: {}".format(endtime-opt.atrig))
 
 if args.verbose: print("Updating plots...")
 redpy.plotting.createPlots(rtable, ftable, ttable, opt)
