@@ -11,7 +11,7 @@ from obspy import UTCDateTime
 from bokeh.plotting import figure, output_file, save, gridplot
 from bokeh.models import HoverTool, ColumnDataSource, OpenURL, TapTool, Range1d
         
-def createPlots(rtable, ftable, ttable, opt):
+def createPlots(rtable, ftable, ttable, ctable, opt):
     
     """
     Creates all output plots (core images, family plots, and two bokeh .html plots)
@@ -27,7 +27,7 @@ def createPlots(rtable, ftable, ttable, opt):
         if np.sum(ftable.cols.printme[:]):
             printCatalog(rtable, ftable, opt)
             plotCores(rtable, ftable, opt)
-            plotFamilies(rtable, ftable, opt)
+            plotFamilies(rtable, ftable, ctable, opt)
             ftable.cols.printme[:] = np.zeros((len(ftable),))
             ftable.cols.lastprint[:] = np.arange(len(ftable))
     else:
@@ -399,7 +399,7 @@ def plotCores(rtable, ftable, opt):
             plt.close(fig)
 
 
-def plotFamilies(rtable, ftable, opt):
+def plotFamilies(rtable, ftable, ctable, opt):
 
     """
     Creates a multi-paneled family plot.
@@ -424,6 +424,10 @@ def plotFamilies(rtable, ftable, opt):
     windowAmp = rtable.cols.windowAmp[:][:,opt.printsta]
     windowStart = rtable.cols.windowStart[:]
     fi = rtable.cols.FI[:]
+    ids = rtable.cols.id[:]
+    id1 = ctable.cols.id1[:]
+    id2 = ctable.cols.id2[:]
+    ccc = ctable.cols.ccc[:]
     
     # Station names
     stas = opt.station.split(',')
@@ -444,10 +448,10 @@ def plotFamilies(rtable, ftable, opt):
 
         if ftable.cols.printme[cnum] != 0:
         
-            fig = plt.figure(figsize=(10, 11))
+            fig = plt.figure(figsize=(10, 12))
         
             # Plot waveforms
-            ax1 = fig.add_subplot(3, 3, (1,2))
+            ax1 = fig.add_subplot(9, 3, (1,8))
             
             # If only one station, plot all aligned waveforms
             if opt.nsta==1:
@@ -524,7 +528,7 @@ def plotFamilies(rtable, ftable, opt):
             ax1.set_xlabel('Time Relative to Trigger (sec)')
             
             # Plot mean FFT
-            ax2 = fig.add_subplot(3, 3, 3)
+            ax2 = fig.add_subplot(9, 3, (3,9))
             ax2.set_xlabel('Frequency (Hz)')
             ax2.get_yaxis().set_visible(False)
             r = rtable[core]
@@ -545,8 +549,8 @@ def plotFamilies(rtable, ftable, opt):
             ax2.set_xlim(0,opt.fmax*1.5)
             
             # Plot amplitude timeline
-            ax3 = fig.add_subplot(3, 3, (4,6))
-            ax3.plot_date(startTimeMPL[fam], windowAmp[fam],
+            ax3 = fig.add_subplot(9, 3, (10,15))
+            ax3.plot_date(catalog, windowAmp[fam],
                     'ro', alpha=0.5, markeredgecolor='r', markeredgewidth=0.5)
             myFmt = matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M')
             ax3.xaxis.set_major_formatter(myFmt)
@@ -556,7 +560,7 @@ def plotFamilies(rtable, ftable, opt):
             ax3.set_yscale('log')
         
             # Plot spacing timeline
-            ax4 = fig.add_subplot(3, 3, (7,9)) 
+            ax4 = fig.add_subplot(9, 3, (16,21)) 
             ax4.plot_date(catalog[1:], spacing, 'ro', alpha=0.5, markeredgecolor='r',
                 markeredgewidth=0.5)
             myFmt = matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M')
@@ -567,6 +571,29 @@ def plotFamilies(rtable, ftable, opt):
             ax4.set_ylabel('Time since previous event (hours)')
             ax4.set_xlabel('Date')
             ax4.set_yscale('log')
+            
+            # Plot correlation timeline
+            idf = ids[fam]
+            ix = np.where(np.in1d(id2,idf))
+            r = np.zeros((max(idf)+1,)).astype('int')
+            r[idf] = range(len(idf))
+            C = np.zeros((len(idf),len(idf)))
+            C[r[id2[ix]],r[id1[ix]]] = ccc[ix]
+            C[r[id1[ix]],r[id2[ix]]] = ccc[ix]
+            C[range(len(idf)),range(len(idf))] = 1.0
+            
+            ax5 = fig.add_subplot(9, 3, (22,27))
+            ax5.plot_date(catalog, C[np.argmax(np.sum(C,0)),:], 'ro', alpha=0.5,
+                markeredgecolor='r', markeredgewidth=0.5)
+            ax5.plot_date(catalog, C[np.argmax(np.sum(C,0)),:]+0.7, 'wo', alpha=0.5,
+                markeredgecolor='r', markeredgewidth=0.5)
+            myFmt = matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M')
+            ax5.xaxis.set_major_formatter(myFmt)
+            ax5.set_xlim(ax3.get_xlim())
+            ax5.set_ylim(opt.cmin-0.02, 1.02)
+            ax5.margins(0.05)
+            ax5.set_ylabel('Cross-correlation coefficient')
+            ax5.set_xlabel('Date')
         
             plt.tight_layout()
             plt.savefig('{0}/clusters/fam{1}.png'.format(opt.groupName,
