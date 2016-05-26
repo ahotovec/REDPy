@@ -524,7 +524,8 @@ def plotFamilies(rtable, ftable, ctable, opt):
             ax1.axvline(x=0.9*opt.winlen/opt.samprate, color='k', ls='dotted')
             ax1.get_yaxis().set_visible(False)
             ax1.set_xlim((np.min(tvec),np.max(tvec)))
-            ax1.set_ylim((-1.75*s-1,1))
+            if opt.nsta > 1:
+                ax1.set_ylim((-1.75*s-1,1))
             ax1.set_xlabel('Time Relative to Trigger (sec)')
             
             # Plot mean FFT
