@@ -103,7 +103,7 @@ def plotTimelines(rtable, ftable, ttable, opt):
         legend='Repeaters', line_width=2)
     o0r.legend.orientation = "top_left"
         
-    o1 = figure(plot_width=1250, plot_height=250, x_axis_type='datetime',
+    o1 = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime',
         x_range=o0.x_range)
     o1.title = 'Frequency Index'
     o1.grid.grid_line_alpha = 0.3
@@ -112,7 +112,7 @@ def plotTimelines(rtable, ftable, ttable, opt):
     o1.circle(matplotlib.dates.num2date(dt), fi, color='red', line_alpha=0,
         size=3, fill_alpha=0.5)
         
-    o1r = figure(plot_width=1250, plot_height=250, x_axis_type='datetime',
+    o1r = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime',
         x_range=o0r.x_range)
     o1r.title = 'Frequency Index'
     o1r.grid.grid_line_alpha = 0.3
