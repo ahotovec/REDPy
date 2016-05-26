@@ -1,3 +1,7 @@
+# REDPy - Repeating Earthquake Detector in Python
+# Copyright (C) 2016  Alicia Hotovec-Ellis (ahotovec@gmail.com)
+# Licensed under GNU GPLv3 (see LICENSE.txt)
+
 from obspy import UTCDateTime
 import obspy
 from obspy.clients.fdsn import Client
