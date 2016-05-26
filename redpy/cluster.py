@@ -59,5 +59,6 @@ def runFamOPTICS(rtable, ctable, ftable, fnum, opt):
     ftable.cols.longevity[fnum] = np.max(rtable[fam]['startTimeMPL']) - np.min(
         rtable[fam]['startTimeMPL'])
     ftable.cols.printme[fnum] = 1
+    ftable.cols.printme[-1] = 1 
     ftable.flush()
         
