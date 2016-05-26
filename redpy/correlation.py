@@ -1,3 +1,7 @@
+# REDPy - Repeating Earthquake Detector in Python
+# Copyright (C) 2016  Alicia Hotovec-Ellis (ahotovec@gmail.com)
+# Licensed under GNU GPLv3 (see LICENSE.txt)
+
 import numpy as np
 import obspy.core.trace as trace
 import redpy.table

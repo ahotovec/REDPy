@@ -1,3 +1,7 @@
+# REDPy - Repeating Earthquake Detector in Python
+# Copyright (C) 2016  Alicia Hotovec-Ellis (ahotovec@gmail.com)
+# Licensed under GNU GPLv3 (see LICENSE.txt)
+
 import matplotlib
 matplotlib.use('TkAgg')
 # ^ Not sure why this needs to be here, but apparently Tk hates me otherwise...
