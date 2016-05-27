@@ -591,7 +591,7 @@ def plotFamilies(rtable, ftable, ctable, opt):
             ax5 = fig.add_subplot(9, 3, (22,27))
             ax5.plot_date(catalog, C[np.argmax(np.sum(C,0)),:], 'ro', alpha=0.5,
                 markeredgecolor='r', markeredgewidth=0.5)
-            ax5.plot_date(catalog, C[np.argmax(np.sum(C,0)),:]+0.7, 'wo', alpha=0.5,
+            ax5.plot_date(catalog, C[np.argmax(np.sum(C,0)),:]+opt.cmin, 'wo', alpha=0.5,
                 markeredgecolor='r', markeredgewidth=0.5)
             myFmt = matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M')
             ax5.xaxis.set_major_formatter(myFmt)
