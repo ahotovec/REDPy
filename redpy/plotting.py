@@ -475,6 +475,7 @@ def plotFamilies(rtable, ftable, ctable, opt):
                     ax1.imshow(data, aspect='auto', vmin=-1, vmax=1, cmap='RdBu',
                         interpolation='nearest', extent=[-1*opt.winlen*0.5/opt.samprate,
                         opt.winlen*1.5/opt.samprate, n + 0.5, -0.5])
+                    tvec = [-1*opt.winlen*0.5/opt.samprate, opt.winlen*1.5/opt.samprate]
                 else:
                     tvec = np.arange(
                         -opt.winlen*0.5/opt.samprate,opt.winlen*1.5/opt.samprate,
