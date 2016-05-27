@@ -129,7 +129,8 @@ def plotTimelines(rtable, ftable, ttable, opt):
         size=3, fill_alpha=0.5)
         
     o2 = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime',
-        x_range=o0.x_range, y_axis_type='log', y_range=[0.1, alltrigs[-1]-alltrigs[0]])
+        x_range=o0.x_range, y_axis_type='log', y_range=[0.1,
+        np.sort(alltrigs)[-1]-np.sort(alltrigs)[0]])
     o2.title = 'Cluster Longevity'
     o2.grid.grid_line_alpha = 0.3
     o2.xaxis.axis_label = 'Date'
@@ -140,7 +141,8 @@ def plotTimelines(rtable, ftable, ttable, opt):
             line_alpha=0.5)
         
     o2r = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime',
-        x_range=o0r.x_range, y_axis_type='log', y_range=[0.1, alltrigs[-1]-alltrigs[0]])
+        x_range=o0r.x_range, y_axis_type='log', y_range=[0.1,
+        np.sort(alltrigs)[-1]-np.sort(alltrigs)[0]])
     o2r.title = 'Cluster Longevity'
     o2r.grid.grid_line_alpha = 0.3
     o2r.xaxis.axis_label = 'Date'
