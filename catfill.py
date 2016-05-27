@@ -71,8 +71,10 @@ for event in eventlist[::-1]:
     
     # Download and trigger
     try:
-        st, stC = redpy.trigger.getData(etime-opt.atrig, etime+3*opt.atrig, opt)
+        st, stC = redpy.trigger.getData(etime-5*opt.atrig, etime+10*opt.atrig, opt)
         alltrigs = redpy.trigger.trigger(st, stC, rtable, opt)
+        # Reset ptime for refilling later
+        rtable.attrs.ptime = []
     except (TypeError, obspy.fdsn.header.FDSNException, Exception):
         print('Could not download or trigger data... moving on')
         alltrigs = []
