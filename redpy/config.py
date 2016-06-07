@@ -97,7 +97,23 @@ class Options(object):
         hrbin: Width of bin in hours for recent histogram (default 1 hour)
         recplot: Number of days for 'recent' plot (default 14 days)
         plotsta: Station index in station list to be plotted (default 2)
-    
+        
+        COMCAT PARAMETERS
+        checkComCat: Use ComCat to find located seismicity that might match repeaters
+            (default False)
+        stalats: List of station latitudes (defaults to MSH network:
+            '46.200210,46.209550,46.174280,46.193470,46.197170,46.237610,46.147060,
+            46.243860')
+        stalons: List of station longitudes (defaults to MSH network:
+            '-122.190600,-122.188990,-122.180650,-122.236350,-122.151210,-122.223960,
+            -122.152430,-122.137870') 
+        serr: Seconds of allowable difference in trigger and projected arrival time
+            (default 5.0 s)
+        locdeg: Degrees of distance to be considered a local event (default 0.5 degrees)
+        regdeg: Degrees of distance to be considered a regional event (default 2.0 degrees)
+        regmag: Minimum magnitude for regional events (default M2.5)
+        telemag: Minimum magnitude for teleseismic events (default M4.5)
+          
         This list will likely expand.       
         """
         
@@ -190,6 +206,24 @@ class Options(object):
             'Settings','hrbin') else 1.
         self.recplot=config.getfloat('Settings','recplot') if config.has_option(
             'Settings','recplot') else 14.
+        self.checkComCat=config.getboolean('Settings','checkComCat') if config.has_option(
+            'Settings','checkComCat') else False
+        self.stalats=config.get('Settings','stalats') if config.has_option(
+            'Settings','stalats') else ('46.200210,46.209550,46.174280,46.193470,'
+                '46.197170,46.237610,46.147060,46.243860')
+        self.stalons=config.get('Settings','stalons') if config.has_option(
+            'Settings','stalons') else ('-122.190600,-122.188990,-122.180650,-122.236350,'
+                '-122.151210,-122.223960,-122.152430,-122.137870')
+        self.serr=config.getfloat('Settings','serr') if config.has_option(
+            'Settings','serr') else 5.
+        self.locdeg=config.getfloat('Settings','locdeg') if config.has_option(
+            'Settings','locdeg') else 0.5
+        self.regdeg=config.getfloat('Settings','regdeg') if config.has_option(
+            'Settings','regdeg') else 2.
+        self.regmag=config.getfloat('Settings','regmag') if config.has_option(
+            'Settings','regmag') else 2.5
+        self.telemag=config.getfloat('Settings','telemag') if config.has_option(
+            'Settings','telemag') else 4.5
         
         # Derived Settings
         self.ptrig=1.5*self.winlen/self.samprate

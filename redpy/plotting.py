@@ -12,6 +12,10 @@ import redpy.cluster
 import os
 import glob
 from obspy import UTCDateTime
+from obspy.geodetics import locations2degrees
+from obspy.taup import TauPyModel
+import pandas as pd
+from mpl_toolkits.basemap import Basemap
 from bokeh.plotting import figure, output_file, save, gridplot
 from bokeh.models import HoverTool, ColumnDataSource, OpenURL, TapTool, Range1d
         
@@ -646,11 +650,155 @@ def plotFamilies(rtable, ftable, ctable, opt):
                     startTime[core]) + windowStart[core]/opt.samprate).isoformat(),
                     np.mean(spacing), np.median(spacing), np.mean(np.nanmean(fi[fam],
                     axis=1)),prev,next))
-                                
+                
+                if opt.checkComCat:
+                    checkComCat(rtable, ftable, cnum, f, startTime, windowStart, opt)
+                           
                 f.write("""
                 </center></body></html>
                 """)
         
+
+def checkComCat(rtable, ftable, cnum, f, startTime, windowStart, opt):
+    """
+    Checks repeater trigger times with projected arrival times from ANSS Comprehensive
+    Earthquake Catalog (ComCat) and writes these to HTML and image files.
+    
+    rtable: Repeater table
+    ftable: Families table
+    cnum: cluster number to check
+    f: HTML file to write to
+    startTime: startTime column from rtable (convenience)
+    windowStart: windowStart column from rtable (convenience)
+    opt: Options object describing station/run parameters
+    
+    Traces through iasp91 global velocity model; checks for local, regional, and
+    teleseismic matches for limited set of phase arrivals
+    """
+    
+    pc = ['Potential', 'Conflicting']
+    model = TauPyModel(model="iasp91")
+    mc = 0
+    n = 0
+    l = 0
+    stalats = np.array(opt.stalats.split(',')).astype(float)
+    stalons = np.array(opt.stalons.split(',')).astype(float)
+    latc = np.mean(stalats)
+    lonc = np.mean(stalons)
+
+    members = np.fromstring(ftable[cnum]['members'], dtype=int, sep=' ')
+    order = np.argsort(startTime[members])
+    f.write('</br><b>ComCat matches:</b></br>')
+    
+    for m in members[order]:
+        t = UTCDateTime(startTime[m])+windowStart[m]/opt.samprate
+        cc_url = ('http://earthquake.usgs.gov/fdsnws/event/1/query?'
+                  'starttime={}&endtime={}&format=csv').format(t-1800,t+30)
+        comcat = pd.read_csv(cc_url)
+        otime = comcat['time'].tolist()
+        lat = comcat['latitude'].tolist()
+        lon = comcat['longitude'].tolist()
+        dep = comcat['depth'].tolist()
+        mag = comcat['mag'].tolist()
+        place = comcat['place'].tolist()
+        n0 = 0
+        for c in range(len(otime)):
+            deg = locations2degrees(lat[c],lon[c],latc,lonc)
+            dt = t-UTCDateTime(otime[c])
+        
+            if deg <= opt.locdeg:
+                mc += 1
+                if np.remainder(mc,100) == 0:
+                    model = TauPyModel(model="iasp91")
+                arrivals = model.get_travel_times(source_depth_in_km=max(0,dep[c]),
+                    distance_in_degree=deg, phase_list=['p','s','P','S'])
+                if len(arrivals) > 0:
+                    pt = np.zeros((len(arrivals),))
+                    pname = []
+                    for a in range(len(arrivals)):
+                        pt[a] = arrivals[a].time - dt
+                        pname.append(arrivals[a].name)
+                    if np.min(abs(pt)) < opt.serr:
+                        amin = np.argmin(abs(pt))
+                        f.write(('{} local match: {} ({}, {}) {}km M{} {} - ({}) '
+                            '{:4.2f} s</br>').format(pc[n0],otime[c],lat[c],lon[c],dep[c],
+                            mag[c],place[c],pname[amin],pt[amin]))
+                        n0 = 1
+                        l = l+1
+                        if l == 1:
+                            llats = np.array(lat[c])
+                            llons = np.array(lon[c])
+                            ldeps = np.array(dep[c])
+                        else:
+                            llats = np.append(llats,lat[c])
+                            llons = np.append(llons,lon[c])
+                            ldeps = np.append(ldeps,dep[c])
+            elif deg <= opt.regdeg and mag[c] >= opt.regmag:
+                mc += 1
+                if np.remainder(mc,100) == 0:
+                    model = TauPyModel(model="iasp91")
+                arrivals = model.get_travel_times(source_depth_in_km=max(0,dep[c]),
+                    distance_in_degree=deg, phase_list=['p','s','P','S','PP','SS'])
+                if len(arrivals) > 0:
+                    pt = np.zeros((len(arrivals),))
+                    pname = []
+                    for a in range(len(arrivals)):
+                        pt[a] = arrivals[a].time - dt
+                        pname.append(arrivals[a].name)
+                    if np.min(abs(pt)) < opt.serr:
+                        amin = np.argmin(abs(pt))
+                        f.write(('{} regional match: {} ({}, {}) {}km M{} {} - ({}) '
+                            '{:4.2f} s</br>').format(pc[n0],otime[c],lat[c],lon[c],dep[c],
+                            mag[c],place[c],pname[amin],pt[amin]))
+                        n0 = 1
+            elif deg > opt.regdeg and mag[c] >= opt.telemag:
+                mc += 1
+                if np.remainder(mc,100) == 0:
+                    model = TauPyModel(model="iasp91")
+                arrivals = model.get_travel_times(source_depth_in_km=max(0,dep[c]),
+                    distance_in_degree=deg, phase_list=['P','S','PP','SS','PcP','ScS',
+                        'PKiKP','PKIKP'])
+                if len(arrivals) > 0:
+                    pt = np.zeros((len(arrivals),))
+                    pname = []
+                    for a in range(len(arrivals)):
+                        pt[a] = arrivals[a].time - dt
+                        pname.append(arrivals[a].name)
+                    if np.min(abs(pt)) < opt.serr:
+                        amin = np.argmin(abs(pt))
+                        f.write(('{} teleseismic match: {} ({}, {}) {}km M{} {} - ({}) '
+                            '{:4.2f} s</br>').format(pc[n0],otime[c],lat[c],lon[c],dep[c],
+                            mag[c],place[c],pname[amin],pt[amin]))
+                        n0 = 1
+        if n0>1:
+            n = n+1
+        else:
+            n = n+n0
+    if n>0:
+        f.write('Total potential matches: {}</br>'.format(n))
+        f.write('Potential local matches: {}</br>'.format(l))
+        if l>0:
+            m = Basemap(llcrnrlon=lonc-2*opt.locdeg,llcrnrlat=latc-opt.locdeg,
+                urcrnrlon=lonc+2*opt.locdeg,urcrnrlat=latc+opt.locdeg, resolution='l',
+                projection='tmerc',lon_0=lonc,lat_0=latc)
+            m.scatter(llons,llats,s=5,alpha=0.5,marker='o',color='r',latlon=True)
+            m.scatter(stalons,stalats,marker='^',color='k',facecolors='None',
+                latlon=True)
+            m.drawparallels(np.arange(np.floor(latc-opt.locdeg),np.ceil(latc+opt.locdeg),
+                opt.locdeg/2),labels=[1,0,0,0])
+            m.drawmeridians(np.arange(np.floor(lonc-2*opt.locdeg),np.ceil(
+                lonc+2*opt.locdeg),opt.locdeg),labels=[0,0,0,1])
+            m.drawmapscale(lonc-opt.locdeg-0.1,latc-opt.locdeg+0.1,lonc,latc,length=50,
+                barstyle='fancy')
+            plt.title('{} potential local matches (~{:3.1f} km depth)'.format(l,
+                np.mean(ldeps)))
+            plt.savefig('./{}/clusters/map{}.png'.format(opt.groupName,cnum),
+                dpi=100)
+            plt.close()
+            f.write('<img src="map{}.png"></br>'.format(cnum))
+    else:
+        f.write('No matches found</br>')  
+
 
 def printCatalog(rtable, ftable, opt):
     """
