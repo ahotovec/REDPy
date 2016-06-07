@@ -5,12 +5,12 @@ REDPy (Repeating Earthquake Detector in Python) is a tool for automated detectio
 
 ## Installation
 REDPy runs on Python 2.7, and currently has the following major package dependencies:  
-[numpy](http://www.numpy.org/) | [scipy](http://www.scipy.org/) | [matplotlib](http://www.matplotlib.org/) | [obspy](http://www.obspy.org/) | [pytables](http://www.pytables.org/) | [pandas](http://pandas.pydata.org/) | [bokeh](http://bokeh.pydata.org/) 
+[numpy](http://www.numpy.org/) | [scipy](http://www.scipy.org/) | [matplotlib with basemap add-on](http://www.matplotlib.org/) | [obspy](http://www.obspy.org/) | [pytables](http://www.pytables.org/) | [pandas](http://pandas.pydata.org/) | [bokeh](http://bokeh.pydata.org/) 
 
 Most of these dependencies can be easily installed via [Anaconda](https://www.continuum.io/) on the command line:
 ```
 >> conda install -c obspy obspy
->> conda install pytables pandas bokeh=0.9.3
+>> conda install pytables pandas basemap bokeh=0.9.3
 ```
 
 ## Usage
