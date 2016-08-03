@@ -17,10 +17,10 @@ import glob
 def getData(tstart, tend, opt):
 
     """
-    Download data from SAC files in a folder, from IRIS, or a Earthworm waveserver
+    Download data from files in a folder, from IRIS, or a Earthworm waveserver
     
-    A note on SAC files: as this makes no assumptions about the naming scheme of your
-    data files, please ensure that your SAC headers contain the correct SCNL information!
+    A note on SAC/miniSEED files: as this makes no assumptions about the naming scheme of
+    your data files, please ensure that your headers contain the correct SCNL information!
 
     tstart: UTCDateTime of beginning of period of interest
     tend: UTCDateTime of end of period of interest
@@ -36,9 +36,13 @@ def getData(tstart, tend, opt):
     
     st = Stream()
     
-    if opt.server == "SAC":
-        # Generate list of SAC files
-        flist = glob.glob(opt.sacdir+'*.sac')+glob.glob(opt.sacdir+'*.SAC')
+    if opt.server == "SAC" or opt.server=="miniSEED":
+    
+        # Generate list of files
+        if opt.server == "SAC":
+            flist = glob.glob(opt.sacdir+'*.sac')+glob.glob(opt.sacdir+'*.SAC')
+        else if opt.server == "miniSEED":
+            flist = glob.glob(opt.mseeddir+'*.mseed')+glob.glob(opt.mseeddir+'*.MSEED')
     
         # Load data from file
         stmp = Stream()

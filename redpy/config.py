@@ -154,6 +154,8 @@ class Options(object):
             'Settings','port') else 16017
         self.sacdir=config.get('Settings','sacdir') if config.has_option(
             'Settings','sacdir') else './'
+        self.mseeddir=config.get('Settings','mseeddir') if config.has_option(
+            'Settings','mseeddir') else './'
         self.nsec=config.getint('Settings','nsec') if config.has_option(
             'Settings','nsec') else 3600
         self.lwin=config.getfloat('Settings','lwin') if config.has_option(
