@@ -41,7 +41,7 @@ def getData(tstart, tend, opt):
         # Generate list of files
         if opt.server == "SAC":
             flist = glob.glob(opt.sacdir+'*.sac')+glob.glob(opt.sacdir+'*.SAC')
-        else if opt.server == "miniSEED":
+        elif opt.server == "miniSEED":
             flist = glob.glob(opt.mseeddir+'*.mseed')+glob.glob(opt.mseeddir+'*.MSEED')
     
         # Load data from file
