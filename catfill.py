@@ -51,11 +51,6 @@ else:
 
 if args.verbose: print("Opening hdf5 table: {0}".format(opt.filename))
 h5file, rtable, otable, ttable, ctable, jtable, dtable, ftable = redpy.table.openTable(opt)
-    
-if len(ttable) > 0:
-    ttimes = ttable.cols.startTimeMPL[:]
-else:
-    ttimes = 0
 
 # Read in csv file using pandas
 df = pd.read_csv(args.csvfile)
@@ -66,6 +61,10 @@ eventlist = pd.to_datetime(df['Time UTC']).tolist()
 for event in eventlist[::-1]:
     
     etime = UTCDateTime(event)
+    if len(ttable) > 0:
+        ttimes = ttable.cols.startTimeMPL[:]
+    else:
+        ttimes = 0
     
     if args.verbose: print(etime)
     
