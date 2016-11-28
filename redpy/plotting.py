@@ -124,7 +124,7 @@ def plotTimelines(rtable, ftable, ttable, opt):
         x_range=o0r.x_range)
     o1r.title = 'Frequency Index'
     o1r.grid.grid_line_alpha = 0.3
-    o1r.xaxis.axis_label = 'Dater'
+    o1r.xaxis.axis_label = 'Date'
     o1r.yaxis.axis_label = 'FI'
     # Put invisible points in for case that there are no events
     o1r.circle(matplotlib.dates.num2date(hTr[0:2]), [1, 1], line_alpha=0, fill_alpha=0)
