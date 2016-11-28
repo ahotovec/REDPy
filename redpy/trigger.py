@@ -36,12 +36,12 @@ def getData(tstart, tend, opt):
     
     st = Stream()
     
-    if opt.server == "SAC" or opt.server=="miniSEED":
+    if opt.server == 'SAC' or opt.server == 'miniSEED':
     
         # Generate list of files
-        if opt.server == "SAC":
+        if opt.server == 'SAC':
             flist = glob.glob(opt.sacdir+'*.sac')+glob.glob(opt.sacdir+'*.SAC')
-        elif opt.server == "miniSEED":
+        elif opt.server == 'miniSEED':
             flist = glob.glob(opt.mseeddir+'*.mseed')+glob.glob(opt.mseeddir+'*.MSEED')
     
         # Load data from file
@@ -84,8 +84,8 @@ def getData(tstart, tend, opt):
     
     else:   
      
-        if opt.server == "IRIS":
-            client = Client("IRIS")
+        if '.' not in opt.server:
+            client = Client(opt.server)
         else:
             client = EWClient(opt.server, opt.port)
         
