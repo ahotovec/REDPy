@@ -56,9 +56,10 @@ h5file, rtable, otable, ttable, ctable, jtable, dtable, ftable = redpy.table.ope
 df = pd.read_csv(args.csvfile)
 # Grab event times from 'Time UTC' column, convert to datetimes also
 eventlist = pd.to_datetime(df['Time UTC']).tolist()
+# Sort so events are processed in order of occurrence
+eventlist.sort()
 
-# Assumes list is youngest to oldest, we want oldest to youngest!
-for event in eventlist[::-1]:
+for event in eventlist:
     
     etime = UTCDateTime(event)
     if len(ttable) > 0:
@@ -70,7 +71,7 @@ for event in eventlist[::-1]:
     
     # Download and trigger
     try:
-        st, stC = redpy.trigger.getData(etime-5*opt.atrig, etime+10*opt.atrig, opt)
+        st, stC = redpy.trigger.getData(etime-5*opt.atrig, etime+5*opt.atrig, opt)
         alltrigs = redpy.trigger.trigger(st, stC, rtable, opt)
         # Reset ptime for refilling later
         rtable.attrs.ptime = []
