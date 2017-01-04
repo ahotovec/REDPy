@@ -54,7 +54,11 @@ def getData(tstart, tend, opt):
         # Filter and merge
         stmp = stmp.filter('bandpass', freqmin=opt.fmin, freqmax=opt.fmax, corners=2,
             zerophase=True)
-        stmp = stmp.merge(method=1, fill_value='interpolate')
+        stmp = stmp.taper(0.05,type='hann',max_length=opt.mintrig)
+        for m in range(len(stmp)):
+            if stmp[m].stats.sampling_rate != opt.samprate:
+                stmp[m] = stmp[m].resample(opt.samprate)
+        stmp = stmp.merge(method=1, fill_value=0)
     
         # Only grab stations/channels that we want and in order
         netlist = []
@@ -72,8 +76,6 @@ def getData(tstart, tend, opt):
             for m in range(len(stalist)):
                 if (stas[n] in stalist[m] and chas[n] in chalist[m] and nets[n] in
                     netlist[m] and locs[n] in loclist[m]):
-                    if stmp[m].stats.sampling_rate != opt.samprate:
-                        stmp[m] = stmp[m].resample(opt.samprate)
                     st = st.append(stmp[m])
             if len(st) == n:
                 print("Couldn't find "+stas[n]+'.'+chas[n]+'.'+nets[n]+'.'+locs[n])
@@ -95,23 +97,28 @@ def getData(tstart, tend, opt):
                         tstart, tend)
                 stmp = stmp.filter('bandpass', freqmin=opt.fmin, freqmax=opt.fmax,
                     corners=2, zerophase=True)
-                stmp = stmp.merge(method=1, fill_value='interpolate')
+                stmp = stmp.taper(0.05,type='hann',max_length=opt.mintrig)
+                for m in range(len(stmp)):
+                    if stmp[m].stats.sampling_rate != opt.samprate:
+                        stmp[m] = stmp[m].resample(opt.samprate)
+                stmp = stmp.merge(method=1, fill_value=0)
             except (obspy.fdsn.header.FDSNException):
                 try: # try again
                     stmp = client.get_waveforms(nets[n], stas[n], locs[n], chas[n],
                             tstart, tend)
                     stmp = stmp.filter('bandpass', freqmin=opt.fmin, freqmax=opt.fmax,
                         corners=2, zerophase=True)
-                    stmp = stmp.merge(method=1, fill_value='interpolate')
+                    stmp = stmp.taper(0.05,type='hann',max_length=opt.mintrig)
+                    for m in range(len(stmp)):
+                        if stmp[m].stats.sampling_rate != opt.samprate:
+                            stmp[m] = stmp[m].resample(opt.samprate)
+                    stmp = stmp.merge(method=1, fill_value=0)
                 except (obspy.fdsn.header.FDSNException):
                     print('No data found for {0}.{1}'.format(stas[n],nets[n]))
                     trtmp = Trace()
                     trtmp.stats.sampling_rate = opt.samprate
                     trtmp.stats.station = stas[n]
                     stmp = Stream().extend([trtmp.copy()])
-            # Resample to ensure all traces are same length
-            if stmp[0].stats.sampling_rate != opt.samprate:
-                stmp = stmp.resample(opt.samprate)
             st.extend(stmp.copy()) 
     
     st = st.trim(starttime=tstart, endtime=tend, pad=True, fill_value=0)
