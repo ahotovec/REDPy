@@ -511,8 +511,12 @@ def plotFamilies(rtable, ftable, ctable, opt):
                             n,s]+1.0/1000)
                         tmps[tmps>1] = 1
                         tmps[tmps<-1] = -1
-                        dats = dats + tmps[int(opt.ptrig*opt.samprate -
-                            opt.winlen*0.5):int(opt.ptrig*opt.samprate + opt.winlen*1.5)]
+                        try:
+                            dats = dats + tmps[int(opt.ptrig*opt.samprate -
+                                opt.winlen*0.5):int(opt.ptrig*opt.samprate +
+                                opt.winlen*1.5)]
+                        except ValueError:
+                           pass
                     dats = dats/(max(dats)+1.0/1000)
                     dats[dats>1] = 1
                     dats[dats<-1] = -1
