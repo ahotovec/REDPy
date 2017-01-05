@@ -71,6 +71,10 @@ def plotTimelines(rtable, ftable, ttable, opt):
     histR, hR = np.histogram(dt, bins=np.arange(min(alltrigs),
         max(alltrigs+opt.dybin), opt.dybin))
         
+    # Determine padding for hover bars (~1% of window range on each side)
+    barpad = (max(alltrigs)-min(alltrigs))*0.01
+    barpadr = opt.recplot*0.01
+        
     # Create histogram of events/hrbin
     histTr, hTr = np.histogram(alltrigs, bins=np.arange(max(alltrigs)-opt.recplot,
         max(alltrigs+opt.hrbin/24), opt.hrbin/24))
@@ -252,17 +256,17 @@ def plotTimelines(rtable, ftable, ttable, opt):
             # Build source for hover patches
             fnum = clustNum
             if n == 0:
-                xs=[[matplotlib.dates.num2date(min(dt[members])-1),
-                    matplotlib.dates.num2date(min(dt[members])-1),
-                    matplotlib.dates.num2date(max(dt[members])+1),
-                    matplotlib.dates.num2date(max(dt[members])+1)]]
+                xs=[[matplotlib.dates.num2date(min(dt[members])-barpad),
+                    matplotlib.dates.num2date(min(dt[members])-barpad),
+                    matplotlib.dates.num2date(max(dt[members])+barpad),
+                    matplotlib.dates.num2date(max(dt[members])+barpad)]]
                 ys=[[n-0.5, n+0.5, n+0.5, n-0.5]]
                 famnum=[fnum]
             else:
-                xs.append([matplotlib.dates.num2date(min(dt[members])-1),
-                           matplotlib.dates.num2date(min(dt[members])-1),
-                           matplotlib.dates.num2date(max(dt[members])+1),
-                           matplotlib.dates.num2date(max(dt[members])+1)])
+                xs.append([matplotlib.dates.num2date(min(dt[members])-barpad),
+                    matplotlib.dates.num2date(min(dt[members])-barpad),
+                    matplotlib.dates.num2date(max(dt[members])+barpad),
+                    matplotlib.dates.num2date(max(dt[members])+barpad)])
                 ys.append([n-0.5, n+0.5, n+0.5, n-0.5])
                 famnum.append([fnum])
             
@@ -299,17 +303,17 @@ def plotTimelines(rtable, ftable, ttable, opt):
             # Build source for hover patches
             fnumr = clustNum
             if m == 0:
-                xsr=[[matplotlib.dates.num2date(max(min(dt[members]),hRr[0])-1),
-                    matplotlib.dates.num2date(max(min(dt[members]),hRr[0])-1),
-                    matplotlib.dates.num2date(max(dt[members])+1),
-                    matplotlib.dates.num2date(max(dt[members])+1)]]
+                xsr=[[matplotlib.dates.num2date(max(min(dt[members]),hRr[0])-barpadr),
+                    matplotlib.dates.num2date(max(min(dt[members]),hRr[0])-barpadr),
+                    matplotlib.dates.num2date(max(dt[members])+barpadr),
+                    matplotlib.dates.num2date(max(dt[members])+barpadr)]]
                 ysr=[[m-0.5, m+0.5, m+0.5, m-0.5]]
                 famnumr=[fnumr]
             else:
-                xsr.append([matplotlib.dates.num2date(max(min(dt[members]),hRr[0])-1),
-                           matplotlib.dates.num2date(max(min(dt[members]),hRr[0])-1),
-                           matplotlib.dates.num2date(max(dt[members])+1),
-                           matplotlib.dates.num2date(max(dt[members])+1)])
+                xsr.append([matplotlib.dates.num2date(max(min(dt[members]),hRr[0])-
+                    barpadr), matplotlib.dates.num2date(max(min(dt[members]),hRr[0])-
+                    barpadr),matplotlib.dates.num2date(max(dt[members])+barpadr),
+                    matplotlib.dates.num2date(max(dt[members])+barpadr)])
                 ysr.append([m-0.5, m+0.5, m+0.5, m-0.5])
                 famnumr.append([fnumr])
             m = m+1
