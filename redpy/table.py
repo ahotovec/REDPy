@@ -359,7 +359,8 @@ def populateOrphan(otable, id, trig, opt):
         trig.data, windowStart, opt)
     trigger['windowAmp'] = calcAmps(trig.data, windowStart, opt)
 
-    adddays = ((opt.maxorph-opt.minorph)/7.)*(trig.stats.maxratio-opt.trigon)+opt.minorph
+    adddays = np.min([opt.maxorph,((opt.maxorph-opt.minorph)/opt.maxorph)*(
+        trig.stats.maxratio-opt.trigon)+opt.minorph])
     trigger['expires'] = (trig.stats.starttime+adddays*86400).isoformat()
     trigger.append()
     otable.flush()
