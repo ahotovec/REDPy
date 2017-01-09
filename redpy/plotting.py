@@ -670,7 +670,8 @@ def plotFamilies(rtable, ftable, ctable, opt):
 def checkComCat(rtable, ftable, cnum, f, startTime, windowStart, opt):
     """
     Checks repeater trigger times with projected arrival times from ANSS Comprehensive
-    Earthquake Catalog (ComCat) and writes these to HTML and image files.
+    Earthquake Catalog (ComCat) and writes these to HTML and image files. Will also
+    check NCEDC catalog if location is near Northern California.
     
     rtable: Repeater table
     ftable: Families table
@@ -701,14 +702,32 @@ def checkComCat(rtable, ftable, cnum, f, startTime, windowStart, opt):
     for m in members[order]:
         t = UTCDateTime(startTime[m])+windowStart[m]/opt.samprate
         cc_url = ('http://earthquake.usgs.gov/fdsnws/event/1/query?'
-                  'starttime={}&endtime={}&format=csv').format(t-1800,t+30)
-        comcat = pd.read_csv(cc_url)
-        otime = comcat['time'].tolist()
-        lat = comcat['latitude'].tolist()
-        lon = comcat['longitude'].tolist()
-        dep = comcat['depth'].tolist()
-        mag = comcat['mag'].tolist()
-        place = comcat['place'].tolist()
+                  'starttime={}&endtime={}&format=text').format(t-1800,t+30)
+        comcat = pd.read_csv(cc_url,delimiter='|')
+        otime = comcat['Time'].tolist()
+        lat = comcat['Latitude'].tolist()
+        lon = comcat['Longitude'].tolist()
+        dep = comcat['Depth/km'].tolist()
+        mag = comcat['Magnitude'].tolist()
+        place = comcat['EventLocationName'].tolist()
+        
+        # Check if near Northern California, then go to NCEDC for additional events but
+        # for shorter time interval
+        if latc > 34 and latc < 42 and lonc > -124 and lonc < -116:
+            cc_urlnc = ('http://ncedc.org/fdsnws/event/1/query?'
+                        'starttime={}&endtime={}&format=text').format((t-60).isoformat(),
+                        (t+30).isoformat())
+            try:
+                ncedc = pd.read_csv(cc_urlnc,delimiter='|')
+                otime.extend(ncedc[' Time '].tolist())
+                lat.extend(ncedc[' Latitude '].tolist())
+                lon.extend(ncedc[' Longitude '].tolist())
+                dep.extend(ncedc[' Depth/km '].tolist())
+                mag.extend(ncedc[' Magnitude '].tolist())
+                place.extend(ncedc[' EventLocationName'].tolist())
+            except ValueError:
+                pass
+        
         n0 = 0
         for c in range(len(otime)):
             deg = locations2degrees(lat[c],lon[c],latc,lonc)
