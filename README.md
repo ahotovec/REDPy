@@ -9,7 +9,7 @@ REDPy runs on Python 2.7, and currently has the following major package dependen
 
 These dependencies can be easily installed via [Anaconda](https://www.continuum.io/) on the command line:
 ```
->> conda install -c obspy obspy pytables pandas basemap bokeh=0.9.3 mock nose
+>> conda install -c obspy obspy pytables pandas basemap bokeh=0.9.3 mock nose PIL
 ```
 
 ## Usage
