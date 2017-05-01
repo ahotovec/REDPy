@@ -11,6 +11,7 @@ import time
 import redpy.cluster
 import os
 import glob
+import urllib2
 from obspy import UTCDateTime
 from obspy.geodetics import locations2degrees
 from obspy.taup import TauPyModel
@@ -703,13 +704,21 @@ def checkComCat(rtable, ftable, cnum, f, startTime, windowStart, opt):
         t = UTCDateTime(startTime[m])+windowStart[m]/opt.samprate
         cc_url = ('http://earthquake.usgs.gov/fdsnws/event/1/query?'
                   'starttime={}&endtime={}&format=text').format(t-1800,t+30)
-        comcat = pd.read_csv(cc_url,delimiter='|')
-        otime = comcat['Time'].tolist()
-        lat = comcat['Latitude'].tolist()
-        lon = comcat['Longitude'].tolist()
-        dep = comcat['Depth/km'].tolist()
-        mag = comcat['Magnitude'].tolist()
-        place = comcat['EventLocationName'].tolist()
+        try:
+            comcat = pd.read_csv(cc_url,delimiter='|')
+            otime = comcat['Time'].tolist()
+            lat = comcat['Latitude'].tolist()
+            lon = comcat['Longitude'].tolist()
+            dep = comcat['Depth/km'].tolist()
+            mag = comcat['Magnitude'].tolist()
+            place = comcat['EventLocationName'].tolist()
+        except urllib2.HTTPError:
+            otime = []
+            lat = []
+            lon = []
+            dep = []
+            mag = []
+            place = []
         
         # Check if near Northern California, then go to NCEDC for additional events but
         # for shorter time interval
