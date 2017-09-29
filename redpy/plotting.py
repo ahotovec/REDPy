@@ -20,7 +20,7 @@ from mpl_toolkits.basemap import Basemap
 from bokeh.plotting import figure, output_file, save, gridplot
 from bokeh.models import HoverTool, ColumnDataSource, OpenURL, TapTool, Range1d
         
-def createPlots(rtable, ftable, ttable, ctable, opt):
+def createPlots(rtable, ftable, ttable, ctable, otable, opt):
     
     """
     Creates all output plots (core images, family plots, and two bokeh .html plots)
@@ -31,6 +31,7 @@ def createPlots(rtable, ftable, ttable, ctable, opt):
         
     """
     
+    printOrphanCatalog(otable, opt)
     if len(rtable)>1:
         plotTimelines(rtable, ftable, ttable, opt)
         if np.sum(ftable.cols.printme[:]):
@@ -857,3 +858,21 @@ def printCatalog(rtable, ftable, opt):
             for i in np.argsort(startTimes[fam]):
                 f.write("{0} {1}\n".format(cnum,(UTCDateTime(startTimes[fam][i]) +
                     windowStarts[fam][i]/opt.samprate).isoformat()))
+                    
+def printOrphanCatalog(otable, opt):
+    """
+    Prints flat catalog of current orphans to text file
+    
+    otable: Orphans table
+    opt: Options object describing station/run parameters
+    
+    Note: Time in text file corresponds to original STA/LTA trigger time
+    """
+
+    with open('{}/orphancatalog.txt'.format(opt.groupName), 'w') as f:
+        
+        startTimes = otable.cols.startTime[:]
+        
+        for i in np.argsort(startTimes):
+            f.write("{0}\n".format(UTCDateTime(startTimes[i]).isoformat()))
+        
