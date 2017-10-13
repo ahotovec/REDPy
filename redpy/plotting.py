@@ -36,6 +36,7 @@ def createPlots(rtable, ftable, ttable, ctable, otable, opt):
         plotTimelines(rtable, ftable, ttable, opt)
         if np.sum(ftable.cols.printme[:]):
             printCatalog(rtable, ftable, opt)
+            printCoresCatalog(rtable, ftable, opt)
             plotCores(rtable, ftable, opt)
             plotFamilies(rtable, ftable, ctable, opt)
             ftable.cols.printme[:] = np.zeros((len(ftable),))
@@ -875,4 +876,25 @@ def printOrphanCatalog(otable, opt):
         
         for i in np.argsort(startTimes):
             f.write("{0}\n".format(UTCDateTime(startTimes[i]).isoformat()))
+
+def printCoresCatalog(rtable, ftable, opt):
+    """
+    Prints flat catalog of only core events to text file
+    
+    rtable: Repeater table
+    ftable: Families table
+    opt: Options object describing station/run parameters
+    
+    Note: Time in text file corresponds to current trigger time by alignment
+    """
+
+    with open('{}/cores.txt'.format(opt.groupName), 'w') as f:
         
+        startTimes = rtable.cols.startTime[:]
+        windowStarts = rtable.cols.windowStart[:]
+        
+        for cnum in range(ftable.attrs.nClust):
+            fam = np.fromstring(ftable[cnum]['members'], dtype=int, sep=' ')
+            core = ftable[cnum]['core']
+            f.write("{0} {1}\n".format(cnum,(UTCDateTime(startTimes[core]) +
+                windowStarts[core]/opt.samprate).isoformat()))
