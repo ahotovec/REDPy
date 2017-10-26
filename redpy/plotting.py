@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import matplotlib.dates
 import time
 import redpy.cluster
 import os
@@ -37,6 +38,7 @@ def createPlots(rtable, ftable, ttable, ctable, otable, opt):
         if np.sum(ftable.cols.printme[:]):
             printCatalog(rtable, ftable, opt)
             printCoresCatalog(rtable, ftable, opt)
+            printEventsperDay(rtable, ftable, opt)
             plotCores(rtable, ftable, opt)
             plotFamilies(rtable, ftable, ctable, opt)
             ftable.cols.printme[:] = np.zeros((len(ftable),))
@@ -898,3 +900,41 @@ def printCoresCatalog(rtable, ftable, opt):
             core = ftable[cnum]['core']
             f.write("{0} {1}\n".format(cnum,(UTCDateTime(startTimes[core]) +
                 windowStarts[core]/opt.samprate).isoformat()))
+                
+def printEventsperDay(rtable, ftable, opt):
+    """
+    Prints daily counts of each family in a tablulated text file
+    
+    rtable: Repeater table
+    ftable: Families table
+    opt: Options object describing station/run parameters
+    
+    Each column (with the exception of first and last) correspond to individual families;
+    first column is date and last column is total across all families.
+    """
+    
+    with open('{}/dailycounts.txt'.format(opt.groupName), 'w') as f:
+        
+        startTimes = rtable.cols.startTimeMPL[:]
+        firstDay = np.floor(np.min(startTimes)).astype(int)
+        lastDay = np.ceil(np.max(startTimes)).astype(int)
+        hists = np.zeros((ftable.attrs.nClust,lastDay-firstDay))
+        
+        # Calculate histograms
+        for cnum in range(ftable.attrs.nClust):
+            fam = np.fromstring(ftable[cnum]['members'], dtype=int, sep=' ')
+            hists[cnum,:], edges = np.histogram(startTimes[fam], bins=np.arange(
+                firstDay,lastDay+1,1))
+        
+        # Header
+        f.write("      Date\t")
+        for cnum in range(ftable.attrs.nClust):
+            f.write("{}\t".format(cnum))
+        f.write("Total\n")
+        
+        # Write daily counts
+        for day in range(firstDay,lastDay):
+            f.write("{}\t".format(matplotlib.dates.num2date(day).strftime('%Y/%m/%d')))
+            for cnum in range(ftable.attrs.nClust):
+                f.write("{}\t".format(hists[cnum,day-firstDay].astype(int)))
+            f.write("{}\n".format(np.sum(hists[:,day-firstDay].astype(int))))
