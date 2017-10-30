@@ -97,6 +97,7 @@ class Options(object):
         hrbin: Width of bin in hours for recent histogram (default 1 hour)
         recplot: Number of days for 'recent' plot (default 14 days)
         plotsta: Station index in station list to be plotted (default 2)
+        verbosecatalog: Add additional columns to the catalog file (default False)
         
         COMCAT PARAMETERS
         checkComCat: Use ComCat to find located seismicity that might match repeaters
@@ -208,6 +209,8 @@ class Options(object):
             'Settings','hrbin') else 1.
         self.recplot=config.getfloat('Settings','recplot') if config.has_option(
             'Settings','recplot') else 14.
+        self.printVerboseCat=config.getboolean('Settings','verbosecatalog') if config.has_option(
+            'Settings','verbosecatalog') else False
         self.checkComCat=config.getboolean('Settings','checkComCat') if config.has_option(
             'Settings','checkComCat') else False
         self.stalats=config.get('Settings','stalats') if config.has_option(

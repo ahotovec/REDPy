@@ -28,6 +28,9 @@ def createPlots(rtable, ftable, ttable, ctable, otable, opt):
     
     rtable: Repeater table
     ftable: Families table
+    ttable: Triggers table
+    ctable: Correlation table
+    otable: Orphan table
     opt: Options object describing station/run parameters
         
     """
@@ -36,7 +39,10 @@ def createPlots(rtable, ftable, ttable, ctable, otable, opt):
     if len(rtable)>1:
         plotTimelines(rtable, ftable, ttable, opt)
         if np.sum(ftable.cols.printme[:]):
-            printCatalog(rtable, ftable, opt)
+            if opt.printVerboseCat == True:
+                printVerboseCatalog(rtable, ftable, ctable, opt)
+            else:
+                printCatalog(rtable, ftable, opt)
             printCoresCatalog(rtable, ftable, opt)
             printEventsperDay(rtable, ftable, opt)
             plotCores(rtable, ftable, opt)
@@ -938,3 +944,60 @@ def printEventsperDay(rtable, ftable, opt):
             for cnum in range(ftable.attrs.nClust):
                 f.write("{}\t".format(hists[cnum,day-firstDay].astype(int)))
             f.write("{}\n".format(np.sum(hists[:,day-firstDay].astype(int))))
+            
+def printVerboseCatalog(rtable, ftable, ctable, opt):
+    """
+    Prints flat catalog to text file with additional columns
+    
+    rtable: Repeater table
+    ftable: Families table
+    ctable: Correlation table
+    opt: Options object describing station/run parameters
+    
+    Columns correspond to cluster number, event time, frequency index, amplitude, time
+    since last event in hours, and correlation coefficient with respect to the core.
+    """
+    
+    with open('{}/catalog.txt'.format(opt.groupName), 'w') as f:
+                
+        startTimes = rtable.cols.startTime[:]
+        startTimeMPL = rtable.cols.startTimeMPL[:]
+        windowStarts = rtable.cols.windowStart[:]
+        windowAmps = rtable.cols.windowAmp[:][:,opt.printsta]
+        ids = rtable.cols.id[:]
+        id1 = ctable.cols.id1[:]
+        id2 = ctable.cols.id2[:]
+        ccc = ctable.cols.ccc[:]
+        fi = np.nanmean(rtable.cols.FI[:], axis=1)
+        
+        f.write("cnum\tevTime                        \tfi\tamp\tdt\t\txcorr\n")
+        for cnum in range(ftable.attrs.nClust):
+            fam = np.fromstring(ftable[cnum]['members'], dtype=int, sep=' ')
+            
+            catalogind = np.argsort(startTimeMPL[fam])
+            catalog = startTimeMPL[fam][catalogind]
+            spacing = np.diff(catalog)*24
+            
+            idf = ids[fam]
+            ix = np.where(np.in1d(id2,idf))
+            r = np.zeros((max(idf)+1,)).astype('int')
+            r[idf] = range(len(idf))
+            C = np.zeros((len(idf),len(idf)))
+            C[r[id2[ix]],r[id1[ix]]] = ccc[ix]
+            C[r[id1[ix]],r[id2[ix]]] = ccc[ix]
+            C[range(len(idf)),range(len(idf))] = 1.0
+            xcorr = C[np.argmax(np.sum(C,0)),:]
+            
+            j = -1
+            for i in catalogind:
+                evTime = (UTCDateTime(startTimes[fam][i]) +
+                    windowStarts[fam][i]/opt.samprate)
+                amp = windowAmps[fam][i]
+                if j == -1:
+                    dt = 'NaN         '
+                else:
+                    dt = spacing[j]
+                j += 1
+                
+                f.write("{0}\t{1}\t{2:4.3f}\t{3:5.2f}\t{4}\t\t{5:2.1f}\n".format(cnum,evTime.isoformat(),
+                    fi[fam][i],amp,dt,xcorr[i]))
