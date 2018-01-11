@@ -119,7 +119,16 @@ def getData(tstart, tend, opt):
                     trtmp.stats.sampling_rate = opt.samprate
                     trtmp.stats.station = stas[n]
                     stmp = Stream().extend([trtmp.copy()])
-            st.extend(stmp.copy()) 
+            
+            # Last check for length; catches problem with empty waveserver
+            if len(stmp) != 1:
+                print('No data found for {0}.{1}'.format(stas[n],nets[n]))
+                trtmp = Trace()
+                trtmp.stats.sampling_rate = opt.samprate
+                trtmp.stats.station = stas[n]
+                stmp = Stream().extend([trtmp.copy()])
+            
+            st.extend(stmp.copy())                
     
     st = st.trim(starttime=tstart, endtime=tend, pad=True, fill_value=0)
     stC = st.copy()
