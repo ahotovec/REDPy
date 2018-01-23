@@ -56,7 +56,7 @@ def remove(*args):
         
     if len(removethese) > 0:
         print("Creating plots...")
-        redpy.plotting.createPlots(rtable, ftable, ttable, ctable, opt)
+        redpy.plotting.createPlots(rtable, ftable, ttable, ctable, otable, opt)
 
 def close(*args):
     """
@@ -122,24 +122,34 @@ fams = range(len(ftable))
 r = 1
 c = 1
 imgobj = []
+invimgobj = []
 check = []
 var = []
 for n in fams:
     if n >= args.minclust:
-        im = Image.open('{0}/clusters/{1}.png'.format(opt.groupName,n))
+        im = Image.open('{0}/clusters/{1}.png'.format(opt.groupName,n)).convert('RGB')
         im.save('{0}/clusters/{1}.gif'.format(opt.groupName,n))
+        
+        # Create 'inverted' selection image
+        source = im.split()
+        blk = source[1].point(lambda i: i*0)
+        source[1].paste(blk)
+        source[2].paste(blk)        
+        invim = Image.merge('RGB', source)
+        
+        invim.save('{0}/clusters/{1}_inv.gif'.format(opt.groupName,n))
         imgobj.append(tk.PhotoImage(file='{0}/clusters/{1}.gif'.format(opt.groupName,n)))
+        invimgobj.append(tk.PhotoImage(file='{0}/clusters/{1}_inv.gif'.format(opt.groupName,n)))
         var.append(tk.IntVar())
         check.append(tk.Checkbutton(frame, image=imgobj[n-m],
-            variable = var[n-m]).grid(column=c, row=r, sticky='N'))
+            variable = var[n-m], selectimage=invimgobj[n-m]).grid(
+            column=c, row=r, sticky='N'))
         c = c+1
         if c == args.ncols+1:
             c = 1
             r = r+1
             if r > 255:
                 print("Ran out of rows. Use -n or -m flags to view more...")
-
-print("\nIgnore these warning things:")
 
 # Add buttons
 tk.Button(frame, text="Remove Checked", background="#ffffff", command=remove).grid(
