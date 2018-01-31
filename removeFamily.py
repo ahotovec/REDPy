@@ -50,7 +50,7 @@ h5file, rtable, otable, ttable, ctable, jtable, dtable, ftable = redpy.table.ope
 redpy.table.removeFamilies(rtable, ctable, dtable, ftable, args.famnum, opt)
 
 if args.verbose: print("Creating plots...")
-redpy.plotting.createPlots(rtable, ftable, ttable, ctable, otable, opt)
+redpy.plotting.createPlots(rtable, ftable, ttable, ctable, otable, jtable, opt)
 
 if args.verbose: print("Closing table...")
 h5file.close()

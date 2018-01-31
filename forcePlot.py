@@ -52,7 +52,7 @@ if args.all:
     ftable.cols.printme[0:ftable.attrs.nClust] = np.ones((ftable.attrs.nClust,))
 
 if args.verbose: print("Creating plots...")
-redpy.plotting.createPlots(rtable, ftable, ttable, ctable, otable, opt)
+redpy.plotting.createPlots(rtable, ftable, ttable, ctable, otable, jtable, opt)
 
 if args.verbose: print("Closing table...")
 h5file.close()

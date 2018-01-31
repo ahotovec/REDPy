@@ -130,7 +130,7 @@ for event in eventlist:
 
 if len(rtable) > 1:
     if args.verbose: print("Creating plots...")
-    redpy.plotting.createPlots(rtable, ftable, ttable, ctable, otable, opt)
+    redpy.plotting.createPlots(rtable, ftable, ttable, ctable, otable, jtable, opt)
 else:
     print("No repeaters to plot.")
 
