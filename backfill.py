@@ -76,6 +76,8 @@ else:
     
 if args.starttime:
     tstart = UTCDateTime(args.starttime)
+    if rtable.attrs.ptime:
+        rtable.attrs.ptime = UTCDateTime(tstart)
 else:
     if rtable.attrs.ptime:
         tstart = UTCDateTime(rtable.attrs.ptime)
