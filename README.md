@@ -12,8 +12,8 @@ These dependencies can be easily installed via [Anaconda](https://www.continuum.
 >> conda create -n redpy python=3.5
 >> source activate redpy
 >> conda install -c obspy obspy
->> conda install -c conda-forge cartopy shapely=1.5.17
->> conda install pytables bokeh pandas
+>> conda install -c conda-forge bokeh cartopy shapely=1.5.17
+>> conda install pytables pandas
 ```
 You may either use `python=3.5` or `python=2.7`, but other versions are not supported. Whenever you intend to run REDPy, be sure to `source activate redpy` and then `source deactivate` when you are done.
 
