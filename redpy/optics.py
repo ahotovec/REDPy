@@ -1,5 +1,5 @@
 # REDPy - Repeating Earthquake Detector in Python
-# Copyright (C) 2016  Alicia Hotovec-Ellis (ahotovec@gmail.com)
+# Copyright (C) 2016-2018  Alicia Hotovec-Ellis (ahotovec@gmail.com)
 # Licensed under GNU GPLv3 (see LICENSE.txt)
 
 import scipy
@@ -18,12 +18,6 @@ class setOfObjects(object):
     """
 
     def __init__(self, distance_pairs):
-
-        """
-        NOTE HERE: The way this is initialized is throwing the following warning:
-        ModuleDeprecationWarning: The oldnumeric module will be dropped in Numpy 1.9
-        warnings.warn(_msg, ModuleDeprecationWarning)
-        """
 
         self.data = distance_pairs
         self._n = len(self.data)

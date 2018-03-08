@@ -1,5 +1,5 @@
 # REDPy - Repeating Earthquake Detector in Python
-# Copyright (C) 2016  Alicia Hotovec-Ellis (ahotovec@gmail.com)
+# Copyright (C) 2016-2018  Alicia Hotovec-Ellis (ahotovec@gmail.com)
 # Licensed under GNU GPLv3 (see LICENSE.txt)
 
 import numpy as np
@@ -30,8 +30,8 @@ def calcWindow(waveform, windowStart, opt, winlen=1):
     windowFI = []
     
     for n in range(opt.nsta):
-        winstart = n*opt.wshape + windowStart
-        winend = n*opt.wshape + windowStart + opt.winlen*winlen
+        winstart = int(n*opt.wshape + windowStart)
+        winend = int(n*opt.wshape + windowStart + opt.winlen*winlen)
         fftwin = np.reshape(fft(waveform[winstart:winend]),(opt.winlen*winlen,))
         if np.median(np.abs(waveform[winstart:winend]))==0:
             windowCoeff.append(0)
@@ -303,7 +303,8 @@ def compareMultipleOrphans2Cores(rtable, ctable, ftable, written, opt):
                             lagmax2), opt)
                         rtable.cols.windowStart[i] = int(rtable.cols.windowStart[i] + lagmax2)
                         rtable.flush()
-                        ftable.cols.members[coresNum[np.argmax(cor)]]+=' {}'.format(
+                        ftable.cols.members[coresNum[np.argmax(cor)]] = ftable.cols.members[
+                            coresNum[np.argmax(cor)]].decode('utf-8')+' {}'.format(
                             len(rtable)+i)
                         ftable.cols.printme[coresNum[np.argmax(cor)]] = 1
                         ftable.flush()
@@ -340,7 +341,8 @@ def compareMultipleOrphans2Cores(rtable, ctable, ftable, written, opt):
                             rtable.cols.windowStart[i] = int(
                                 rtable.cols.windowStart[i] + lagmax2 + lagx[np.argmax(corx)])
                             rtable.flush()
-                            ftable.cols.members[coresNum[np.argmax(cor)]]+=' {}'.format(
+                            ftable.cols.members[coresNum[np.argmax(cor)]] = ftable.cols.members[
+                                coresNum[np.argmax(cor)]].decode('utf-8')+' {}'.format(
                                 len(rtable)+i)
                             ftable.cols.printme[coresNum[np.argmax(cor)]] = 1
                             ftable.flush()
@@ -427,7 +429,8 @@ def compareSingleOrphan2Cores(rtable, otable, ctable, ftable, trig, id, coeffi, 
                 # Move the orphan to the repeater table
                 redpy.table.populateRepeater(rtable, ftable, id, trig, opt,
                     int(opt.ptrig*opt.samprate + lagmax))
-                ftable.cols.members[coresNum[np.argmax(cor)]]+=' {}'.format(
+                ftable.cols.members[coresNum[np.argmax(cor)]] = ftable.cols.members[
+                    coresNum[np.argmax(cor)]].decode('utf-8')+' {}'.format(
                     len(rtable)-1)
                 ftable.flush()
                 wlag.append(0)
@@ -455,7 +458,8 @@ def compareSingleOrphan2Cores(rtable, otable, ctable, ftable, trig, id, coeffi, 
                     # Move the orphan to the repeater table
                     redpy.table.populateRepeater(rtable, ftable, id, trig, opt,
                         int(opt.ptrig*opt.samprate + lagmax + lagx[np.argmax(corx)]))
-                    ftable.cols.members[coresNum[np.argmax(cor)]]+=' {}'.format(
+                    ftable.cols.members[coresNum[np.argmax(cor)]] = ftable.cols.members[
+                        coresNum[np.argmax(cor)]].decode('utf-8')+' {}'.format(
                         len(rtable)-1)
                     ftable.flush()
                     wlag.append(0)

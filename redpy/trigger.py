@@ -1,5 +1,5 @@
 # REDPy - Repeating Earthquake Detector in Python
-# Copyright (C) 2016  Alicia Hotovec-Ellis (ahotovec@gmail.com)
+# Copyright (C) 2016-2018  Alicia Hotovec-Ellis (ahotovec@gmail.com)
 # Licensed under GNU GPLv3 (see LICENSE.txt)
 
 from obspy import UTCDateTime
@@ -13,6 +13,9 @@ import numpy as np
 from scipy import stats
 from scipy.fftpack import fft
 import glob
+
+import warnings
+warnings.filterwarnings("ignore")
 
 def getData(tstart, tend, opt):
 
@@ -47,7 +50,7 @@ def getData(tstart, tend, opt):
         # Load data from file
         stmp = Stream()
         for f in flist:
-            tmp = obspy.read(f, starttime=tstart, endtime=tend)
+            tmp = obspy.read(f, starttime=tstart, endtime=tend+opt.maxdt)
             if len(tmp) > 0:
                 stmp = stmp.extend(tmp)
     
@@ -94,7 +97,7 @@ def getData(tstart, tend, opt):
         for n in range(len(stas)):
             try:
                 stmp = client.get_waveforms(nets[n], stas[n], locs[n], chas[n],
-                        tstart, tend)
+                        tstart, tend+opt.maxdt)
                 stmp = stmp.filter('bandpass', freqmin=opt.fmin, freqmax=opt.fmax,
                     corners=2, zerophase=True)
                 stmp = stmp.taper(0.05,type='hann',max_length=opt.mintrig)
@@ -102,10 +105,10 @@ def getData(tstart, tend, opt):
                     if stmp[m].stats.sampling_rate != opt.samprate:
                         stmp[m] = stmp[m].resample(opt.samprate)
                 stmp = stmp.merge(method=1, fill_value=0)
-            except (obspy.fdsn.header.FDSNException):
+            except (obspy.clients.fdsn.header.FDSNException):
                 try: # try again
                     stmp = client.get_waveforms(nets[n], stas[n], locs[n], chas[n],
-                            tstart, tend)
+                            tstart, tend+opt.maxdt)
                     stmp = stmp.filter('bandpass', freqmin=opt.fmin, freqmax=opt.fmax,
                         corners=2, zerophase=True)
                     stmp = stmp.taper(0.05,type='hann',max_length=opt.mintrig)
@@ -113,13 +116,13 @@ def getData(tstart, tend, opt):
                         if stmp[m].stats.sampling_rate != opt.samprate:
                             stmp[m] = stmp[m].resample(opt.samprate)
                     stmp = stmp.merge(method=1, fill_value=0)
-                except (obspy.fdsn.header.FDSNException):
+                except (obspy.clients.fdsn.header.FDSNException):
                     print('No data found for {0}.{1}'.format(stas[n],nets[n]))
                     trtmp = Trace()
                     trtmp.stats.sampling_rate = opt.samprate
                     trtmp.stats.station = stas[n]
                     stmp = Stream().extend([trtmp.copy()])
-            
+                                            
             # Last check for length; catches problem with empty waveserver
             if len(stmp) != 1:
                 print('No data found for {0}.{1}'.format(stas[n],nets[n]))
@@ -127,8 +130,14 @@ def getData(tstart, tend, opt):
                 trtmp.stats.sampling_rate = opt.samprate
                 trtmp.stats.station = stas[n]
                 stmp = Stream().extend([trtmp.copy()])
-            
-            st.extend(stmp.copy())                
+                
+            st.extend(stmp.copy()) 
+    
+    # Edit 'start' time if using offset option
+    if opt.maxdt:
+        dts = np.fromstring(opt.offset, sep=',')
+        for n, tr in enumerate(st):
+            tr.stats.starttime = tr.stats.starttime-dts[n]
     
     st = st.trim(starttime=tstart, endtime=tend, pad=True, fill_value=0)
     stC = st.copy()
@@ -153,6 +162,7 @@ def trigger(st, stC, rtable, opt):
 
     cft = coincidence_trigger("classicstalta", opt.trigon, opt.trigoff, stC, opt.nstaC,
         sta=opt.swin, lta=opt.lwin, details=True)
+            
     if len(cft) > 0:
         
         ind = 0
@@ -165,7 +175,7 @@ def trigger(st, stC, rtable, opt):
             ptime = (UTCDateTime(rtable.attrs.ptime) - t)
         else:
             ptime = -opt.mintrig
-        
+                
         for n in range(len(cft)):
                     
             ttime = cft[n]['time'] # This is a UTCDateTime, not samples
@@ -199,7 +209,7 @@ def trigger(st, stC, rtable, opt):
         return []
 
 
-def dataclean(alltrigs, opt, flag=1):
+def dataClean(alltrigs, opt, flag=1):
 
     """
     Examine triggers and weed out spikes and calibration pulses using kurtosis and
@@ -210,10 +220,12 @@ def dataclean(alltrigs, opt, flag=1):
     flag: 1 if defining window to check, 0 if want to check whole waveform for spikes
         (note that different threshold values should be used for different window lengths)
     
-    Returns good trigs (trigs) and junk (junk)
+    Returns good trigs (trigs) and several junk types (junk, junkFI, junkKurt)
     """
     
     trigs=Stream()
+    junkFI=Stream()
+    junkKurt=Stream()
     junk=Stream()
     for i in range(len(alltrigs)):
             
@@ -229,39 +241,46 @@ def dataclean(alltrigs, opt, flag=1):
             else:
                 datcut=dat
             
-            # Calculate kurtosis in window
-            k = stats.kurtosis(datcut)
-            # Compute kurtosis of frequency amplitude spectrum next
-            datf = np.absolute(fft(dat))
-            kf = stats.kurtosis(datf)
-            # Calculate outlier ratio using z ((data-median)/mad); outliers have z > 4.45
-            mad = np.median(np.absolute(dat - np.median(dat)))
-            z = (dat-np.median(dat))/mad
-            orm = len(z[z>4.45])/np.array(len(z)).astype(float)
+            if np.sum(np.abs(dat))!=0.0:
+                # Calculate kurtosis in window
+                k = stats.kurtosis(datcut)
+                # Compute kurtosis of frequency amplitude spectrum next
+                datf = np.absolute(fft(dat))
+                kf = stats.kurtosis(datf)
+                # Calculate outlier ratio using z ((data-median)/mad)
+                mad = np.nanmedian(np.absolute(dat - np.nanmedian(dat)))
+                z = (dat-np.median(dat))/mad
+                # Outliers have z > 4.45
+                orm = len(z[z>4.45])/np.array(len(z)).astype(float)
             
-            if k >= opt.kurtmax or orm >= opt.oratiomax or kf >= opt.kurtfmax:
-                njunk+=1
+                if k >= opt.kurtmax or orm >= opt.oratiomax or kf >= opt.kurtfmax:
+                    njunk+=1
                 
-            winstart = opt.ptrig*opt.samprate - opt.winlen/10
-            winend = opt.ptrig*opt.samprate - opt.winlen/10 + opt.winlen
-            fftwin = np.reshape(fft(dat[winstart:winend]),(opt.winlen,))
-            if np.median(np.abs(dat[winstart:winend]))!=0:
-                fi = np.log10(np.mean(np.abs(np.real(
-                    fftwin[int(opt.fiupmin*opt.winlen/opt.samprate):int(
-                    opt.fiupmax*opt.winlen/opt.samprate)])))/np.mean(np.abs(np.real(
-                    fftwin[int(opt.filomin*opt.winlen/opt.samprate):int(
-                    opt.filomax*opt.winlen/opt.samprate)]))))
-                if fi<opt.telefi:
-                    ntele+=1
+                winstart = int(opt.ptrig*opt.samprate - opt.winlen/10)
+                winend = int(opt.ptrig*opt.samprate - opt.winlen/10 + opt.winlen)
+                fftwin = np.reshape(fft(dat[winstart:winend]),(opt.winlen,))
+                if np.median(np.abs(dat[winstart:winend]))!=0:
+                    fi = np.log10(np.mean(np.abs(np.real(
+                        fftwin[int(opt.fiupmin*opt.winlen/opt.samprate):int(
+                        opt.fiupmax*opt.winlen/opt.samprate)])))/np.mean(np.abs(np.real(
+                        fftwin[int(opt.filomin*opt.winlen/opt.samprate):int(
+                        opt.filomax*opt.winlen/opt.samprate)]))))
+                    if fi<opt.telefi:
+                        ntele+=1
         
         # Allow if there are enough good stations to correlate
         if njunk <= (opt.nsta-opt.ncor) and ntele <= opt.teleok:
             trigs.append(alltrigs[i])
         else:
-            junk.append(alltrigs[i])
-            
+            if njunk > 0:
+                if ntele > 0:
+                    junk.append(alltrigs[i])
+                else:
+                    junkKurt.append(alltrigs[i])
+            else:
+                junkFI.append(alltrigs[i])
                 
-    return trigs, junk
+    return trigs, junk, junkFI, junkKurt
 
 
 def aicpick(st, initialTrigger, opt):

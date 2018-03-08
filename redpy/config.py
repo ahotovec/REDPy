@@ -1,8 +1,14 @@
 # REDPy - Repeating Earthquake Detector in Python
-# Copyright (C) 2016  Alicia Hotovec-Ellis (ahotovec@gmail.com)
+# Copyright (C) 2016-2018  Alicia Hotovec-Ellis (ahotovec@gmail.com)
 # Licensed under GNU GPLv3 (see LICENSE.txt)
 
-import ConfigParser
+import numpy as np
+try:
+    # Python 3
+    import configparser
+except ImportError:
+    # Python 2.7
+    import ConfigParser as configparser
 
 class Options(object):
     
@@ -26,12 +32,11 @@ class Options(object):
         settings and may be edited. The name of the configfile used is also stored.       
     
         TABLE DEFINITIONS:
-        title: Name of the table (default 'REDPy Catalog')
+        title: Name of the table, used also in plotting titles (default 'REDPy Catalog')
         filename: Filename for the table, should end in .h5 (default 'redpytable.h5')
         groupName: Short string describing the name of the station, may not contain spaces
             (default 'default')
-        groupDesc: Longer string describing the run (default 'Default Test Run')
-    
+        
         STATION PARAMETERS:
         nsta: Number of stations (default 8)
         station: String of ordered station names
@@ -46,14 +51,24 @@ class Options(object):
         sacdir: Path to directory with SAC files ending in / (default './', not used if
             using IRIS or waveserver)
         nsec: Number of seconds to download from server at a time (default 3600 s) 
+        
+        WINDOWING PARAMETERS:
+        winlen: Length of window for cross-correlation (default 1024 samples, 2^n is best)
+        ptrig: Length of time cut prior to trigger (default 10.0 s)
+        atrig: Length of time cut after trigger (default 20.0 s)
+        wshape: A derived value (cannot be explicitly defined) corresponding to the number
+            of samples that will be cut based on ptrig and atrig
                 
         TRIGGERING PARAMETERS:
         lwin: Length of long window for STALTA (default 7.0 s)
         swin: Length of short window for STALTA (default 0.8 s)
         trigon: Cutoff ratio for triggering STALTA (default 3.0)
         trigoff: Cutoff ratio for ending STALTA trigger (default 2.0)
-        mintrig: Minimum spacing between triggers (default 10.0 s)
+        mintrig: A derived value (set to 75% of winlen) for the minimum spacing between
+            subsequent triggers
         nstaC: Minimum number of stations a trigger must show up on (default 4)
+        offset: Optional time offset to advance waveforms as a list of positive floats
+            (default 0.0)
         kurtmax: Maximum kurtosis allowed for event window, to eliminate spikes; ~80-100
             is appropriate for 5 s window, ~130 for 15 s, ~200 for 25 s (default 80.0)
         kurtfmax: Maximum kurtosis of frequency amplitude spectrum to eliminate
@@ -62,14 +77,7 @@ class Options(object):
         kurtwin: Length of window to use for kurtosis, in seconds, around the trigger
             time, will be centered on the trigger time (default 5 s)
         oratiomax: Maximum ratio of outliers to total number of datapoints in trace
-            (default 0.06 (6%))
-    
-        WINDOWING PARAMETERS:
-        winlen: Length of window for cross-correlation (default 1024 samples, 2^n is best)
-        ptrig: Length of time cut prior to trigger (default 10.0 s)
-        atrig: Length of time cut after trigger (default 20.0 s)
-        wshape: A derived value (cannot be explicitly defined) corresponding to the number
-            of samples that will be cut based on ptrig and atrig
+            (default 0.15 (15%))
     
         FILTERING PARAMETERS:
         fmin: Lower band of bandpass filter (default 1.0 Hz)
@@ -121,7 +129,7 @@ class Options(object):
         self.configfile = configfile
                 
         # Load parameters from config file
-        config = ConfigParser.RawConfigParser()
+        config = configparser.ConfigParser()
         config.read(self.configfile)
         
         # Set parameters to default if not in config file       
@@ -167,12 +175,14 @@ class Options(object):
             'Settings','trigon') else 3.
         self.trigoff=config.getfloat('Settings','trigoff') if config.has_option(
             'Settings','trigoff') else 2.
+        self.offset=config.get('Settings','offset') if config.has_option(
+            'Settings','offset') else '0'
         self.kurtmax=config.getfloat('Settings','kurtmax') if config.has_option(
             'Settings','kurtmax') else 80.
         self.kurtfmax=config.getfloat('Settings','kurtfmax') if config.has_option(
             'Settings','kurtfmax') else 150.
         self.oratiomax=config.getfloat('Settings','oratiomax') if config.has_option(
-            'Settings','oratiomax') else 0.06
+            'Settings','oratiomax') else 0.15
         self.kurtwin=config.getfloat('Settings','kurtwin') if config.has_option(
             'Settings','kurtwin') else 5.
         self.winlen=config.getint('Settings','winlen') if config.has_option(
@@ -233,5 +243,7 @@ class Options(object):
         # Derived Settings
         self.ptrig=1.5*self.winlen/self.samprate
         self.atrig=3*self.winlen/self.samprate
-        self.mintrig=self.winlen/self.samprate
+        self.mintrig=0.75*self.winlen/self.samprate
         self.wshape = int((self.ptrig + self.atrig)*self.samprate) + 1
+        self.maxdt = np.max(np.fromstring(self.offset, sep=','))
+        

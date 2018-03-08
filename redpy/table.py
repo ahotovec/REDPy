@@ -1,5 +1,5 @@
 # REDPy - Repeating Earthquake Detector in Python
-# Copyright (C) 2016  Alicia Hotovec-Ellis (ahotovec@gmail.com)
+# Copyright (C) 2016-2018  Alicia Hotovec-Ellis (ahotovec@gmail.com)
 # Licensed under GNU GPLv3 (see LICENSE.txt)
 
 from tables import *
@@ -215,7 +215,7 @@ def initializeTable(opt):
     """
 
     h5file = open_file(opt.filename, mode="w", title=opt.title)
-    group = h5file.create_group("/", opt.groupName, opt.groupDesc)
+    group = h5file.create_group("/", opt.groupName, opt.title)
 
     rtable = h5file.create_table(group, "repeaters", Repeaters(opt),
         "Repeater Catalog")
@@ -481,7 +481,7 @@ def removeFamilies(rtable, ctable, dtable, ftable, cnums, opt):
     """
 
     cnums = np.sort(cnums)
-    old = range(len(rtable))
+    old = list(range(len(rtable)))
     transform = np.zeros((len(rtable),)).astype(int)    
     ids = rtable.cols.id[:]
     members = np.array([])
@@ -544,21 +544,25 @@ def clearExpiredOrphans(otable, opt, tend):
     opt: Options object describing station/run parameters
     tend: Time to remove orphans older than, corresponds usually to end of run increment
     
-    Removes orphans from table, prints how many were removed. Checks to make sure there
-    is always at least one orphan in the table.
+    Removes orphans from table, but checks to make sure there is always at least one
+    orphan in the table.
     """
     
-    index = np.where(otable.cols.expires[:] < tend.isoformat())
-    if len(index) != len(otable):
-        for n in range(len(index[0])-1,-1,-1):
-            otable.remove_row(index[0][n])        
-    else:
-        print('Warning: All orphans expired...')
-        for n in range(len(index[0])-1,0,-1):
-            otable.remove_row(index[0][n])
-    otable.flush()
+    index = np.empty(0)
+    for n in range(len(otable)):
+        if otable.cols.expires[n].decode('utf-8') < tend.isoformat():
+            index = np.append(index,n)
     
-
+    if len(index) > 0:
+        if len(index) != len(otable):
+            for n in range(len(index)-1,-1,-1):
+                otable.remove_row(int(index[n]))        
+        else:
+            print('Warning: All orphans expired...')
+            for n in range(len(index)-1,0,-1):
+                otable.remove_row(int(index[n]))
+        otable.flush()
+    
 
 def appendCorrelation(ctable, id1, id2, ccc, opt):
 
@@ -666,7 +670,8 @@ def mergeFamilies(rtable, ctable, ftable, wfam, wlag, opt):
     for n in range(len(wfam))[::-1]:
         f2 = np.sort(wfam)[n]
         if f2!=f1:            
-            ftable.cols.members[f1]+=' '+ftable[f2]['members']
+            ftable.cols.members[f1] = ftable.cols.members[f1].decode(
+                'utf-8')+' '+ftable[f2]['members'].decode('utf-8')
             ftable.remove_row(f2)
             ftable.attrs.nClust-=1
     ftable.cols.printme[f1] = 1

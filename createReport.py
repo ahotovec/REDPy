@@ -4,31 +4,34 @@
 
 import redpy.config
 import redpy.table
-import redpy.plotting
 import argparse
-import numpy as np
-import os
 
 """
-Run this script to force plotting. Can be used after killing mid-run or updating settings.
+Run this script to manually produce a more detailed "report" page for a given family
+(or families)
 
-usage: forcePlot.py [-h] [-v] [-a] [-c CONFIGFILE]
+usage: createReport.py [-h] [-v] [-o] [-c CONFIGFILE] N [N ...]
+
+positional arguments:
+  N                     family number(s) to be reported on
 
 optional arguments:
   -h, --help            show this help message and exit
   -v, --verbose         increase written print statements
-  -a, --all             replot everything, not just updated families
+  -o, --ordered         order plots by OPTICS
   -c CONFIGFILE, --configfile CONFIGFILE
                         use configuration file named CONFIGFILE instead of
                         default settings.cfg
 """
 
 parser = argparse.ArgumentParser(description=
-    "Run this script to force plotting. Can be used after killing mid-run or updating settings.")
+    "Run this script to manually remove families/clusters")
+parser.add_argument('famnum', metavar='N', type=int, nargs='+',
+    help="family number(s) to be reported on")
 parser.add_argument("-v", "--verbose", action="count", default=0,
     help="increase written print statements")
-parser.add_argument("-a", "--all", action="count", default=0,
-    help="replot everything, not just updated families")
+parser.add_argument("-o", "--ordered", action="count", default=0,
+    help="order plots by OPTICS")
 parser.add_argument("-c", "--configfile",
     help="use configuration file named CONFIGFILE instead of default settings.cfg")
 args = parser.parse_args()
@@ -43,12 +46,9 @@ else:
 if args.verbose: print("Opening hdf5 table: {0}".format(opt.filename))
 h5file, rtable, otable, ttable, ctable, jtable, dtable, ftable = redpy.table.openTable(opt)
 
-if args.all:
-    if args.verbose: print("Resetting plotting column...")
-    ftable.cols.printme[0:ftable.attrs.nClust] = np.ones((ftable.attrs.nClust,))
-
-if args.verbose: print("Creating plots...")
-redpy.plotting.createPlots(rtable, ftable, ttable, ctable, otable, opt)
+for fnum in args.famnum:
+    if args.verbose: print("Creating report for family {}...".format(fnum))
+    redpy.plotting.plotReport(rtable, ftable, ctable, opt, fnum, args.ordered)
 
 if args.verbose: print("Closing table...")
 h5file.close()

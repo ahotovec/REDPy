@@ -1,5 +1,5 @@
 # REDPy - Repeating Earthquake Detector in Python
-# Copyright (C) 2016  Alicia Hotovec-Ellis (ahotovec@gmail.com)
+# Copyright (C) 2016-2018  Alicia Hotovec-Ellis (ahotovec@gmail.com)
 # Licensed under GNU GPLv3 (see LICENSE.txt)
 
 import matplotlib
@@ -13,10 +13,6 @@ import argparse
 from PIL import Image
 import os
 import glob
-
-# Added this to remove the slew of warnings obspy/numpy was throwing at me
-import warnings
-warnings.filterwarnings("ignore")
 
 """
 Run this script to manually remove families/clusters (e.g., correlated noise that made it
@@ -56,7 +52,7 @@ def remove(*args):
         
     if len(removethese) > 0:
         print("Creating plots...")
-        redpy.plotting.createPlots(rtable, ftable, ttable, ctable, otable, jtable, opt)
+        redpy.plotting.createPlots(rtable, ftable, ttable, ctable, otable, opt)
 
 def close(*args):
     """

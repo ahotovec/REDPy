@@ -1,5 +1,5 @@
 # REDPy - Repeating Earthquake Detector in Python
-# Copyright (C) 2016  Alicia Hotovec-Ellis (ahotovec@gmail.com)
+# Copyright (C) 2016-2018  Alicia Hotovec-Ellis (ahotovec@gmail.com)
 # Licensed under GNU GPLv3 (see LICENSE.txt)
 
 import argparse
@@ -9,10 +9,6 @@ import obspy
 from obspy import UTCDateTime
 import time
 
-# Added this to remove the slew of warnings obspy/numpy was throwing at me
-import warnings
-warnings.filterwarnings("ignore")
-
 """
 Run this script to fill the table with data from the past. If a start time is not
 specified, it will check the attributes of the repeater table to pick up where it left
@@ -20,10 +16,9 @@ off. Additionally, if this is the first run and a start time is not specified, i
 assume one time chunk prior to the end time. If an end time is not specified, "now" is
 assumed. The end time updates at the end of each time chunk processed (default: by hour,
 set in configuration). This script can be run as a cron job that will pick up where it
-left off if a chunk is missed, but will not run until a full chunk of time has elapsed
-since the last trigger. Use -n if you are backfilling with a large amount of time; it will
-consume less time downloading the data in small chunks if NSEC is an hour or a day instead
-of a few minutes.
+left off if a chunk is missed. Use -n if you are backfilling with a large amount of time;
+it will consume less time downloading the data in small chunks if NSEC is an hour or a day
+instead of a few minutes, but at the cost of keeping orphans for longer.
  
 usage: backfill.py [-h] [-v] [-s STARTTIME] [-e ENDTIME] [-c CONFIGFILE] [-n NSEC]
 
@@ -103,16 +98,20 @@ while tstart+n*opt.nsec < tend:
             endtime = tend
         st, stC = redpy.trigger.getData(tstart+n*opt.nsec-opt.atrig, endtime, opt)
         alltrigs = redpy.trigger.trigger(st, stC, rtable, opt)
-    except (TypeError, obspy.fdsn.header.FDSNException, Exception):
+    except (TypeError, obspy.clients.fdsn.header.FDSNException, Exception):
         print('Could not download or trigger data... moving on')
         alltrigs = []
     
 	# Clean out data spikes etc.
-    trigs, junk = redpy.trigger.dataclean(alltrigs, opt, flag=1)
+    trigs, junk, junkFI, junkKurt = redpy.trigger.dataClean(alltrigs, opt, flag=1)
         
 	# Save junk triggers in separate table for quality checking purposes
     for i in range(len(junk)):
-        redpy.table.populateJunk(jtable, junk[i], 0, opt)
+        redpy.table.populateJunk(jtable, junk[i], 2, opt) # Both types of junk
+    for i in range(len(junkKurt)):
+        redpy.table.populateJunk(jtable, junkKurt[i], 1, opt) # Just kurtosis junk
+    for i in range(len(junkFI)):
+        redpy.table.populateJunk(jtable, junkFI[i], 0, opt) # Just 'teleseisms'
     
     # Append times of triggers to ttable to compare total seismicity later
     redpy.table.populateTriggers(ttable, trigs, ttimes, opt)
@@ -168,7 +167,7 @@ while tstart+n*opt.nsec < tend:
 print("Caught up to: {}".format(endtime-opt.atrig))
 
 if args.verbose: print("Updating plots...")
-redpy.plotting.createPlots(rtable, ftable, ttable, ctable, otable, jtable, opt)
+redpy.plotting.createPlots(rtable, ftable, ttable, ctable, otable, opt)
 
 if args.verbose: print("Closing table...")
 h5file.close()

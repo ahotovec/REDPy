@@ -1,5 +1,5 @@
 # REDPy - Repeating Earthquake Detector in Python
-# Copyright (C) 2016  Alicia Hotovec-Ellis (ahotovec@gmail.com)
+# Copyright (C) 2016-2018  Alicia Hotovec-Ellis (ahotovec@gmail.com)
 # Licensed under GNU GPLv3 (see LICENSE.txt)
 
 import argparse
@@ -9,10 +9,6 @@ import obspy
 from obspy import UTCDateTime
 import time
 import pandas as pd
-
-# Added this to remove the slew of warnings obspy/numpy was throwing at me
-import warnings
-warnings.filterwarnings("ignore")
 
 """
 Run this script to fill the table with data from the past using a catalog of events.
@@ -80,11 +76,15 @@ for event in eventlist:
         alltrigs = []
     
 	# Clean out data spikes etc.
-    trigs, junk = redpy.trigger.dataclean(alltrigs, opt, flag=1)
+    trigs, junk, junkFI, junkKurt = redpy.trigger.dataClean(alltrigs, opt, flag=1)
         
 	# Save junk triggers in separate table for quality checking purposes
     for i in range(len(junk)):
-        redpy.table.populateJunk(jtable,junk[i],0,opt)
+        redpy.table.populateJunk(jtable, junk[i], 2, opt)
+    for i in range(len(junkKurt)):
+        redpy.table.populateJunk(jtable, junkKurt[i], 1, opt)
+    for i in range(len(junkFI)):
+        redpy.table.populateJunk(jtable, junkFI[i], 0, opt)
     
     # Append times of triggers to ttable to compare total seismicity later
     redpy.table.populateTriggers(ttable, trigs, ttimes, opt)
@@ -130,7 +130,7 @@ for event in eventlist:
 
 if len(rtable) > 1:
     if args.verbose: print("Creating plots...")
-    redpy.plotting.createPlots(rtable, ftable, ttable, ctable, otable, jtable, opt)
+    redpy.plotting.createPlots(rtable, ftable, ttable, ctable, otable, opt)
 else:
     print("No repeaters to plot.")
 
