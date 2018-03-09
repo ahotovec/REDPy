@@ -16,6 +16,7 @@ import os
 import shutil
 import glob
 import urllib
+import urllib2
 from obspy import UTCDateTime
 from obspy.geodetics import locations2degrees
 from obspy.taup import TauPyModel
@@ -755,7 +756,7 @@ def checkComCat(rtable, ftable, cnum, f, startTime, windowStart, opt):
             dep = comcat['Depth/km'].tolist()
             mag = comcat['Magnitude'].tolist()
             place = comcat['EventLocationName'].tolist()
-        except urllib.error.HTTPError:
+        except (urllib.error.HTTPError, urllib2.HTTPError):
             otime = []
             lat = []
             lon = []
