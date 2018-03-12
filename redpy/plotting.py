@@ -185,7 +185,7 @@ def plotTimelines(rtable, ftable, ttable, opt):
             o2r.add_layout(Arrow(end=VeeHead(size=3, line_color='red', line_alpha=0.5),
                     line_color='red', line_alpha=0.5,
                     x_start=matplotlib.dates.num2date(famstarts[n]+longevity[n]),
-                    x_end=matplotlib.dates.num2date(hTr[0]),
+                    x_end=matplotlib.dates.num2date(hTr[0]-0.5),
                     y_start=longevity[n], y_end=longevity[n]))
             
     # Build hover to show an image of the cluster core
@@ -296,7 +296,7 @@ def plotTimelines(rtable, ftable, ttable, opt):
                     color='black')
                 r1.add_layout(Arrow(end=VeeHead(size=3),
                     x_start=matplotlib.dates.num2date(hTr[0]+0.01),
-                    x_end=matplotlib.dates.num2date(hTr[0]),
+                    x_end=matplotlib.dates.num2date(hTr[0]-0.5),
                     y_start=m, y_end=m))
 
                 idx = np.where(h[np.where(hist>0)[0]]>hRr[0])[0]
