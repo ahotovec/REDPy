@@ -162,7 +162,7 @@ def plotTimelines(rtable, ftable, ttable, opt):
         np.sort(alltrigs)[-1]-np.sort(alltrigs)[0]], title='Cluster Longevity')
     o2.grid.grid_line_alpha = 0.3
     o2.xaxis.axis_label = 'Date'
-    o2.yaxis.axis_label = 'Days                                  '
+    o2.yaxis.axis_label = 'Days'
     for n in range(len(famstarts)):
         o2.line((matplotlib.dates.num2date(famstarts[n]), matplotlib.dates.num2date(
             famstarts[n]+longevity[n])), (longevity[n], longevity[n]), color='red',
@@ -173,7 +173,7 @@ def plotTimelines(rtable, ftable, ttable, opt):
         np.sort(alltrigs)[-1]-np.sort(alltrigs)[0]], title='Cluster Longevity')
     o2r.grid.grid_line_alpha = 0.3
     o2r.xaxis.axis_label = 'Date'
-    o2r.yaxis.axis_label = 'Days                                  '
+    o2r.yaxis.axis_label = 'Days'
     # Put invisible points in for case that there are no events
     o2r.circle(matplotlib.dates.num2date(hTr[0:2]), [1, 1], line_alpha=0, fill_alpha=0)
     for n in range(len(famstarts)):
