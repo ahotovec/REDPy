@@ -16,7 +16,6 @@ import os
 import shutil
 import glob
 import urllib
-import urllib2
 from obspy import UTCDateTime
 from obspy.geodetics import locations2degrees
 from obspy.taup import TauPyModel
@@ -29,6 +28,10 @@ from bokeh.plotting import figure, output_file, save, gridplot
 from bokeh.models import HoverTool, ColumnDataSource, OpenURL, TapTool, Range1d, Div
 from bokeh.models import Arrow, VeeHead, ColorBar, LogColorMapper, LogTicker
 from bokeh.layouts import column
+try:
+    import urllib2
+except:
+    pass
         
 def createPlots(rtable, ftable, ttable, ctable, otable, opt):
     
