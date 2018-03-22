@@ -12,7 +12,7 @@ from obspy.signal.trigger import coincidence_trigger
 import numpy as np
 from scipy import stats
 from scipy.fftpack import fft
-import glob
+import glob, os, itertools
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -43,9 +43,15 @@ def getData(tstart, tend, opt):
     
         # Generate list of files
         if opt.server == 'SAC':
-            flist = glob.glob(opt.sacdir+'*.sac')+glob.glob(opt.sacdir+'*.SAC')
+            flist = list(itertools.chain.from_iterable(glob.iglob(os.path.join(
+                root,'*.sac')) for root, dirs, files in os.walk(opt.sacdir)))+list(
+                itertools.chain.from_iterable(glob.iglob(os.path.join(
+                root,'*.SAC')) for root, dirs, files in os.walk(opt.sacdir)))
         elif opt.server == 'miniSEED':
-            flist = glob.glob(opt.mseeddir+'*.mseed')+glob.glob(opt.mseeddir+'*.MSEED')
+            flist = list(itertools.chain.from_iterable(glob.iglob(os.path.join(
+                root,'*.mseed')) for root, dirs, files in os.walk(opt.mseeddir)))+list(
+                itertools.chain.from_iterable(glob.iglob(os.path.join(
+                root,'*.MSEED')) for root, dirs, files in os.walk(opt.mseeddir)))
             
         # Determine which subset of files to load based on start and end times and
         # station name; we'll fully deal with stations below
