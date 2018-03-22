@@ -46,10 +46,24 @@ def getData(tstart, tend, opt):
             flist = glob.glob(opt.sacdir+'*.sac')+glob.glob(opt.sacdir+'*.SAC')
         elif opt.server == 'miniSEED':
             flist = glob.glob(opt.mseeddir+'*.mseed')+glob.glob(opt.mseeddir+'*.MSEED')
-    
-        # Load data from file
-        stmp = Stream()
+            
+        # Determine which subset of files to load based on start and end times and
+        # station name; we'll fully deal with stations below
+        flist_sub = []
         for f in flist:
+            # Load header only
+            stmp = obspy.read(f, headonly=True)
+            # Check if station is contained in the stas list
+            if stmp[0].stats.station in stas:
+                # Check if contains either start or end time
+                ststart = stmp[0].stats.starttime
+                stend = stmp[0].stats.endtime
+                if (ststart<=tstart and tstart<=stend) or (ststart<=tend and tend<=stend):
+                    flist_sub.append(f)
+    
+        # Fully load data from file
+        stmp = Stream()
+        for f in flist_sub:
             tmp = obspy.read(f, starttime=tstart, endtime=tend+opt.maxdt)
             if len(tmp) > 0:
                 stmp = stmp.extend(tmp)
