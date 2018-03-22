@@ -240,7 +240,10 @@ def plotTimelines(rtable, ftable, ttable, opt):
 
     # Build the lists and dictionaries    
     n = 0  
-    m = 0  
+    m = 0
+    cloc1 = 335
+    cloc2 = 335
+      
     for clustNum in range(ftable.attrs.nClust):
         
         members = np.fromstring(ftable[clustNum]['members'], dtype=int, sep=' ')
@@ -357,8 +360,6 @@ def plotTimelines(rtable, ftable, ttable, opt):
             p1.plot_height = n*15
             p1.y_range = Range1d(-1, n)
             cloc1 = n*15-165
-        else:
-            cloc1 = 335
     
     else:
         p1.circle(matplotlib.dates.num2date(hTr[0:2]), [0, 0], line_alpha=0, fill_alpha=0)
@@ -379,8 +380,6 @@ def plotTimelines(rtable, ftable, ttable, opt):
             r1.plot_height = m*15
             r1.y_range = Range1d(-1, m)
             cloc2 = m*15-165
-        else:
-            cloc2 = 335
         
     else: 
         r1.circle(matplotlib.dates.num2date(hTr[0:2]), [0, 0], line_alpha=0, fill_alpha=0)
