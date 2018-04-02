@@ -1217,7 +1217,7 @@ def plotReport(rtable, ftable, ctable, opt, fnum, ordered):
         y_axis_type='log', y_range=[1, 2*np.max(windowAmp)])
     o0.grid.grid_line_alpha = 0.3
     o0.xaxis.axis_label = 'Date'
-    o0.yaxis.axis_label = 'Counts                                       '
+    o0.yaxis.axis_label = 'Counts'
     o0.circle(matplotlib.dates.num2date(startTimeMPL[fam]), windowAmp[fam], color='red',
         line_alpha=0, size=4, fill_alpha=0.5)
     
@@ -1227,7 +1227,7 @@ def plotReport(rtable, ftable, ctable, opt, fnum, ordered):
         y_range=[1e-3, 2*np.max(spacing)])
     o1.grid.grid_line_alpha = 0.3
     o1.xaxis.axis_label = 'Date'
-    o1.yaxis.axis_label = 'Interval (hr)                                 '
+    o1.yaxis.axis_label = 'Interval (hr)'
     o1.circle(matplotlib.dates.num2date(catalog[1:]), spacing, color='red',
         line_alpha=0, size=4, fill_alpha=0.5)
     
