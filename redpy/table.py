@@ -32,7 +32,7 @@ def Repeaters(opt):
         "id"            : Int32Col(shape=(), pos=0),
         "startTime"     : StringCol(itemsize=32, pos=1),
         "startTimeMPL"  : Float64Col(shape=(), pos=2),
-        "waveform"      : Float64Col(shape=(opt.wshape*opt.nsta,), pos=3),
+        "waveform"      : Float32Col(shape=(opt.wshape*opt.nsta,), pos=3),
         "windowStart"   : Int32Col(shape=(), pos=4),
         "windowCoeff"   : Float64Col(shape=(opt.nsta,), pos=5),
         "windowFFT"     : ComplexCol(shape=(opt.winlen*opt.nsta,), itemsize=16, pos=6),
@@ -65,7 +65,7 @@ def Orphans(opt):
         "id"          : Int32Col(shape=(), pos=0),
         "startTime"   : StringCol(itemsize=32, pos=1),
         "startTimeMPL": Float64Col(shape=(), pos=2),
-        "waveform"    : Float64Col(shape=(opt.wshape*opt.nsta,), pos=3),
+        "waveform"    : Float32Col(shape=(opt.wshape*opt.nsta,), pos=3),
         "windowStart" : Int32Col(shape=(), pos=4),
         "windowCoeff" : Float64Col(shape=(opt.nsta,), pos=5),
         "windowFFT"   : ComplexCol(shape=(opt.winlen*opt.nsta,), itemsize=16, pos=6),
@@ -115,7 +115,7 @@ def Deleted(opt):
         "id"          : Int32Col(shape=(), pos=0),
         "startTime"   : StringCol(itemsize=32, pos=1),
         "startTimeMPL": Float64Col(shape=(), pos=2),
-        "waveform"    : Float64Col(shape=(opt.wshape*opt.nsta,), pos=3),
+        "waveform"    : Float32Col(shape=(opt.wshape*opt.nsta,), pos=3),
         "windowStart" : Int32Col(shape=(), pos=4),
         "windowCoeff" : Float64Col(shape=(opt.nsta,), pos=5),
         "windowFFT"   : ComplexCol(shape=(opt.winlen*opt.nsta,), itemsize=16, pos=6),
@@ -141,7 +141,7 @@ def Junk(opt):
     
     dict = {
         "startTime"   : StringCol(itemsize=32, pos=1),
-        "waveform"    : Float64Col(shape=(opt.wshape*opt.nsta,), pos=2),
+        "waveform"    : Float32Col(shape=(opt.wshape*opt.nsta,), pos=2),
         "windowStart" : Int32Col(shape=(), pos=3),
         "isjunk"      : Int32Col(shape=(), pos=0)
         }
