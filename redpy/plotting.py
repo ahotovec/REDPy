@@ -32,6 +32,10 @@ try:
     import urllib2
 except:
     pass
+try:
+    import urllib.request
+except:
+    pass
         
 def createPlots(rtable, ftable, ttable, ctable, otable, opt):
     
