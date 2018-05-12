@@ -319,9 +319,8 @@ def plotTimelines(rtable, ftable, ttable, opt):
             r1.quad(top=m+0.3, bottom=m-0.3, left=np.array(d1)[idx],
                 right=np.array(d2)[idx], color=np.array(colors)[idx])                   
                 
-            r1.add_layout(LabelSet(x=matplotlib.dates.num2date(
-                max(h[np.where(hist>0)]+1.0/24)),
-                y=n, text=['{}'.format(len(dt[members]))], level='glyph',
+            r1.add_layout(LabelSet(x=np.max(np.array(d2)[idx]),
+                y=m, text=['{}'.format(len(dt[members]))], level='glyph',
                 x_offset=5, y_offset=0, render_mode='canvas', text_font_size='9pt',
                 text_baseline='middle'))
             
