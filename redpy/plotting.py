@@ -26,7 +26,7 @@ from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 from matplotlib.transforms import offset_copy
 from bokeh.plotting import figure, output_file, save, gridplot
 from bokeh.models import HoverTool, ColumnDataSource, OpenURL, TapTool, Range1d, Div
-from bokeh.models import Arrow, VeeHead, ColorBar, LogColorMapper, LogTicker
+from bokeh.models import Arrow, VeeHead, ColorBar, LogColorMapper, LogTicker, LabelSet
 from bokeh.layouts import column
 try:
     import urllib2
@@ -271,12 +271,11 @@ def plotTimelines(rtable, ftable, ttable, opt):
             p1.quad(top=n+0.3, bottom=n-0.3, left=d1, right=d2,
                 color=colors)            
             
-            # Text doesn't understand datetimes, need to convert to a number and subtract
-            # about 8 hours
-            p1.text(time.mktime(matplotlib.dates.num2date(
-                 max(dt[members])).timetuple())*1000 - 28799000, n,
-                 text=['   {}'.format(len(dt[members]))], text_font_size='9pt',
-                 text_baseline='middle')
+            p1.add_layout(LabelSet(x=matplotlib.dates.num2date(
+                max(h[np.where(hist>0)]+1.0/24)),
+                y=n, text=['{}'.format(len(dt[members]))], level='glyph',
+                x_offset=5, y_offset=0, render_mode='canvas', text_font_size='9pt',
+                text_baseline='middle'))
                  
             # Build source for hover patches
             fnum = clustNum
@@ -320,13 +319,12 @@ def plotTimelines(rtable, ftable, ttable, opt):
             r1.quad(top=m+0.3, bottom=m-0.3, left=np.array(d1)[idx],
                 right=np.array(d2)[idx], color=np.array(colors)[idx])                   
                 
-            # Text doesn't understand datetimes, need to convert to a number and subtract
-            # about 8 hours
-            r1.text(time.mktime(matplotlib.dates.num2date(
-                max(dt[members])).timetuple())*1000 - 28799000, m,
-                text=['   {}'.format(len(dt[members]))], text_font_size='9pt',
-                text_baseline='middle')
-                 
+            r1.add_layout(LabelSet(x=matplotlib.dates.num2date(
+                max(h[np.where(hist>0)]+1.0/24)),
+                y=n, text=['{}'.format(len(dt[members]))], level='glyph',
+                x_offset=5, y_offset=0, render_mode='canvas', text_font_size='9pt',
+                text_baseline='middle'))
+            
             # Build source for hover patches
             fnumr = clustNum
             if m == 0:
