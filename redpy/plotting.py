@@ -5,10 +5,12 @@
 from tables import *
 import numpy as np
 import matplotlib
+import datetime
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.dates
 import time
+import pandas as pd
 import redpy.cluster
 import redpy.correlation
 from redpy.optics import *
@@ -25,7 +27,7 @@ import cartopy.io.img_tiles as cimgt
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 from matplotlib.transforms import offset_copy
 from bokeh.plotting import figure, output_file, save, gridplot
-from bokeh.models import HoverTool, ColumnDataSource, OpenURL, TapTool, Range1d, Div
+from bokeh.models import HoverTool, ColumnDataSource, OpenURL, TapTool, Range1d, Div, Span
 from bokeh.models import Arrow, VeeHead, ColorBar, LogColorMapper, LogTicker, LabelSet
 from bokeh.layouts import column
 try:
@@ -91,6 +93,9 @@ def plotTimelines(rtable, ftable, ttable, opt):
     famstarts = ftable.cols.startTime[:]
     alltrigs = ttable.cols.startTimeMPL[:]
     
+    # Read in annotation file (if it exists)
+    if opt.anotfile != '':
+        df = pd.read_csv(opt.anotfile)
     
     # Create histogram of events/dybin
     histT, hT = np.histogram(alltrigs, bins=np.arange(min(alltrigs),
@@ -121,6 +126,14 @@ def plotTimelines(rtable, ftable, ttable, opt):
     o0.xaxis.axis_label = 'Date'
     o0.yaxis.axis_label = 'Events'
     
+    if opt.anotfile != '':
+        for row in df.itertuples():
+            spantime = (datetime.datetime.strptime(row[1]
+                ,'%Y-%m-%dT%H:%M:%S')-datetime.datetime(1970, 1, 1)).total_seconds()
+            o0.add_layout(Span(location=spantime*1000, dimension='height',
+                line_color=row[2], line_width=row[3], line_dash=row[4],
+                line_alpha=row[5]))
+    
     o0.line(matplotlib.dates.num2date(hT[0:-1]+opt.dybin/2), histT-histR, color='black',
         legend='Orphans')
     o0.line(matplotlib.dates.num2date(hR[0:-1]+opt.dybin/2), histR, color='red',
@@ -139,6 +152,14 @@ def plotTimelines(rtable, ftable, ttable, opt):
     o0r.xaxis.axis_label = 'Date'
     o0r.yaxis.axis_label = 'Events'
     
+    if opt.anotfile != '':
+        for row in df.itertuples():
+            spantime = (datetime.datetime.strptime(row[1]
+                ,'%Y-%m-%dT%H:%M:%S')-datetime.datetime(1970, 1, 1)).total_seconds()
+            o0r.add_layout(Span(location=spantime*1000, dimension='height',
+                line_color=row[2], line_width=row[3], line_dash=row[4],
+                line_alpha=row[5]))
+    
     o0r.line(matplotlib.dates.num2date(hTr[0:-1]+opt.hrbin/48), histTr-histRr,
         color='black', legend='Orphans')
     o0r.line(matplotlib.dates.num2date(hRr[0:-1]+opt.hrbin/48), histRr, color='red',
@@ -150,6 +171,14 @@ def plotTimelines(rtable, ftable, ttable, opt):
     o1.grid.grid_line_alpha = 0.3
     o1.xaxis.axis_label = 'Date'
     o1.yaxis.axis_label = 'FI'
+    
+    if opt.anotfile != '':
+        for row in df.itertuples():
+            spantime = (datetime.datetime.strptime(row[1]
+                ,'%Y-%m-%dT%H:%M:%S')-datetime.datetime(1970, 1, 1)).total_seconds()
+            o1.add_layout(Span(location=spantime*1000, dimension='height',
+                line_color=row[2], line_width=row[3], line_dash=row[4],
+                line_alpha=row[5]))
     o1.circle(matplotlib.dates.num2date(dt), fi, color='red', line_alpha=0,
         size=3, fill_alpha=0.5)
         
@@ -158,6 +187,14 @@ def plotTimelines(rtable, ftable, ttable, opt):
     o1r.grid.grid_line_alpha = 0.3
     o1r.xaxis.axis_label = 'Date'
     o1r.yaxis.axis_label = 'FI'
+    
+    if opt.anotfile != '':
+        for row in df.itertuples():
+            spantime = (datetime.datetime.strptime(row[1]
+                ,'%Y-%m-%dT%H:%M:%S')-datetime.datetime(1970, 1, 1)).total_seconds()
+            o1r.add_layout(Span(location=spantime*1000, dimension='height',
+                line_color=row[2], line_width=row[3], line_dash=row[4],
+                line_alpha=row[5]))
     # Put invisible points in for case that there are no events
     o1r.circle(matplotlib.dates.num2date(hTr[0:2]), [1, 1], line_alpha=0, fill_alpha=0)
     o1r.circle(matplotlib.dates.num2date(dt[dt>(max(alltrigs)-opt.recplot)]),
@@ -170,6 +207,14 @@ def plotTimelines(rtable, ftable, ttable, opt):
     o2.grid.grid_line_alpha = 0.3
     o2.xaxis.axis_label = 'Date'
     o2.yaxis.axis_label = 'Days'
+    
+    if opt.anotfile != '':
+        for row in df.itertuples():
+            spantime = (datetime.datetime.strptime(row[1]
+                ,'%Y-%m-%dT%H:%M:%S')-datetime.datetime(1970, 1, 1)).total_seconds()
+            o2.add_layout(Span(location=spantime*1000, dimension='height',
+                line_color=row[2], line_width=row[3], line_dash=row[4],
+                line_alpha=row[5]))
     for n in range(len(famstarts)):
         o2.line((matplotlib.dates.num2date(famstarts[n]), matplotlib.dates.num2date(
             famstarts[n]+longevity[n])), (longevity[n], longevity[n]), color='red',
@@ -181,6 +226,14 @@ def plotTimelines(rtable, ftable, ttable, opt):
     o2r.grid.grid_line_alpha = 0.3
     o2r.xaxis.axis_label = 'Date'
     o2r.yaxis.axis_label = 'Days'
+    
+    if opt.anotfile != '':
+        for row in df.itertuples():
+            spantime = (datetime.datetime.strptime(row[1]
+                ,'%Y-%m-%dT%H:%M:%S')-datetime.datetime(1970, 1, 1)).total_seconds()
+            o2r.add_layout(Span(location=spantime*1000, dimension='height',
+                line_color=row[2], line_width=row[3], line_dash=row[4],
+                line_alpha=row[5]))
     # Put invisible points in for case that there are no events
     o2r.circle(matplotlib.dates.num2date(hTr[0:2]), [1, 1], line_alpha=0, fill_alpha=0)
     for n in range(len(famstarts)):
@@ -231,11 +284,27 @@ def plotTimelines(rtable, ftable, ttable, opt):
     p1.xaxis.axis_label = 'Date'
     p1.yaxis.axis_label = 'Cluster by Date ({}+ Members)'.format(opt.minplot)
     
+    if opt.anotfile != '':
+        for row in df.itertuples():
+            spantime = (datetime.datetime.strptime(row[1]
+                ,'%Y-%m-%dT%H:%M:%S')-datetime.datetime(1970, 1, 1)).total_seconds()
+            p1.add_layout(Span(location=spantime*1000, dimension='height',
+                line_color=row[2], line_width=row[3], line_dash=row[4],
+                line_alpha=row[5]))
+    
     r1 = figure(tools=TOOLSrec, plot_width=1250, plot_height=500, x_axis_type='datetime',
         x_range=o0r.x_range, title = 'Occurrence Timeline')
     r1.grid.grid_line_alpha = 0.3
     r1.xaxis.axis_label = 'Date'
     r1.yaxis.axis_label = 'Cluster by Date'    
+    
+    if opt.anotfile != '':
+        for row in df.itertuples():
+            spantime = (datetime.datetime.strptime(row[1]
+                ,'%Y-%m-%dT%H:%M:%S')-datetime.datetime(1970, 1, 1)).total_seconds()
+            r1.add_layout(Span(location=spantime*1000, dimension='height',
+                line_color=row[2], line_width=row[3], line_dash=row[4],
+                line_alpha=row[5]))
     
     # Steal YlOrRd (len=256) colormap from matplotlib
     colormap = matplotlib.cm.get_cmap('YlOrRd')

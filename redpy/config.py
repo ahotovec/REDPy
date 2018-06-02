@@ -221,6 +221,8 @@ class Options(object):
             'Settings','recplot') else 14.
         self.printVerboseCat=config.getboolean('Settings','verbosecatalog') if config.has_option(
             'Settings','verbosecatalog') else False
+        self.anotfile=config.get('Settings','anotfile') if config.has_option(
+            'Settings','anotfile') else ''
         self.checkComCat=config.getboolean('Settings','checkComCat') if config.has_option(
             'Settings','checkComCat') else False
         self.stalats=config.get('Settings','stalats') if config.has_option(
