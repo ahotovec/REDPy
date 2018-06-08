@@ -29,6 +29,7 @@ from matplotlib.transforms import offset_copy
 from bokeh.plotting import figure, output_file, save, gridplot
 from bokeh.models import HoverTool, ColumnDataSource, OpenURL, TapTool, Range1d, Div, Span
 from bokeh.models import Arrow, VeeHead, ColorBar, LogColorMapper, LogTicker, LabelSet
+from bokeh.models.glyphs import Line, Quad
 from bokeh.layouts import column
 try:
     import urllib2
@@ -216,9 +217,11 @@ def plotTimelines(rtable, ftable, ttable, opt):
                 line_color=row[2], line_width=row[3], line_dash=row[4],
                 line_alpha=row[5]))
     for n in range(len(famstarts)):
-        o2.line((matplotlib.dates.num2date(famstarts[n]), matplotlib.dates.num2date(
-            famstarts[n]+longevity[n])), (longevity[n], longevity[n]), color='red',
-            line_alpha=0.5)
+        source = ColumnDataSource(dict(x=np.array((matplotlib.dates.num2date(
+                famstarts[n]), matplotlib.dates.num2date(famstarts[n]+longevity[n]))),
+                y=np.array((longevity[n], longevity[n]))))
+        o2.add_glyph(source, Line(x="x", y="y", line_color='red',
+                line_alpha=0.5))
         
     o2r = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime',
         x_range=o0r.x_range, y_axis_type='log', y_range=[0.1,
@@ -238,14 +241,16 @@ def plotTimelines(rtable, ftable, ttable, opt):
     o2r.circle(matplotlib.dates.num2date(hTr[0:2]), [1, 1], line_alpha=0, fill_alpha=0)
     for n in range(len(famstarts)):
         if (max(alltrigs)-opt.recplot)<=famstarts[n]:
-            o2r.line((matplotlib.dates.num2date(famstarts[n]), matplotlib.dates.num2date(
-                famstarts[n]+longevity[n])), (longevity[n], longevity[n]), color='red',
-                line_alpha=0.5)
+            source = ColumnDataSource(dict(x=np.array((matplotlib.dates.num2date(
+                famstarts[n]), matplotlib.dates.num2date(famstarts[n]+longevity[n]))),
+                y=np.array((longevity[n], longevity[n]))))
+            o2r.add_glyph(source, Line(x="x", y="y", line_color='red',
+                line_alpha=0.5))
         elif (max(alltrigs)-opt.recplot)<=famstarts[n]+longevity[n]:
             o2r.add_layout(Arrow(end=VeeHead(size=3, line_color='red', line_alpha=0.5),
                     line_color='red', line_alpha=0.5,
                     x_start=matplotlib.dates.num2date(famstarts[n]+longevity[n]),
-                    x_end=matplotlib.dates.num2date(hTr[0]-0.5),
+                    x_end=matplotlib.dates.num2date(hTr[0]-barpadr),
                     y_start=longevity[n], y_end=longevity[n]))
             
     # Build hover to show an image of the cluster core
@@ -329,16 +334,19 @@ def plotTimelines(rtable, ftable, ttable, opt):
         histlog = np.log10(hist[hist>0])
         ind = [int(min(255,255*(i/2))) for i in histlog]
         colors = [bokehpalette[i] for i in ind]
-        
+                
         if len(dt[members]) >= opt.minplot:
-        
-            # Date is required as datenum
-            p1.line((matplotlib.dates.num2date(min(dt[members])),
-                matplotlib.dates.num2date(max(dt[members]))), (n, n),
-                color='black')
             
-            p1.quad(top=n+0.3, bottom=n-0.3, left=d1, right=d2,
-                color=colors)            
+            source = ColumnDataSource(dict(x=np.array((matplotlib.dates.num2date(
+                min(dt[members])), matplotlib.dates.num2date(max(dt[members])))),
+                y=np.array((n, n))))
+            p1.add_glyph(source, Line(x="x", y="y", line_color='black'))
+            
+            source = ColumnDataSource(dict(top=np.ones(len(d1))*(n+0.3),
+                bottom=np.ones(len(d1))*(n-0.3), left=np.array(d1), right=np.array(d2),
+                color=np.array(colors)))
+            p1.add_glyph(source, Quad(left="left", right="right", top="top",
+                bottom="bottom", fill_color="color", line_color=None))
             
             p1.add_layout(LabelSet(x=matplotlib.dates.num2date(
                 max(h[np.where(hist>0)]+1.0/24)),
@@ -369,24 +377,32 @@ def plotTimelines(rtable, ftable, ttable, opt):
             
             if min(dt[members])<hRr[0]:
                 
-                r1.line((matplotlib.dates.num2date(hTr[0]),
-                    matplotlib.dates.num2date(max(dt[members]))), (m, m),
-                    color='black')
+                source = ColumnDataSource(dict(x=np.array((matplotlib.dates.num2date(
+                    hTr[0]), matplotlib.dates.num2date(max(dt[members])))),
+                    y=np.array((m, m))))
+                r1.add_glyph(source, Line(x="x", y="y", line_color='black'))
+            
                 r1.add_layout(Arrow(end=VeeHead(size=3),
                     x_start=matplotlib.dates.num2date(hTr[0]+0.01),
-                    x_end=matplotlib.dates.num2date(hTr[0]-0.5),
+                    x_end=matplotlib.dates.num2date(hTr[0]-barpadr),
                     y_start=m, y_end=m))
 
                 idx = np.where(h[np.where(hist>0)[0]]>hRr[0])[0]
                         
             else:
-                r1.line((matplotlib.dates.num2date(min(dt[members])),
-                    matplotlib.dates.num2date(max(dt[members]))), (m, m),
-                    color='black')
-                idx = np.arange(len(d1))
+            
+                source = ColumnDataSource(dict(x=np.array((matplotlib.dates.num2date(
+                    min(dt[members])), matplotlib.dates.num2date(max(dt[members])))),
+                    y=np.array((m, m))))
+                r1.add_glyph(source, Line(x="x", y="y", line_color='black'))
                 
-            r1.quad(top=m+0.3, bottom=m-0.3, left=np.array(d1)[idx],
-                right=np.array(d2)[idx], color=np.array(colors)[idx])                   
+                idx = np.arange(len(d1))            
+            
+            source = ColumnDataSource(dict(top=np.ones(len(idx))*(m+0.3), bottom=np.ones(
+                len(idx))*(m-0.3), left=np.array(d1)[idx], right=np.array(d2)[idx],
+                color=np.array(colors)[idx]))
+            r1.add_glyph(source, Quad(left="left", right="right", top="top",
+                bottom="bottom", fill_color="color", line_color=None))
                 
             r1.add_layout(LabelSet(x=np.array(d2)[-1],
                 y=m, text=['{}'.format(len(dt[members]))], level='glyph',
@@ -469,7 +485,7 @@ def plotTimelines(rtable, ftable, ttable, opt):
     o = gridplot([[Div(text='<h1>{0}</h1>'.format(
                        opt.title), width=1000)],[o0],[o1],[p1],[o2]])
     o_recent = gridplot([[Div(text='<h1>{0} (Last {1:.1f} Days)</h1>'.format(
-                              opt.title,opt.recplot), width=1000)],[o0r],[o1r],[r1],[o2r]])
+                       opt.title,opt.recplot), width=1000)],[o0r],[o1r],[r1],[o2r]])
         
     output_file('{}/overview.html'.format(opt.groupName),
         title='{} Overview'.format(opt.title))
@@ -1011,6 +1027,16 @@ def printCatalog(rtable, ftable, opt):
             for i in np.argsort(startTimes[fam]):
                 f.write("{0} {1}\n".format(cnum,(UTCDateTime(startTimes[fam][i]) +
                     windowStarts[fam][i]/opt.samprate).isoformat()))
+    
+    """
+    startTimes = rtable.cols.startTime[:]
+    windowStarts = rtable.cols.windowStart[:]
+    famNums = np.ones(len(windowStarts), dtype=int)
+    for cnum in range(ftable.attrs.nClust):
+        fam = np.fromstring(ftable[cnum]['members'], dtype=int, sep=' ')
+        famNums[fam] = cnum
+    print(famNums)   
+    """ 
 
                     
 def printOrphanCatalog(otable, opt):
