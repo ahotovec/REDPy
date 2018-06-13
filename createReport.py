@@ -25,7 +25,8 @@ optional arguments:
 """
 
 parser = argparse.ArgumentParser(description=
-    "Run this script to manually remove families/clusters")
+    "Run this script to manually produce a more detailed 'report' page for a given
+    family (or families)")
 parser.add_argument('famnum', metavar='N', type=int, nargs='+',
     help="family number(s) to be reported on")
 parser.add_argument("-v", "--verbose", action="count", default=0,
