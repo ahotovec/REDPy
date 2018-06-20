@@ -8,8 +8,9 @@ import numpy as np
 import obspy
 from obspy import UTCDateTime
 import time
+import datetime as dt
 import pandas as pd
-from matplotlib.dates import num2date
+from matplotlib.dates import num2date, date2num
 
 """
 Run this script to compare table with a specific catalog of events for agreement.
@@ -64,14 +65,13 @@ df['Cluster'] = ''
 df['dt'] = ''
 
 # Set up times to compare
-evtimes = [UTCDateTime(i) for i in pd.to_datetime(df['Time UTC']).tolist()]
-rtimes = [UTCDateTime(i) for i in rtable.cols.startTime[:]]
-rtimes += rtable.cols.windowStart[:]/opt.samprate
-otimes = [UTCDateTime(i) for i in otable.cols.startTime[:]]
-otimes += otable.cols.windowStart[:]/opt.samprate
-jtimes = [UTCDateTime(i) for i in jtable.cols.startTime[:]]
-jtimes += jtable.cols.windowStart[:]/opt.samprate
-ttimes = [UTCDateTime(num2date(i)) for i in ttable.cols.startTimeMPL[:]]
+evtimes = date2num(np.array(pd.to_datetime(df['Time UTC']).tolist()))
+rtimes = rtable.cols.startTimeMPL[:]+rtable.cols.windowStart[:]/86400.0/opt.samprate
+otimes = otable.cols.startTimeMPL[:]+otable.cols.windowStart[:]/86400.0/opt.samprate
+jtimes = date2num(np.array([dt.datetime.strptime(jtable.cols.startTime[i],
+    '%Y-%m-%dT%H:%M:%S.%f')+dt.timedelta(
+    seconds=jtable.cols.windowStart[i]/opt.samprate) for i in range(len(jtable))]))
+ttimes = ttable.cols.startTimeMPL[:]
 
 # Flatten families to list
 famlist = np.zeros((len(rtimes),)).astype(int)
@@ -81,42 +81,45 @@ for fnum in range(len(ftable)):
 
 for i in range(len(df)):
     
+    if i%1000 == 0 and i>0:
+        print('{:3.2f}% complete'.format(100.0*i/len(df)))
+    
     # See if there's junk that matches
     if len(jtimes) > 0:
         dtimesj = jtimes-evtimes[i]
         bestjunk = dtimesj[np.argmin(np.abs(dtimesj))]
-        if np.abs(bestjunk) < terr:
+        if np.abs(bestjunk) < terr/86400:
             df['Cluster'][i] = 'junk'
-            df['dt'][i] = bestjunk
-    
+            df['dt'][i] = bestjunk*86400
+            
     # See if there are any expired orphans that match
     if len(ttimes) > 0:
         dtimest = np.array(ttimes)-evtimes[i]
         besttrig = dtimest[np.argmin(np.abs(dtimest))]
-        if np.abs(besttrig) < terr:
+        if np.abs(besttrig) < terr/86400:
             df['Cluster'][i] = 'expired'
-            df['dt'][i] = besttrig
+            df['dt'][i] = besttrig*86400
     
     # See if there's an orphan that matches
     if len(otimes) > 0:
         dtimeso = otimes-evtimes[i]
         bestorph = dtimeso[np.argmin(np.abs(dtimeso))]
-        if np.abs(bestorph) < terr:
+        if np.abs(bestorph) < terr/86400:
             df['Cluster'][i] = 'orphan'
-            df['dt'][i] = bestorph
+            df['dt'][i] = bestorph*86400
     
     # See if there's a repeater that matches
     if len(rtimes) > 0:
         dtimesr = rtimes-evtimes[i]
         bestr = dtimesr[np.argmin(np.abs(dtimesr))]
-        if np.abs(bestr) < terr:
+        if np.abs(bestr) < terr/86400:
             df['Cluster'][i] = famlist[np.argmin(np.abs(dtimesr))]
-            df['dt'][i] = bestr
-
-
+            df['dt'][i] = bestr*86400
+        
 # Write to matches.csv
 if args.verbose: print("Saving to matches_{}.csv".format(opt.groupName))
 df.to_csv('matches_{}.csv'.format(opt.groupName), index=False)   
+
 
 if args.verbose: print("Closing table...")
 h5file.close()
