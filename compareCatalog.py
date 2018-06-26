@@ -68,7 +68,7 @@ df['dt'] = ''
 evtimes = date2num(np.array(pd.to_datetime(df['Time UTC']).tolist()))
 rtimes = rtable.cols.startTimeMPL[:]+rtable.cols.windowStart[:]/86400.0/opt.samprate
 otimes = otable.cols.startTimeMPL[:]+otable.cols.windowStart[:]/86400.0/opt.samprate
-jtimes = date2num(np.array([dt.datetime.strptime(jtable.cols.startTime[i],
+jtimes = date2num(np.array([dt.datetime.strptime(jtable.cols.startTime[i].decode('utf-8'),
     '%Y-%m-%dT%H:%M:%S.%f')+dt.timedelta(
     seconds=jtable.cols.windowStart[i]/opt.samprate) for i in range(len(jtable))]))
 ttimes = ttable.cols.startTimeMPL[:]
