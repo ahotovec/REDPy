@@ -61,13 +61,17 @@ terr = opt.winlen/opt.samprate
 # location and do some simple ray-tracing like in checkComCat(), but at this point I'm
 # not convinced it's necessary. Column dt here is the REDPy trigger time - csv catalog
 # time; if it is negative, REDPy either triggered early or it may not be a match.
+# Amplitude is amplitude on printed station.
 df['Cluster'] = ''
 df['dt'] = ''
+df['Amplitude'] = ''
 
 # Set up times to compare
 evtimes = date2num(np.array(pd.to_datetime(df['Time UTC']).tolist()))
 rtimes = rtable.cols.startTimeMPL[:]+rtable.cols.windowStart[:]/86400.0/opt.samprate
+ramps = rtable.cols.windowAmp[:][:,opt.printsta]
 otimes = otable.cols.startTimeMPL[:]+otable.cols.windowStart[:]/86400.0/opt.samprate
+oamps = otable.cols.windowAmp[:][:,opt.printsta]
 jtimes = date2num(np.array([dt.datetime.strptime(jtable.cols.startTime[i].decode('utf-8'),
     '%Y-%m-%dT%H:%M:%S.%f')+dt.timedelta(
     seconds=jtable.cols.windowStart[i]/opt.samprate) for i in range(len(jtable))]))
@@ -91,6 +95,7 @@ for i in range(len(df)):
         if np.abs(bestjunk) < terr/86400:
             df['Cluster'][i] = 'junk'
             df['dt'][i] = bestjunk*86400
+            df['Amplitude'][i] = 'NaN'
             
     # See if there are any expired orphans that match
     if len(ttimes) > 0:
@@ -99,6 +104,7 @@ for i in range(len(df)):
         if np.abs(besttrig) < terr/86400:
             df['Cluster'][i] = 'expired'
             df['dt'][i] = besttrig*86400
+            df['Amplitude'][i] = 'NaN'
     
     # See if there's an orphan that matches
     if len(otimes) > 0:
@@ -107,6 +113,7 @@ for i in range(len(df)):
         if np.abs(bestorph) < terr/86400:
             df['Cluster'][i] = 'orphan'
             df['dt'][i] = bestorph*86400
+            df['Amplitude'][i] = oamps[np.argmin(np.abs(dtimeso))]
     
     # See if there's a repeater that matches
     if len(rtimes) > 0:
@@ -115,6 +122,7 @@ for i in range(len(df)):
         if np.abs(bestr) < terr/86400:
             df['Cluster'][i] = famlist[np.argmin(np.abs(dtimesr))]
             df['dt'][i] = bestr*86400
+            df['Amplitude'][i] = ramps[np.argmin(np.abs(dtimesr))]
         
 # Write to matches.csv
 if args.verbose: print("Saving to matches_{}.csv".format(opt.groupName))
