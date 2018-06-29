@@ -31,6 +31,7 @@ from bokeh.models import HoverTool, ColumnDataSource, OpenURL, TapTool, Range1d,
 from bokeh.models import Arrow, VeeHead, ColorBar, LogColorMapper, LogTicker, LabelSet
 from bokeh.models.glyphs import Line, Quad
 from bokeh.layouts import column
+from bokeh.palettes import inferno, all_palettes
 try:
     import urllib2
 except:
@@ -1232,8 +1233,8 @@ def printVerboseCatalog(rtable, ftable, ctable, opt):
                     dt = spacing[j]
                 j += 1
                 
-                f.write("{0}\t{1}\t{2:4.3f}\t{3:5.2f}\t{4}\t\t{5:2.1f}\n".format(cnum,evTime.isoformat(),
-                    fi[fam][i],amp,dt,xcorr[i]))
+                f.write("{0}\t{1}\t{2:4.3f}\t{3:5.2f}\t{4}\t\t{5:3.2f}\n".format(
+                    cnum,evTime.isoformat(),fi[fam][i],amp,dt,xcorr[i]))
 
 
 def plotReport(rtable, ftable, ctable, opt, fnum, ordered):
@@ -1253,6 +1254,10 @@ def plotReport(rtable, ftable, ctable, opt, fnum, ordered):
     matplotlib.rcParams['font.family'] = 'sans-serif'
     matplotlib.rcParams['font.sans-serif'] = ['Arial']
     matplotlib.rcParams['font.size'] = 8.0    
+    
+    # Read in annotation file (if it exists)
+    if opt.anotfile != '':
+        df = pd.read_csv(opt.anotfile)
     
     # Set up variables
     fam = np.fromstring(ftable[fnum]['members'], dtype=int, sep=' ')
@@ -1307,15 +1312,32 @@ def plotReport(rtable, ftable, ctable, opt, fnum, ordered):
     ### BOKEH PLOTS    
     oTOOLS = ['pan,box_zoom,reset,save,tap']    
     
-    # Amplitude vs. time
+    # Amplitude vs. time on all stations with interactive show/hide
     o0 = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime',
-        title='Amplitude on {} with Time'.format(opt.station.split(',')[opt.printsta]),
-        y_axis_type='log', y_range=[1, 2*np.max(windowAmp)])
+        title='Amplitude with Time (Click name to hide)', y_axis_type='log',
+        y_range=[0.01,2*np.amax(windowAmps)])
     o0.grid.grid_line_alpha = 0.3
     o0.xaxis.axis_label = 'Date'
     o0.yaxis.axis_label = 'Counts'
-    o0.circle(matplotlib.dates.num2date(startTimeMPL[fam]), windowAmp[fam], color='red',
-        line_alpha=0, size=4, fill_alpha=0.5)
+    if opt.anotfile != '':
+        for row in df.itertuples():
+            spantime = (datetime.datetime.strptime(row[1]
+                ,'%Y-%m-%dT%H:%M:%S')-datetime.datetime(1970, 1, 1)).total_seconds()
+            o0.add_layout(Span(location=spantime*1000, dimension='height',
+                line_color=row[2], line_width=row[3], line_dash=row[4],
+                line_alpha=row[5]))
+    if opt.nsta <= 8:
+        palette = all_palettes['YlOrRd'][9]
+    else:
+        palette = inferno(opt.nsta+1)
+    for sta, staname in enumerate(opt.station.split(',')):
+        o0.circle(matplotlib.dates.num2date(startTimeMPL[fam]), windowAmps[fam][:,sta],
+            color=palette[sta], line_alpha=0, size=4, fill_alpha=0.5,
+            legend='{}.{}'.format(staname,opt.channel.split(',')[sta]))    
+    o0.legend.location='bottom_left'
+    o0.legend.orientation='horizontal'
+    o0.legend.click_policy='hide'
+    
     
     # Time since last event
     o1 = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime',
@@ -1324,6 +1346,13 @@ def plotReport(rtable, ftable, ctable, opt, fnum, ordered):
     o1.grid.grid_line_alpha = 0.3
     o1.xaxis.axis_label = 'Date'
     o1.yaxis.axis_label = 'Interval (hr)'
+    if opt.anotfile != '':
+        for row in df.itertuples():
+            spantime = (datetime.datetime.strptime(row[1]
+                ,'%Y-%m-%dT%H:%M:%S')-datetime.datetime(1970, 1, 1)).total_seconds()
+            o1.add_layout(Span(location=spantime*1000, dimension='height',
+                line_color=row[2], line_width=row[3], line_dash=row[4],
+                line_alpha=row[5]))
     o1.circle(matplotlib.dates.num2date(catalog[1:]), spacing, color='red',
         line_alpha=0, size=4, fill_alpha=0.5)
     
@@ -1333,7 +1362,14 @@ def plotReport(rtable, ftable, ctable, opt, fnum, ordered):
         y_range=[0, 1.02])
     o2.grid.grid_line_alpha = 0.3
     o2.xaxis.axis_label = 'Date'
-    o2.yaxis.axis_label = 'CCC'   
+    o2.yaxis.axis_label = 'CCC'  
+    if opt.anotfile != '':
+        for row in df.itertuples():
+            spantime = (datetime.datetime.strptime(row[1]
+                ,'%Y-%m-%dT%H:%M:%S')-datetime.datetime(1970, 1, 1)).total_seconds()
+            o2.add_layout(Span(location=spantime*1000, dimension='height',
+                line_color=row[2], line_width=row[3], line_dash=row[4],
+                line_alpha=row[5])) 
     o2.circle(matplotlib.dates.num2date(catalog), Cfull[np.where(famcat==core)[0],:][0],
         color='red', line_alpha=0, size=4, fill_alpha=0.5)
     
@@ -1377,6 +1413,14 @@ def plotReport(rtable, ftable, ctable, opt, fnum, ordered):
         plt.title('Stored Correlation Matrix (Ordered)', fontweight='bold')
     else:
         plt.title('Stored Correlation Matrix', fontweight='bold')
+        if opt.anotfile!='':
+            for anot in range(len(df)):
+                hloc = np.interp(matplotlib.dates.date2num(
+                    pd.to_datetime(df['Time'][anot])),startTimeMPL[fam][catalogind],
+                    np.array(range(len(fam))))
+                if hloc!=0:
+                    ax1.axhline(np.floor(hloc)+0.5,color='k',
+                        linewidth=df['Weight'][anot]/2.,linestyle=df['Line Type'][anot])
     ax2 = fig.add_subplot(1,2,2)
     cax2 = ax2.imshow(Cfull, vmin=opt.cmin-0.05, cmap='Spectral_r')
     cbar2 = plt.colorbar(cax2, ticks=np.arange(opt.cmin-0.05,1.05,0.05))
@@ -1387,6 +1431,14 @@ def plotReport(rtable, ftable, ctable, opt, fnum, ordered):
         plt.title('Full Correlation Matrix (Ordered)', fontweight='bold')
     else:
         plt.title('Full Correlation Matrix', fontweight='bold')
+        if opt.anotfile!='':
+            for anot in range(len(df)):
+                hloc = np.interp(matplotlib.dates.date2num(
+                    pd.to_datetime(df['Time'][anot])),startTimeMPL[fam][catalogind],
+                    np.array(range(len(fam))))
+                if hloc!=0:
+                    ax2.axhline(np.floor(hloc)+0.5,color='k',
+                        linewidth=df['Weight'][anot]/2.,linestyle=df['Line Type'][anot])
     plt.tight_layout()
     plt.savefig('{0}/clusters/{1}-reportcmat.png'.format(opt.groupName,fnum), dpi=100)
     plt.close(fig)
@@ -1398,7 +1450,7 @@ def plotReport(rtable, ftable, ctable, opt, fnum, ordered):
     for sta in range(opt.nsta):
         n = -1
         data = np.zeros((len(fam), int(opt.winlen*2)))
-        ax = fig2.add_subplot(np.ceil((opt.nsta)/2), 2, sta+1)
+        ax = fig2.add_subplot(np.ceil((opt.nsta)/2.), 2, sta+1)
         for r in famtable:
             if ordered:
                 plt.title('{0}.{1} (Ordered)'.format(opt.station.split(',')[sta],
@@ -1406,6 +1458,15 @@ def plotReport(rtable, ftable, ctable, opt, fnum, ordered):
             else:
                 plt.title('{0}.{1}'.format(opt.station.split(',')[sta],
                           opt.channel.split(',')[sta]), fontweight='bold')
+                if opt.anotfile!='':
+                    for anot in range(len(df)):
+                        hloc = np.interp(matplotlib.dates.date2num(
+                            pd.to_datetime(df['Time'][anot])),
+                            startTimeMPL[fam][catalogind],np.array(range(len(fam))))
+                        if hloc!=0:
+                            ax.axhline(np.floor(hloc)+0.5,color='k',
+                                linewidth=df['Weight'][anot]/2.,
+                                linestyle=df['Line Type'][anot])
             n = n+1        
             waveform = r['waveform'][sta*opt.wshape:(sta+1)*opt.wshape]
             tmp = waveform[max(0, windowStart[famcat[n]]-int(
