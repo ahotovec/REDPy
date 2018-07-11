@@ -52,7 +52,7 @@ def getData(tstart, tend, opt):
                 root,'*.mseed')) for root, dirs, files in os.walk(opt.mseeddir)))+list(
                 itertools.chain.from_iterable(glob.iglob(os.path.join(
                 root,'*.MSEED')) for root, dirs, files in os.walk(opt.mseeddir)))
-            
+                
         # Determine which subset of files to load based on start and end times and
         # station name; we'll fully deal with stations below
         flist_sub = []
@@ -64,9 +64,10 @@ def getData(tstart, tend, opt):
                 # Check if contains either start or end time
                 ststart = stmp[0].stats.starttime
                 stend = stmp[0].stats.endtime
-                if (ststart<=tstart and tstart<=stend) or (ststart<=tend and tend<=stend):
+                if (ststart<=tstart and tstart<=stend) or (ststart<=tend and
+                    tend<=stend) or (tstart<=stend and ststart<=tend):
                     flist_sub.append(f)
-    
+        
         # Fully load data from file
         stmp = Stream()
         for f in flist_sub:
@@ -93,7 +94,7 @@ def getData(tstart, tend, opt):
             chalist.append(s.stats.channel)
             netlist.append(s.stats.network)
             loclist.append(s.stats.location)
-    
+            
         # Find match of SCNL in header or fill empty
         for n in range(len(stas)):
             for m in range(len(stalist)):
