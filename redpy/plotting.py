@@ -1092,7 +1092,7 @@ def createJunkPlots(jtable, opt):
         ax.plot(dat,'k',linewidth=0.25)
         plt.autoscale(tight=True)
         plt.savefig('{0}/junk/{1}-{2}.png'.format(opt.groupName,
-            UTCDateTime(r['startTime'])+opt.ptrig,r['isjunk']), dpi=100)
+            UTCDateTime(r['startTime']).format_fissures()+opt.ptrig,r['isjunk']), dpi=100)
         plt.close(fig)
 
             
