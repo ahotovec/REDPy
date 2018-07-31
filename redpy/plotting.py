@@ -1197,14 +1197,14 @@ def printVerboseCatalog(rtable, ftable, ctable, opt):
         startTimes = rtable.cols.startTime[:]
         startTimeMPL = rtable.cols.startTimeMPL[:]
         windowStarts = rtable.cols.windowStart[:]
-        windowAmps = rtable.cols.windowAmp[:][:,opt.printsta]
+        windowAmps = rtable.cols.windowAmp[:]
         ids = rtable.cols.id[:]
         id1 = ctable.cols.id1[:]
         id2 = ctable.cols.id2[:]
         ccc = ctable.cols.ccc[:]
         fi = np.nanmean(rtable.cols.FI[:], axis=1)
         
-        f.write("cnum\tevTime                        \tfi\tamp\tdt\t\txcorr\n")
+        f.write("cnum\tevTime                        \tfi\tamps\tdt\t\txcorr\n")
         for cnum in range(ftable.attrs.nClust):
             fam = np.fromstring(ftable[cnum]['members'], dtype=int, sep=' ')
             
@@ -1226,14 +1226,14 @@ def printVerboseCatalog(rtable, ftable, ctable, opt):
             for i in catalogind:
                 evTime = (UTCDateTime(startTimes[fam][i]) +
                     windowStarts[fam][i]/opt.samprate)
-                amp = windowAmps[fam][i]
+                amp = windowAmps[fam[i],:]
                 if j == -1:
                     dt = 'NaN         '
                 else:
                     dt = spacing[j]
                 j += 1
                 
-                f.write("{0}\t{1}\t{2:4.3f}\t{3:5.2f}\t{4}\t\t{5:3.2f}\n".format(
+                f.write("{0}\t{1}\t{2:4.3f}\t{3}\t{4}\t\t{5:3.2f}\n".format(
                     cnum,evTime.isoformat(),fi[fam][i],amp,dt,xcorr[i]))
 
 
