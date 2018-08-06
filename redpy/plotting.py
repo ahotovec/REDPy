@@ -1233,8 +1233,10 @@ def printVerboseCatalog(rtable, ftable, ctable, opt):
                     dt = spacing[j]
                 j += 1
                 
-                f.write("{0}\t{1}\t{2:4.3f}\t{3}\t{4}\t\t{5:3.2f}\n".format(
-                    cnum,evTime.isoformat(),fi[fam][i],amp,dt,xcorr[i]))
+                f.write("{0}\t{1}\t{2:4.3f}\t[".format(cnum,evTime.isoformat(),fi[fam][i]))
+                for a in amp:
+                    f.write(" {} ".format(a))
+                f.write("]\t{0}\t\t{1:3.2f}\n".format(dt,xcorr[i]))
 
 
 def plotReport(rtable, ftable, ctable, opt, fnum, ordered):
