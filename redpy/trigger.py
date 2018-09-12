@@ -83,7 +83,7 @@ def getData(tstart, tend, opt):
             if stmp[m].stats.sampling_rate != opt.samprate:
                 stmp[m] = stmp[m].resample(opt.samprate)
         stmp = stmp.merge(method=1, fill_value=0)
-    
+        
         # Only grab stations/channels that we want and in order
         netlist = []
         stalist = []
@@ -207,8 +207,11 @@ def trigger(st, stC, rtable, opt):
                 
                 ptime = ttime - t
                 
-                # Slice and save as first trace              
-                ttmp = st.slice(ttime - opt.ptrig, ttime + opt.atrig)
+                # Cut out and append all data to first trace              
+                tmp = st.slice(ttime - opt.ptrig, ttime + opt.atrig)
+                ttmp = tmp.copy()
+                ttmp = ttmp.trim(ttime - opt.ptrig, ttime + opt.atrig, pad=True,
+                    fill_value=0)
                 ttmp[0].data = ttmp[0].data[0:opt.wshape] - np.mean(
                     ttmp[0].data[0:opt.wshape])
                 for s in range(1,len(ttmp)):
