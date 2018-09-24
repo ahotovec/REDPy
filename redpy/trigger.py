@@ -210,7 +210,7 @@ def trigger(st, stC, rtable, opt):
                 # Cut out and append all data to first trace              
                 tmp = st.slice(ttime - opt.ptrig, ttime + opt.atrig)
                 ttmp = tmp.copy()
-                ttmp = ttmp.trim(ttime - opt.ptrig, ttime + opt.atrig, pad=True,
+                ttmp = ttmp.trim(ttime - opt.ptrig, ttime + opt.atrig + 0.05, pad=True,
                     fill_value=0)
                 ttmp[0].data = ttmp[0].data[0:opt.wshape] - np.mean(
                     ttmp[0].data[0:opt.wshape])
