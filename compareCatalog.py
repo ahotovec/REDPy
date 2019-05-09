@@ -65,13 +65,16 @@ terr = opt.winlen/opt.samprate
 df['Cluster'] = ''
 df['dt'] = ''
 df['Amplitude'] = ''
+df['FI'] = ''
 
 # Set up times to compare
 evtimes = date2num(np.array(pd.to_datetime(df['Time UTC']).tolist()))
 rtimes = rtable.cols.startTimeMPL[:]+rtable.cols.windowStart[:]/86400.0/opt.samprate
 ramps = rtable.cols.windowAmp[:][:,opt.printsta]
+fi = np.nanmean(rtable.cols.FI[:], axis=1)
 otimes = otable.cols.startTimeMPL[:]+otable.cols.windowStart[:]/86400.0/opt.samprate
 oamps = otable.cols.windowAmp[:][:,opt.printsta]
+ofi = np.nanmean(otable.cols.FI[:], axis=1)
 jtimes = date2num(np.array([dt.datetime.strptime(jtable.cols.startTime[i].decode('utf-8'),
     '%Y-%m-%dT%H:%M:%S.%f')+dt.timedelta(
     seconds=jtable.cols.windowStart[i]/opt.samprate) for i in range(len(jtable))]))
@@ -96,6 +99,7 @@ for i in range(len(df)):
             df['Cluster'][i] = 'junk'
             df['dt'][i] = bestjunk*86400
             df['Amplitude'][i] = 'NaN'
+            df['FI'][i] = 'NaN'
             
     # See if there are any expired orphans that match
     if len(ttimes) > 0:
@@ -105,6 +109,7 @@ for i in range(len(df)):
             df['Cluster'][i] = 'expired'
             df['dt'][i] = besttrig*86400
             df['Amplitude'][i] = 'NaN'
+            df['FI'][i] = 'NaN'
     
     # See if there's an orphan that matches
     if len(otimes) > 0:
@@ -114,6 +119,7 @@ for i in range(len(df)):
             df['Cluster'][i] = 'orphan'
             df['dt'][i] = bestorph*86400
             df['Amplitude'][i] = oamps[np.argmin(np.abs(dtimeso))]
+            df['FI'][i] = ofi[np.argmin(np.abs(dtimeso))]
     
     # See if there's a repeater that matches
     if len(rtimes) > 0:
@@ -123,6 +129,7 @@ for i in range(len(df)):
             df['Cluster'][i] = famlist[np.argmin(np.abs(dtimesr))]
             df['dt'][i] = bestr*86400
             df['Amplitude'][i] = ramps[np.argmin(np.abs(dtimesr))]
+            df['FI'][i] = fi[np.argmin(np.abs(dtimesr))]
         
 # Write to matches.csv
 if args.verbose: print("Saving to matches_{}.csv".format(opt.groupName))
