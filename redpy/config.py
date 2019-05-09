@@ -106,6 +106,7 @@ class Options(object):
         recplot: Number of days for 'recent' plot (default 14 days)
         plotsta: Station index in station list to be plotted (default 2)
         verbosecatalog: Add additional columns to the catalog file (default False)
+        amplims: Use 'global' or 'family' to define amplitude plot limits (default global)
         
         COMCAT PARAMETERS
         checkComCat: Use ComCat to find located seismicity that might match repeaters
@@ -221,6 +222,8 @@ class Options(object):
             'Settings','recplot') else 14.
         self.printVerboseCat=config.getboolean('Settings','verbosecatalog') if config.has_option(
             'Settings','verbosecatalog') else False
+        self.amplims=config.get('Settings','amplims') if config.has_option(
+            'Settings','amplims') else 'global'
         self.anotfile=config.get('Settings','anotfile') if config.has_option(
             'Settings','anotfile') else ''
         self.checkComCat=config.getboolean('Settings','checkComCat') if config.has_option(

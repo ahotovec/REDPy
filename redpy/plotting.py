@@ -609,8 +609,11 @@ def plotFamilies(rtable, ftable, ctable, opt):
                     tmp = waveform[max(0, windowStart[fam[n]]-int(
                         opt.ptrig*opt.samprate)):min(opt.wshape,
                         windowStart[fam[n]]+int(opt.atrig*opt.samprate))]
-                    data[n, :] = tmp[int(opt.ptrig*opt.samprate - opt.winlen*0.5):int(
-                        opt.ptrig*opt.samprate + opt.winlen*1.5)]/windowAmp[fam[n]]
+                    try:
+                        data[n, :] = tmp[int(opt.ptrig*opt.samprate - opt.winlen*0.5):int(
+                            opt.ptrig*opt.samprate + opt.winlen*1.5)]/windowAmp[fam[n]]
+                    except (ValueError, Exception):
+                        print('Error in printing family {}, moving on...'.format(cnum))
                 if len(fam) > 12:
                     ax1.imshow(data, aspect='auto', vmin=-1, vmax=1, cmap='RdBu',
                         interpolation='nearest', extent=[-1*opt.winlen*0.5/opt.samprate,
@@ -699,6 +702,21 @@ def plotFamilies(rtable, ftable, ctable, opt):
             ax2.set_xlim(0,opt.fmax*1.5)
             ax2.legend(['Stack','Core'], loc='upper right', frameon=False)
             
+            # Set min/max for plotting
+            if opt.amplims == 'family':
+                windowAmpFam = windowAmp[fam[catalogind]]
+                try:
+                    ymin = 0.5*np.min(windowAmpFam[np.nonzero(windowAmpFam)])
+                    ymax = 2*np.max(windowAmpFam)
+                except ValueError:
+                    # Use global if all zeros
+                    ymin = 0.5*np.min(windowAmp[np.nonzero(windowAmp)])
+                    ymax = 2*np.max(windowAmp)
+            else:
+                # Use global maximum/minimum
+                ymin = 0.5*np.min(windowAmp[np.nonzero(windowAmp)])
+                ymax = 2*np.max(windowAmp)
+            
             # Plot amplitude timeline
             ax3 = fig.add_subplot(9, 3, (10,15))
             ax3.plot_date(catalog, windowAmp[fam[catalogind]],
@@ -706,7 +724,7 @@ def plotFamilies(rtable, ftable, ctable, opt):
                     markersize=3)
             myFmt = matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M')
             ax3.xaxis.set_major_formatter(myFmt)
-            ax3.set_ylim(1, max(rtable.cols.windowAmp[:][:,opt.printsta])+500)
+            ax3.set_ylim(ymin, ymax)
             ax3.margins(0.05)
             ax3.set_ylabel('Amplitude (Counts)', style='italic')
             ax3.set_xlabel('Date', style='italic')
@@ -1315,9 +1333,19 @@ def plotReport(rtable, ftable, ctable, opt, fnum, ordered):
     oTOOLS = ['pan,box_zoom,reset,save,tap']    
     
     # Amplitude vs. time on all stations with interactive show/hide
+    # Set min/max for plotting
+    if opt.amplims == 'family':
+        windowAmpFam = windowAmps[fam[catalogind]][:]
+        ymin = 0.25*np.amin(windowAmpFam[np.nonzero(windowAmpFam)])
+        ymax = 4*np.amax(windowAmpFam)
+    else:
+        # Use global maximum
+        ymin = 0.25*np.amin(windowAmps[np.nonzero(windowAmps)])
+        ymax = 4*np.amax(windowAmps)            
+    
     o0 = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime',
         title='Amplitude with Time (Click name to hide)', y_axis_type='log',
-        y_range=[0.01,2*np.amax(windowAmps)])
+        y_range=[ymin,ymax])
     o0.grid.grid_line_alpha = 0.3
     o0.xaxis.axis_label = 'Date'
     o0.yaxis.axis_label = 'Counts'
