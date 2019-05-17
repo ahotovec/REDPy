@@ -472,11 +472,12 @@ def plotTimelines(rtable, ftable, ttable, opt):
         r1.circle(matplotlib.dates.num2date(hTr[0:2]), [0, 0], line_alpha=0, fill_alpha=0)
     
     color_mapper = LogColorMapper(palette=bokehpalette, low=1, high=100)
+    color_mapper2 = LogColorMapper(palette=bokehpalette, low=1, high=100)
     color_bar = ColorBar(color_mapper=color_mapper, ticker=LogTicker(),
         border_line_color='#eeeeee', location=(7,cloc1), orientation='horizontal',
         width=100, height=15, title='Events per Hour', padding=15,
         major_tick_line_alpha=0)
-    color_bar2 = ColorBar(color_mapper=color_mapper, ticker=LogTicker(),
+    color_bar2 = ColorBar(color_mapper=color_mapper2, ticker=LogTicker(),
         border_line_color='#eeeeee', location=(7,cloc2), orientation='horizontal',
         width=100, height=15, title='Events per Hour', padding=15,
         major_tick_line_alpha=0)
