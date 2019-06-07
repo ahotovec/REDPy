@@ -63,6 +63,7 @@ def createPlots(rtable, ftable, ttable, ctable, otable, opt):
                 printVerboseCatalog(rtable, ftable, ctable, opt)
             else:
                 printCatalog(rtable, ftable, opt)
+            printSwarmCatalog(rtable, ftable, opt)
             printCoresCatalog(rtable, ftable, opt)
             printEventsperDay(rtable, ftable, opt)
             plotCores(rtable, ftable, opt)
@@ -85,6 +86,7 @@ def plotTimelines(rtable, ftable, ttable, opt):
     
     rtable: Repeater table
     ftable: Families table
+    ttable: Triggers table
     opt: Options object describing station/run parameters
     
     """
@@ -1570,3 +1572,44 @@ def plotReport(rtable, ftable, ctable, opt, fnum, ordered):
         f.write("""
         </center></body></html>
         """)
+
+
+def printSwarmCatalog(rtable, ftable, opt):
+        
+    """
+    Writes a .csv file for use in annotating repeating events in Swarm v2.8.5+
+    
+    rtable: Repeater table
+    ftable: Families table
+    opt: Options object describing station/run parameters
+    
+    """
+    
+    nets = opt.network.split(',')
+    stas = opt.station.split(',')
+    locs = opt.location.split(',')
+    chas = opt.channel.split(',')
+    
+    with open('{}/swarm.csv'.format(opt.groupName), 'w') as f:
+        
+        startTimes = rtable.cols.startTime[:]
+        windowStarts = rtable.cols.windowStart[:]
+        
+        for cnum in range(ftable.attrs.nClust):
+            fam = np.fromstring(ftable[cnum]['members'], dtype=int, sep=' ')
+            for i in np.argsort(startTimes[fam]):
+                # Format for Swarm is 'Date Time, STA CHA NET LOC, label'
+                # The SCNL defaults to whichever station was chosen for the preview,
+                # which can be changed by a global search/replace in a text editor.
+                # The label name is the same as the folder name (groupName) followed by
+                # the family number. Highlighting families of interest in a different
+                # color can be done by editing the EventClassifications.config file in
+                # the Swarm folder, and adding a line for each cluster of interest
+                # followed by a hex code for color, such as:
+                # default1, #ffff00
+                # to highlight family 1 from the default run in yellow compared to other
+                # repeaters in red/orange.
+                f.write("{}, {} {} {} {}, {}{}\n".format((UTCDateTime(startTimes[fam][i])+
+                    windowStarts[fam][i]/opt.samprate).isoformat(sep=' '),
+                    stas[opt.printsta],chas[opt.printsta],nets[opt.printsta],
+                    locs[opt.printsta],opt.groupName,cnum))
