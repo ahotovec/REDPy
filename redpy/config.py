@@ -162,10 +162,10 @@ class Options(object):
             'Settings','server') else 'IRIS'
         self.port=config.getint('Settings','port') if config.has_option(
             'Settings','port') else 16017
-        self.sacdir=config.get('Settings','sacdir') if config.has_option(
-            'Settings','sacdir') else './'
-        self.mseeddir=config.get('Settings','mseeddir') if config.has_option(
-            'Settings','mseeddir') else './'
+        self.searchdir=config.get('Settings','searchdir') if config.has_option(
+            'Settings','searchdir') else './'
+        self.filepattern=config.get('Settings','filepattern') if config.has_option(
+            'Settings','filepattern') else '*'
         self.nsec=config.getint('Settings','nsec') if config.has_option(
             'Settings','nsec') else 3600
         self.lwin=config.getfloat('Settings','lwin') if config.has_option(

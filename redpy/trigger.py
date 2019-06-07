@@ -39,19 +39,12 @@ def getData(tstart, tend, opt):
     
     st = Stream()
     
-    if opt.server == 'SAC' or opt.server == 'miniSEED':
+    if opt.server == 'file':
     
         # Generate list of files
-        if opt.server == 'SAC':
+        if opt.server == 'file':
             flist = list(itertools.chain.from_iterable(glob.iglob(os.path.join(
-                root,'*.sac')) for root, dirs, files in os.walk(opt.sacdir)))+list(
-                itertools.chain.from_iterable(glob.iglob(os.path.join(
-                root,'*.SAC')) for root, dirs, files in os.walk(opt.sacdir)))
-        elif opt.server == 'miniSEED':
-            flist = list(itertools.chain.from_iterable(glob.iglob(os.path.join(
-                root,'*.mseed')) for root, dirs, files in os.walk(opt.mseeddir)))+list(
-                itertools.chain.from_iterable(glob.iglob(os.path.join(
-                root,'*.MSEED')) for root, dirs, files in os.walk(opt.mseeddir)))
+                root,opt.filepattern)) for root, dirs, files in os.walk(opt.searchdir)))
                 
         # Determine which subset of files to load based on start and end times and
         # station name; we'll fully deal with stations below
