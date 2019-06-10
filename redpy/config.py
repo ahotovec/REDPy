@@ -46,10 +46,12 @@ class Options(object):
         network: String of network code (default 'UW,UW,UW,UW,UW,UW,UW,UW')
         location: String of location code (default '--,--,--,--,--,--,--,--')
         samprate: Sampling rate of that station (default 100.0 Hz)
-        server: Source of data (default "IRIS", otherwise "SAC" or name of waveserver)
+        server: Source of data (default "IRIS", otherwise "file" or name of waveserver)
         port: Port number for server (default 16017, not used if using IRIS)
-        sacdir: Path to directory with SAC files ending in / (default './', not used if
-            using IRIS or waveserver)
+        searchdir: Path to directory with local files ending in / (default './', not used
+            if using IRIS or waveserver)
+        filepattern: Wildcard for selecting subset of files based on their name
+            (default "*")
         nsec: Number of seconds to download from server at a time (default 3600 s) 
         
         WINDOWING PARAMETERS:
