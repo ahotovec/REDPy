@@ -1,0 +1,7 @@
+*/
+!redpy/
+*.pyc
+*.csv
+*.cfg
+*.h5
+.DS_Store
