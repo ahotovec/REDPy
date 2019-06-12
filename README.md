@@ -10,12 +10,21 @@ REDPy runs on Python 2.7 and Python 3.5, with the following major package depend
 These dependencies can be easily installed via [Anaconda](https://www.continuum.io/) on the command line. I *highly* recommend using a virtual environment so that your REDPy environment does not conflict with any other Python packages you may be using. This can be done with the following commands:
 ```
 >> conda create -n redpy python=3.5
->> source activate redpy
+>> conda activate redpy
 >> conda install -c obspy obspy
->> conda install -c conda-forge bokeh cartopy shapely=1.5.17
+>> conda install -c conda-forge bokeh cartopy
 >> conda install pytables pandas
 ```
-You may either use `python=3.5` or `python=2.7`, but other versions are not supported. Whenever you intend to run REDPy, be sure to `source activate redpy` and then `source deactivate` when you are done.
+You may either use `python=3.5` or `python=2.7`, but other versions are not supported. Whenever you intend to run REDPy, be sure to `conda activate redpy` and then `conda deactivate` when you are done.
+
+There are also environment files that should create a stable environment with either version of Python; to use `python=3.5`:
+```
+>>> conda env create -f redpy35.yml
+```
+or `python=2.7`:
+```
+>>> conda env create -f redpy27.yml
+```
 
 ## Usage
 Once dependencies are installed and REDPy is downloaded, REDPy can be run out of the box with the following commands to test if the code is working on your computer. If it completes without error, it will produce files in a folder named `default` after several minutes.
