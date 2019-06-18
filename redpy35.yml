@@ -1,4 +1,4 @@
-name: redpy35
+name: redpy
 channels:
   - obspy
   - conda-forge
