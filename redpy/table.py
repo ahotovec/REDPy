@@ -10,6 +10,7 @@ import numpy as np
 import redpy.correlation
 import datetime
 import matplotlib
+import sys
 
 def Repeaters(opt):
 
@@ -520,8 +521,8 @@ def removeFamilies(rtable, ctable, dtable, ftable, cnums, opt):
     new = range(len(rtable))
     transform[old] = new
     
-    np.set_printoptions(threshold=np.nan)
-    np.set_printoptions(linewidth=np.nan)
+    np.set_printoptions(threshold=sys.maxsize)
+    np.set_printoptions(linewidth=sys.maxsize)
     for n in range(len(ftable)):
         fmembers = np.fromstring(ftable[n]['members'], dtype=int, sep=' ')
         core = ftable[n]['core']
