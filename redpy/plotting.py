@@ -32,14 +32,7 @@ from bokeh.models import Arrow, VeeHead, ColorBar, LogColorMapper, LogTicker, La
 from bokeh.models.glyphs import Line, Quad
 from bokeh.layouts import column
 from bokeh.palettes import inferno, all_palettes
-try:
-    import urllib2
-except:
-    pass
-try:
-    import urllib.request
-except:
-    pass
+import urllib.request
         
 def createPlots(rtable, ftable, ttable, ctable, otable, opt):
     
@@ -55,6 +48,7 @@ def createPlots(rtable, ftable, ttable, ctable, otable, opt):
         
     """
     
+    printTriggerCatalog(ttable, opt)
     printOrphanCatalog(otable, opt)
     if len(rtable)>1:
         plotTimelines(rtable, ftable, ttable, opt)
@@ -866,7 +860,7 @@ def checkComCat(rtable, ftable, cnum, f, startTime, windowStart, opt):
             dep = comcat['Depth/km'].tolist()
             mag = comcat['Magnitude'].tolist()
             place = comcat['EventLocationName'].tolist()
-        except (urllib.error.HTTPError, urllib2.HTTPError):
+        except urllib.error.HTTPError:
             otime = []
             lat = []
             lon = []
@@ -888,7 +882,7 @@ def checkComCat(rtable, ftable, cnum, f, startTime, windowStart, opt):
                 dep.extend(ncedc[' Depth/km '].tolist())
                 mag.extend(ncedc[' Magnitude '].tolist())
                 place.extend(ncedc[' EventLocationName'].tolist())
-            except ValueError:
+            except (ValueError, urllib.error.HTTPError):
                 pass
         
         n0 = 0
@@ -1059,6 +1053,25 @@ def printCatalog(rtable, ftable, opt):
         famNums[fam] = cnum
     print(famNums)   
     """ 
+
+
+def printTriggerCatalog(ttable, opt):
+    """
+    Prints flat catalog of all triggers to text file
+    
+    ttable: Triggers table
+    opt: Options object describing station/run parameters
+    
+    Note: Time in text file corresponds to original STA/LTA trigger time
+    """
+
+    with open('{}/triggers.txt'.format(opt.groupName), 'w') as f:
+        
+        startTimes = ttable.cols.startTimeMPL[:]
+        
+        for i in np.argsort(startTimes):
+            f.write("{0}\n".format((UTCDateTime(matplotlib.dates.num2date(
+                startTimes[i]))+opt.ptrig).isoformat()))
 
                     
 def printOrphanCatalog(otable, opt):
