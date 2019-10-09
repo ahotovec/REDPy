@@ -57,7 +57,7 @@ def createPlots(rtable, ftable, ttable, ctable, otable, opt):
                 printVerboseCatalog(rtable, ftable, ctable, opt)
             else:
                 printCatalog(rtable, ftable, opt)
-            printSwarmCatalog(rtable, ftable, opt)
+            printSwarmCatalog(rtable, ftable, ttable, opt)
             printCoresCatalog(rtable, ftable, opt)
             printEventsperDay(rtable, ftable, opt)
             plotCores(rtable, ftable, opt)
@@ -1587,7 +1587,7 @@ def plotReport(rtable, ftable, ctable, opt, fnum, ordered):
         """)
 
 
-def printSwarmCatalog(rtable, ftable, opt):
+def printSwarmCatalog(rtable, ftable, ttable, opt):
         
     """
     Writes a .csv file for use in annotating repeating events in Swarm v2.8.5+
@@ -1626,3 +1626,13 @@ def printSwarmCatalog(rtable, ftable, opt):
                     windowStarts[fam][i]/opt.samprate).isoformat(sep=' '),
                     stas[opt.printsta],chas[opt.printsta],nets[opt.printsta],
                     locs[opt.printsta],opt.groupName,cnum))
+                    
+    with open('{}/triggerswarm.csv'.format(opt.groupName), 'w') as f:
+        
+        startTimes = ttable.cols.startTimeMPL[:]
+        
+        for i in np.argsort(startTimes):
+            f.write("{}, {} {} {} {}, trigger\n".format((UTCDateTime(
+                matplotlib.dates.num2date(startTimes[i]))+opt.ptrig).isoformat(sep=' '),
+                stas[opt.printsta],chas[opt.printsta],nets[opt.printsta],
+                    locs[opt.printsta]))
