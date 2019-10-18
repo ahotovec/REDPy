@@ -174,7 +174,7 @@ def trigger(st, stC, rtable, opt):
     tr = st[0]
     t = tr.stats.starttime
 
-    cft = coincidence_trigger("classicstalta", opt.trigon, opt.trigoff, stC, opt.nstaC,
+    cft = coincidence_trigger(opt.trigalg, opt.trigon, opt.trigoff, stC, opt.nstaC,
         sta=opt.swin, lta=opt.lwin, details=True)
             
     if len(cft) > 0:

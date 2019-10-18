@@ -62,6 +62,7 @@ class Options(object):
             of samples that will be cut based on ptrig and atrig
                 
         TRIGGERING PARAMETERS:
+        trigalg: Trigger algorithm to be used for STALTA (default 'classicstalta')
         lwin: Length of long window for STALTA (default 7.0 s)
         swin: Length of short window for STALTA (default 0.8 s)
         trigon: Cutoff ratio for triggering STALTA (default 3.0)
@@ -170,6 +171,8 @@ class Options(object):
             'Settings','filepattern') else '*'
         self.nsec=config.getint('Settings','nsec') if config.has_option(
             'Settings','nsec') else 3600
+        self.trigalg=config.get('Settings','trigalg') if config.has_option(
+            'Settings','trigalg') else 'classicstalta'
         self.lwin=config.getfloat('Settings','lwin') if config.has_option(
             'Settings','lwin') else 7.
         self.swin=config.getfloat('Settings','swin') if config.has_option(
