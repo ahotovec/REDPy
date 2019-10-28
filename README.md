@@ -4,6 +4,8 @@
 REDPy (Repeating Earthquake Detector in Python) is a tool for automated detection and analysis of repeating earthquakes in continuous data. It works without any previous assumptions of what repeating seismicity looks like (that is, does not require a template event). Repeating earthquakes are clustered into "families" based on cross-correlation across multiple stations. All data, including waveforms, are stored in an HDF5 table using [PyTables](http://www.pytables.org/).
 
 ## Installation
+Download the [zip file](https://github.com/ahotovec/REDPy/archive/master.zip) or use `git` to clone the entire repository to a working directory (e.g., mine is `/Users/ahotovecellis/REDPy/`). All scripts will be run from this directory, and all new files will be generated here.
+
 REDPy runs on Python 2.7 and Python 3.5, with the following major package dependencies:  
 [numpy](http://www.numpy.org/) | [scipy](http://www.scipy.org/) | [matplotlib](http://www.matplotlib.org/) | [obspy](http://www.obspy.org/) | [pytables](http://www.pytables.org/) | [pandas](http://pandas.pydata.org/) | [bokeh](http://bokeh.pydata.org/) | [cartopy](http://scitools.org.uk/cartopy/)
 
