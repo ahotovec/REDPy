@@ -112,6 +112,10 @@ def getData(tstart, tend, opt):
             try:
                 stmp = client.get_waveforms(nets[n], stas[n], locs[n], chas[n],
                         tstart, tend+opt.maxdt)
+                print(stmp)
+                for m in range(len(stmp)):
+                    stmp[m].data = np.where(stmp[m].data == -2**31, 0, stmp[m].data) # replace -2**31 (Winston NaN token) w 0
+                stmp.merge()
                 stmp = stmp.filter('bandpass', freqmin=opt.fmin, freqmax=opt.fmax,
                     corners=2, zerophase=True)
                 stmp = stmp.taper(0.05,type='hann',max_length=opt.mintrig)
@@ -123,6 +127,9 @@ def getData(tstart, tend, opt):
                 try: # try again
                     stmp = client.get_waveforms(nets[n], stas[n], locs[n], chas[n],
                             tstart, tend+opt.maxdt)
+                    for m in range(len(stmp)):
+                        stmp[m].data = np.where(stmp[m].data == -2**31, 0, stmp[m].data) # replace -2**31 (Winston NaN token) w 0
+                    stmp.merge()
                     stmp = stmp.filter('bandpass', freqmin=opt.fmin, freqmax=opt.fmax,
                         corners=2, zerophase=True)
                     stmp = stmp.taper(0.05,type='hann',max_length=opt.mintrig)
