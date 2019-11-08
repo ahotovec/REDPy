@@ -33,7 +33,8 @@ class Options(object):
     
         TABLE DEFINITIONS:
         title: Name of the table, used also in plotting titles (default 'REDPy Catalog')
-        filename: Filename for the table, should end in .h5 (default 'redpytable.h5')
+        filename: Filename/path for the table, should end in .h5 (default 'redpytable.h5')
+        outputPath: Absolute or relative path to outputs (defaults to current directory)
         groupName: Short string describing the name of the station, may not contain spaces
             (default 'default')
         
@@ -141,6 +142,8 @@ class Options(object):
             'Settings','title') else 'REDPy Catalog'
         self.filename=config.get('Settings','filename') if config.has_option(
             'Settings','filename') else 'redpytable.h5'
+        self.outputPath=config.get('Settings','outputPath') if config.has_option(
+            'Settings','outputPath') else ''
         self.groupName=config.get('Settings','groupName') if config.has_option(
             'Settings','groupName') else 'default'
         self.groupDesc=config.get('Settings','groupDesc') if config.has_option(

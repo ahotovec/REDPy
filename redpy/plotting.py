@@ -68,7 +68,7 @@ def createPlots(rtable, ftable, ttable, ctable, otable, opt):
         print('Nothing to plot!')
     
     # Rename any .tmp files
-    tmplist = glob.glob('./{0}/clusters/*.tmp'.format(opt.groupName))
+    tmplist = glob.glob('{}{}/clusters/*.tmp'.format(opt.outputPath, opt.groupName))
     for tmp in tmplist:
         os.rename(tmp,tmp[0:-4]) 
     
@@ -485,12 +485,12 @@ def plotTimelines(rtable, ftable, ttable, opt):
     o_recent = gridplot([[Div(text='<h1>{0} (Last {1:.1f} Days)</h1>'.format(
                        opt.title,opt.recplot), width=1000)],[o0r],[o1r],[r1],[o2r]])
         
-    output_file('{}/overview.html'.format(opt.groupName),
+    output_file('{}{}/overview.html'.format(opt.outputPath, opt.groupName),
         title='{} Overview'.format(opt.title))
     save(o)
     
-    output_file('{}/overview_recent.html'.format(opt.groupName),
-            title='{0} Overview - Last {1:.1f} Days'.format(opt.title,opt.recplot))
+    output_file('{}{}/overview_recent.html'.format(opt.outputPath, opt.groupName),
+            title='{0} Overview - Last {1:.1f} Days'.format(opt.title, opt.recplot))
     save(o_recent)
 
 
@@ -507,12 +507,12 @@ def plotCores(rtable, ftable, opt):
     
     for n in range(len(ftable))[::-1]:
         if ftable.cols.lastprint[n] != n and ftable.cols.printme[n] == 0:
-            os.rename('{0}/clusters/{1}.png'.format(opt.groupName,
-                ftable.cols.lastprint[n]), '{0}/clusters/{1}.png.tmp'.format(
-                opt.groupName, n))
-            os.rename('{0}/clusters/fam{1}.png'.format(opt.groupName,
-                ftable.cols.lastprint[n]), '{0}/clusters/fam{1}.png.tmp'.format(
-                opt.groupName, n))
+            os.rename('{}{}/clusters/{}.png'.format(opt.outputPath, opt.groupName,
+                ftable.cols.lastprint[n]), '{}{}/clusters/{}.png.tmp'.format(
+                opt.outputPath, opt.groupName, n))
+            os.rename('{}{}/clusters/fam{}.png'.format(opt.outputPath, opt.groupName,
+                ftable.cols.lastprint[n]), '{}{}/clusters/fam{}.png.tmp'.format(
+                opt.outputPath, opt.groupName, n))
     
     cores = rtable[ftable.cols.core[:]]
     n = -1
@@ -535,7 +535,7 @@ def plotCores(rtable, ftable, opt):
         
             ax.plot(dat,'k',linewidth=0.25)
             plt.autoscale(tight=True)
-            plt.savefig('{0}/clusters/{1}.png'.format(opt.groupName,n),
+            plt.savefig('{}{}/clusters/{}.png'.format(opt.outputPath, opt.groupName, n),
                 dpi=100)
             plt.close(fig)
 
@@ -764,7 +764,7 @@ def plotFamilies(rtable, ftable, ctable, opt):
             ax5.set_xlabel('Date', style='italic')
         
             plt.tight_layout()
-            plt.savefig('{0}/clusters/fam{1}.png'.format(opt.groupName,
+            plt.savefig('{}{}/clusters/fam{}.png'.format(opt.outputPath, opt.groupName,
                 cnum), dpi=100)
             plt.close(fig)
         
@@ -778,7 +778,8 @@ def plotFamilies(rtable, ftable, ctable, opt):
             else:
                 next = " "   
             # Now write a simple HTML file to show image and catalog
-            with open('{0}/clusters/{1}.html'.format(opt.groupName, cnum), 'w') as f:
+            with open('{}{}/clusters/{}.html'.format(opt.outputPath, opt.groupName,
+                     cnum), 'w') as f:
                 f.write("""
                 <html><head><title>{1} - Cluster {0}</title>
                 </head><style>
@@ -1013,8 +1014,8 @@ def checkComCat(rtable, ftable, cnum, f, startTime, windowStart, opt):
             plt.title('{} potential local matches (~{:3.1f} km depth)'.format(l,
                 np.mean(ldeps)))
             plt.tight_layout()
-            plt.savefig('./{}/clusters/map{}.png'.format(opt.groupName,cnum),
-                dpi=100)
+            plt.savefig('{}{}/clusters/map{}.png'.format(opt.outputPath, opt.groupName,
+                cnum), dpi=100)
             plt.close()
             f.write('<img src="map{}.png"></br>'.format(cnum))            
     else:
@@ -1033,7 +1034,7 @@ def printCatalog(rtable, ftable, opt):
     Note: Time in text file corresponds to current trigger time by alignment
     """
 
-    with open('{}/catalog.txt'.format(opt.groupName), 'w') as f:
+    with open('{}{}/catalog.txt'.format(opt.outputPath, opt.groupName), 'w') as f:
         
         startTimes = rtable.cols.startTime[:]
         windowStarts = rtable.cols.windowStart[:]
@@ -1065,7 +1066,7 @@ def printTriggerCatalog(ttable, opt):
     Note: Time in text file corresponds to original STA/LTA trigger time
     """
 
-    with open('{}/triggers.txt'.format(opt.groupName), 'w') as f:
+    with open('{}{}/triggers.txt'.format(opt.outputPath, opt.groupName), 'w') as f:
         
         startTimes = ttable.cols.startTimeMPL[:]
         
@@ -1084,7 +1085,7 @@ def printOrphanCatalog(otable, opt):
     Note: Time in text file corresponds to original STA/LTA trigger time
     """
 
-    with open('{}/orphancatalog.txt'.format(opt.groupName), 'w') as f:
+    with open('{}{}/orphancatalog.txt'.format(opt.outputPath, opt.groupName), 'w') as f:
         
         startTimes = otable.cols.startTime[:]
         
@@ -1125,7 +1126,7 @@ def createJunkPlots(jtable, opt):
         
         ax.plot(dat,'k',linewidth=0.25)
         plt.autoscale(tight=True)
-        plt.savefig('{0}/junk/{1}-{2}.png'.format(opt.groupName,
+        plt.savefig('{}{}/junk/{}-{}.png'.format(opt.outputPath, opt.groupName,
             (UTCDateTime(r['startTime'])+opt.ptrig).strftime('%Y%m%d%H%M%S'),
             r['isjunk']), dpi=100)
         plt.close(fig)
@@ -1141,7 +1142,7 @@ def printJunk(jtable, opt):
     Note: Time in text file corresponds to original STA/LTA trigger time
     """
 
-    with open('{}/junk.txt'.format(opt.groupName), 'w') as f:
+    with open('{}{}/junk.txt'.format(opt.outputPath, opt.groupName), 'w') as f:
         
         startTimes = jtable.cols.startTime[:]
         jtype = jtable.cols.isjunk[:]
@@ -1162,7 +1163,7 @@ def printCoresCatalog(rtable, ftable, opt):
     Note: Time in text file corresponds to current trigger time by alignment
     """
 
-    with open('{}/cores.txt'.format(opt.groupName), 'w') as f:
+    with open('{}{}/cores.txt'.format(opt.outputPath, opt.groupName), 'w') as f:
         
         startTimes = rtable.cols.startTime[:]
         windowStarts = rtable.cols.windowStart[:]
@@ -1186,7 +1187,7 @@ def printEventsperDay(rtable, ftable, opt):
     first column is date and last column is total across all families.
     """
     
-    with open('{}/dailycounts.txt'.format(opt.groupName), 'w') as f:
+    with open('{}{}/dailycounts.txt'.format(opt.outputPath, opt.groupName), 'w') as f:
         
         startTimes = rtable.cols.startTimeMPL[:]
         firstDay = np.floor(np.min(startTimes)).astype(int)
@@ -1227,7 +1228,7 @@ def printVerboseCatalog(rtable, ftable, ctable, opt):
     correlated event.
     """
     
-    with open('{}/catalog.txt'.format(opt.groupName), 'w') as f:
+    with open('{}{}/catalog.txt'.format(opt.outputPath, opt.groupName), 'w') as f:
                 
         startTimes = rtable.cols.startTime[:]
         startTimeMPL = rtable.cols.startTimeMPL[:]
@@ -1327,8 +1328,8 @@ def plotReport(rtable, ftable, ctable, opt, fnum, ordered):
     C[range(len(idf)),range(len(idf))] = 1.0
     
     # Copy static preview image in case cluster changes
-    shutil.copy('{0}/clusters/{1}.png'.format(opt.groupName, fnum),
-                '{0}/clusters/{1}-report.png'.format(opt.groupName, fnum))
+    shutil.copy('{}{}/clusters/{}.png'.format(opt.outputPath, opt.groupName, fnum),
+                '{}{}/clusters/{}-report.png'.format(opt.outputPath, opt.groupName, fnum))
     
     # Fill in full correlation matrix
     print('Computing full correlation matrix; this will take time if the family is large!')
@@ -1422,8 +1423,8 @@ def plotReport(rtable, ftable, ctable, opt, fnum, ordered):
     
     # Combine and save
     o = gridplot([[o0],[o1],[o2]])
-    output_file('{0}/clusters/{1}-report-bokeh.html'.format(opt.groupName,fnum),
-        title='{0} - Cluster {1} Detailed Report'.format(opt.title,fnum))
+    output_file('{}{}/clusters/{}-report-bokeh.html'.format(opt.outputPath, opt.groupName,
+        fnum), title='{} - Cluster {} Detailed Report'.format(opt.title, fnum))
     save(o)
     
     ### OPTICS ORDERING (OPTIONAL)
@@ -1539,13 +1540,14 @@ def plotReport(rtable, ftable, ctable, opt, fnum, ordered):
         ax.yaxis.set_visible(False)
         plt.xlabel('Time Relative to Trigger (seconds)', style='italic')
     plt.tight_layout()
-    plt.savefig('{0}/clusters/{1}-reportwaves.png'.format(opt.groupName,
+    plt.savefig('{}{}/clusters/{}-reportwaves.png'.format(opt.outputPath, opt.groupName,
                 fnum), dpi=100)
     plt.close(fig2)
     
     ### HTML OUTPUT PAGE
     tstamp = UTCDateTime.now()
-    with open('{0}/clusters/{1}-report.html'.format(opt.groupName, fnum), 'w') as f:
+    with open('{}{}/clusters/{}-report.html'.format(opt.outputPath, opt.groupName, fnum),
+              'w') as f:
         f.write("""
         <html><head><title>{1} - Cluster {0} Detailed Report</title>
         </head><style>
@@ -1603,7 +1605,7 @@ def printSwarmCatalog(rtable, ftable, ttable, opt):
     locs = opt.location.split(',')
     chas = opt.channel.split(',')
     
-    with open('{}/swarm.csv'.format(opt.groupName), 'w') as f:
+    with open('{}{}/swarm.csv'.format(opt.outputPath, opt.groupName), 'w') as f:
         
         startTimes = rtable.cols.startTime[:]
         windowStarts = rtable.cols.windowStart[:]
@@ -1627,7 +1629,7 @@ def printSwarmCatalog(rtable, ftable, ttable, opt):
                     stas[opt.printsta],chas[opt.printsta],nets[opt.printsta],
                     locs[opt.printsta],opt.groupName,cnum))
                     
-    with open('{}/triggerswarm.csv'.format(opt.groupName), 'w') as f:
+    with open('{}{}/triggerswarm.csv'.format(opt.outputPath, opt.groupName), 'w') as f:
         
         startTimes = ttable.cols.startTimeMPL[:]
         

@@ -32,19 +32,19 @@ args = parser.parse_args()
 
 if args.configfile:
     opt = redpy.config.Options(args.configfile)
-    if args.verbose: print("Using config file: {0}".format(args.configfile))
+    if args.verbose: print("Using config file: {}".format(args.configfile))
 else:
     opt = redpy.config.Options("settings.cfg")
     if args.verbose: print("Using config file: settings.cfg")
 
-if args.verbose: print("Creating folder to store junk images named '{}'/junk".format(
-    opt.groupName))
+if args.verbose: print("Creating folder to store junk images named '{}{}'/junk".format(
+    opt.outputPath,opt.groupName))
 try:
-    os.mkdir('{}/junk'.format(opt.groupName))
+    os.mkdir('{}{}/junk'.format(opt.outputPath,opt.groupName))
 except OSError:
     print("Folder exists.")
 
-if args.verbose: print("Opening hdf5 table: {0}".format(opt.filename))
+if args.verbose: print("Opening hdf5 table: {}".format(opt.filename))
 h5file, rtable, otable, ttable, ctable, jtable, dtable, ftable = redpy.table.openTable(opt)
 
 if args.verbose: print("Creating junk plots...")

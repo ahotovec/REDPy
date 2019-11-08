@@ -123,8 +123,9 @@ check = []
 var = []
 for n in fams:
     if n >= args.minclust:
-        im = Image.open('{0}/clusters/{1}.png'.format(opt.groupName,n)).convert('RGB')
-        im.save('{0}/clusters/{1}.gif'.format(opt.groupName,n))
+        im = Image.open('{}{}/clusters/{}.png'.format(opt.outputPath,
+                                                         opt.groupName,n)).convert('RGB')
+        im.save('{}{}/clusters/{}.gif'.format(opt.outputPath,opt.groupName,n))
         
         # Create 'inverted' selection image
         source = im.split()
@@ -133,9 +134,11 @@ for n in fams:
         source[2].paste(blk)        
         invim = Image.merge('RGB', source)
         
-        invim.save('{0}/clusters/{1}_inv.gif'.format(opt.groupName,n))
-        imgobj.append(tk.PhotoImage(file='{0}/clusters/{1}.gif'.format(opt.groupName,n)))
-        invimgobj.append(tk.PhotoImage(file='{0}/clusters/{1}_inv.gif'.format(opt.groupName,n)))
+        invim.save('{}{}/clusters/{}_inv.gif'.format(opt.outputPath,opt.groupName,n))
+        imgobj.append(tk.PhotoImage(file='{}{}/clusters/{}.gif'.format(
+                                                        opt.outputPath,opt.groupName,n)))
+        invimgobj.append(tk.PhotoImage(file='{}{}/clusters/{}_inv.gif'.format(
+                                                        opt.outputPath,opt.groupName,n)))
         var.append(tk.IntVar())
         check.append(tk.Checkbutton(frame, image=imgobj[n-m],
             variable = var[n-m], selectimage=invimgobj[n-m]).grid(
@@ -166,7 +169,8 @@ root.mainloop()
 
 # Clean up
 print("\nCleaning up .gif files...")
-dlist = glob.glob('./{0}/clusters/*.gif'.format(opt.groupName))
+dlist = glob.glob('{}{}/clusters/*.gif'.format(opt.outputPath,opt.groupName))
+    
 for tmp in dlist:
     os.remove(tmp) 
 print("Closing table...")

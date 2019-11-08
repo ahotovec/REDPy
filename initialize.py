@@ -32,23 +32,24 @@ args = parser.parse_args()
 
 if args.configfile:
     opt = redpy.config.Options(args.configfile)
-    if args.verbose: print("Using config file: {0}".format(args.configfile))
+    if args.verbose: print("Using config file: {}".format(args.configfile))
 else:
     opt = redpy.config.Options("settings.cfg")
     if args.verbose: print("Using config file: settings.cfg")
 
-if args.verbose: print("Writing hdf5 table: {0}".format(opt.filename))
+if args.verbose: print("Writing hdf5 table: {}".format(opt.filename))
 
 redpy.table.initializeTable(opt)
 
-if args.verbose: print("Creating folder to store images named '{}'".format(opt.groupName))
+if args.verbose: print("Creating folder to store images '{}{}'".format(opt.outputPath,
+                                                                       opt.groupName))
 try:
     os.mkdir(opt.groupName)
 except OSError:
     print("Folder exists.")
     
-if args.verbose: print("Creating folder to store core images named '{}/clusters'".format(
-    opt.groupName))
+if args.verbose: print("Creating folder to store core images '{}{}/clusters'".format(
+    opt.outputPath,opt.groupName))
 try:
     os.mkdir('{}/clusters'.format(opt.groupName))
 except OSError:
