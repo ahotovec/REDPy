@@ -1488,7 +1488,8 @@ def plotReport(rtable, ftable, ctable, opt, fnum, ordered):
                     ax2.axhline(np.floor(hloc)+0.5,color='k',
                         linewidth=df['Weight'][anot]/2.,linestyle=df['Line Type'][anot])
     plt.tight_layout()
-    plt.savefig('{0}/clusters/{1}-reportcmat.png'.format(opt.groupName,fnum), dpi=100)
+    plt.savefig('{}{}/clusters/{}-reportcmat.png'.format(opt.outputPath, opt.groupName,
+                                                         fnum), dpi=100)
     plt.close(fig)
     
     ### WAVEFORM IMAGES
