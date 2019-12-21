@@ -56,7 +56,7 @@ def getData(tstart, tend, opt):
             if stmp[0].stats.station in stas:
                 # Check if contains either start or end time
                 ststart = stmp[0].stats.starttime
-                stend = stmp[0].stats.endtime
+                stend = stmp[-1].stats.endtime
                 if (ststart<=tstart and tstart<=stend) or (ststart<=tend and
                     tend<=stend) or (tstart<=stend and ststart<=tend):
                     flist_sub.append(f)
