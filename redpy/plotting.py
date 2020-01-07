@@ -133,9 +133,9 @@ def plotTimelines(rtable, ftable, ttable, opt):
                 line_alpha=row[5]))
     
     o0.line(matplotlib.dates.num2date(hT[0:-1]+opt.dybin/2), histT-histR, color='black',
-        legend='Orphans')
+        legend_label='Orphans')
     o0.line(matplotlib.dates.num2date(hR[0:-1]+opt.dybin/2), histR, color='red',
-        legend='Repeaters', line_width=2)
+        legend_label='Repeaters', line_width=2)
     o0.legend.location = 'top_left'
     
     if opt.hrbin<24:
@@ -159,9 +159,9 @@ def plotTimelines(rtable, ftable, ttable, opt):
                 line_alpha=row[5]))
     
     o0r.line(matplotlib.dates.num2date(hTr[0:-1]+opt.hrbin/48), histTr-histRr,
-        color='black', legend='Orphans')
+        color='black', legend_label='Orphans')
     o0r.line(matplotlib.dates.num2date(hRr[0:-1]+opt.hrbin/48), histRr, color='red',
-        legend='Repeaters', line_width=2)
+        legend_label='Repeaters', line_width=2)
     o0r.legend.location = 'top_left'
         
     o1 = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime',
@@ -1381,7 +1381,7 @@ def plotReport(rtable, ftable, ctable, opt, fnum, ordered):
     for sta, staname in enumerate(opt.station.split(',')):
         o0.circle(matplotlib.dates.num2date(startTimeMPL[fam]), windowAmps[fam][:,sta],
             color=palette[sta], line_alpha=0, size=4, fill_alpha=0.5,
-            legend='{}.{}'.format(staname,opt.channel.split(',')[sta]))    
+            legend_label='{}.{}'.format(staname,opt.channel.split(',')[sta]))    
     o0.legend.location='bottom_left'
     o0.legend.orientation='horizontal'
     o0.legend.click_policy='hide'

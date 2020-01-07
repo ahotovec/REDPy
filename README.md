@@ -6,30 +6,27 @@ REDPy (Repeating Earthquake Detector in Python) is a tool for automated detectio
 ## Installation
 Download the [zip file](https://github.com/ahotovec/REDPy/archive/master.zip) or use `git` to clone the entire repository to a working directory (e.g., mine is `/Users/ahotovecellis/REDPy/`). All scripts will be run from this directory, and all new files will be generated here.
 
-REDPy runs on Python 2.7 and Python 3.5, with the following major package dependencies:  
+REDPy runs on Python 3.6+, with the following major package dependencies:  
 [numpy](http://www.numpy.org/) | [scipy](http://www.scipy.org/) | [matplotlib](http://www.matplotlib.org/) | [obspy](http://www.obspy.org/) | [pytables](http://www.pytables.org/) | [pandas](http://pandas.pydata.org/) | [bokeh](http://bokeh.pydata.org/) | [cartopy](http://scitools.org.uk/cartopy/)
 
 These dependencies can be easily installed via [Anaconda](https://www.continuum.io/) on the command line. I *highly* recommend using a virtual environment so that your REDPy environment does not conflict with any other Python packages you may be using. This can be done with the following commands:
 ```
->> conda create -n redpy python=3.5
->> conda activate redpy
->> conda install -c obspy obspy
->> conda install -c conda-forge bokeh cartopy
->> conda install pytables pandas
+>> conda config --add channels conda-forge
+>> conda create -n redpy python=3.7 bokeh cartopy obspy pandas pytables
 ```
-You may either use `python=3.5` or `python=2.7`, but other versions are not supported. Whenever you intend to run REDPy, be sure to `conda activate redpy` and then `conda deactivate` when you are done.
+You may either use `python=3.6` or `python=3.7`, but other versions are no longer supported.
 
-There are also environment files that should create a stable environment with either version of Python; to use `python=3.5`:
+I have included an environment file that should create a stable environment with Python `python=3.7`:
 ```
->>> conda env create -f redpy35.yml
+>>> conda env create -f redpy37.yml
 ```
-or `python=2.7`:
-```
->>> conda env create -f redpy27.yml
-```
+or at least provide a guide for if the code breaks and the output of your `conda list` does not match.
+
+Whenever you intend to run REDPy, be sure to `conda activate redpy` and then `conda deactivate` when you are done.
+
 
 ## Usage
-Once dependencies are installed and REDPy is downloaded, REDPy can be run out of the box with the following commands to test if the code is working on your computer. If it completes without error, it will produce files in a folder named `default` after several minutes.
+Once dependencies are installed, REDPy is downloaded, and you are in the `redpy` environment, REDPy can be run out of the box with the following commands to test if the code is working on your computer. If it completes without error, it will produce files in a folder named `default` after several minutes.
 ```
 >> python initialize.py
 >> python catfill.py -v mshcat.csv
