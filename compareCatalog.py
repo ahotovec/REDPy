@@ -75,9 +75,16 @@ fi = np.nanmean(rtable.cols.FI[:], axis=1)
 otimes = otable.cols.startTimeMPL[:]+otable.cols.windowStart[:]/86400.0/opt.samprate
 oamps = otable.cols.windowAmp[:][:,opt.printsta]
 ofi = np.nanmean(otable.cols.FI[:], axis=1)
-jtimes = date2num(np.array([dt.datetime.strptime(jtable.cols.startTime[i].decode('utf-8'),
-    '%Y-%m-%dT%H:%M:%S.%f')+dt.timedelta(
-    seconds=jtable.cols.windowStart[i]/opt.samprate) for i in range(len(jtable))]))
+jtimes = np.zeros(len(jtable),)
+for i in range(len(jtable)):
+    try:
+        jtimes[i] = date2num(dt.datetime.strptime(jtable.cols.startTime[i].decode('utf-8'),
+                             '%Y-%m-%dT%H:%M:%S.%f')+dt.timedelta(
+                             seconds=jtable.cols.windowStart[i]/opt.samprate))
+    except:
+        jtimes[i] = date2num(dt.datetime.strptime(jtable.cols.startTime[i].decode('utf-8'),
+                             '%Y-%m-%dT%H:%M:%S')+dt.timedelta(
+                             seconds=jtable.cols.windowStart[i]/opt.samprate))
 ttimes = ttable.cols.startTimeMPL[:]
 
 # Flatten families to list
