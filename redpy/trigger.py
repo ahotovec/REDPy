@@ -112,26 +112,26 @@ def getData(tstart, tend, opt):
                 client = EWClient(opt.server, opt.port)
         # New server syntax (more options and server and port on same variable)
         elif 'fdsnws://' in opt.server:
-            server = opt.server.split('fdsnws://',1)[1]
-            client = Client(server)
+            FDNWSserver = opt.server.split('fdsnws://',1)[1]
+            client = Client(FDSNWSserver)
         elif 'waveserver://' in opt.server:
             server_str = opt.server.split('waveserver://',1)[1]
             try:
-                server = server_str.split(':',1)[0]
-                port = server_str.split(':',1)[1]
+                WSserver = server_str.split(':',1)[0]
+                WSport = server_str.split(':',1)[1]
             except:
-                server = server_str
-                port = '16017'
-            client = EWClient(server, port)
+                WSserver = server_str
+                WSport = '16017'
+            client = EWClient(WSserver, int(WSport))
         elif 'seedlink://' in opt.server:
             server_str = opt.server.split('seedlink://',1)[1]
             try:
-                server = server_str.split(':',1)[0]
-                port = server_str.split(':',1)[1]
+                SLserver = server_str.split(':',1)[0]
+                SLport = server_str.split(':',1)[1]
             except:
-                server = server_str
-                port = '18000'
-            client = SeedLinkClient(server, port, 1)
+                SLserver = server_str
+                SLport = '18000'
+            client = SeedLinkClient(SLserver, port=int(SLport), timeout=1)
 
         for n in range(len(stas)):
             try:

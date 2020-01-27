@@ -8,6 +8,7 @@ import numpy as np
 import obspy
 from obspy import UTCDateTime
 import time
+from obspy.clients.seedlink import Client as SeedLinkClient
 
 """
 Run this script to fill the table with data from the past. If a start time is not
