@@ -44,14 +44,14 @@ redpy.table.initializeTable(opt)
 if args.verbose: print("Creating folder to store images '{}{}'".format(opt.outputPath,
                                                                        opt.groupName))
 try:
-    os.mkdir(opt.groupName)
+    os.mkdir('{}{}'.format(opt.outputPath,opt.groupName))
 except OSError:
     print("Folder exists.")
     
 if args.verbose: print("Creating folder to store core images '{}{}/clusters'".format(
     opt.outputPath,opt.groupName))
 try:
-    os.mkdir('{}/clusters'.format(opt.groupName))
+    os.mkdir('{}{}/clusters'.format(opt.outputPath,opt.groupName))
 except OSError:
     print("Folder exists.")
 
