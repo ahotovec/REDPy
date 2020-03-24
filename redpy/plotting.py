@@ -244,11 +244,16 @@ def plotTimelines(rtable, ftable, ttable, opt):
             o2r.add_glyph(source, Line(x="x", y="y", line_color='red',
                 line_alpha=0.5))
         elif (max(alltrigs)-opt.recplot)<=famstarts[n]+longevity[n]:
-            o2r.add_layout(Arrow(end=VeeHead(size=3, line_color='red', line_alpha=0.5),
-                    line_color='red', line_alpha=0.5,
-                    x_start=matplotlib.dates.num2date(famstarts[n]+longevity[n]),
-                    x_end=matplotlib.dates.num2date(hTr[0]-barpadr),
-                    y_start=longevity[n], y_end=longevity[n]))
+            source = ColumnDataSource(dict(x=np.array((matplotlib.dates.num2date(
+                hTr[0]-barpadr), matplotlib.dates.num2date(famstarts[n]+longevity[n]))),
+                y=np.array((longevity[n], longevity[n]))))
+            o2r.add_glyph(source, Line(x="x", y="y", line_color='red',
+                line_alpha=0.5))
+            o2r.add_layout(Arrow(end=VeeHead(size=5, fill_color='red', line_color='red',
+                line_alpha=0.5), line_alpha=0,
+                x_start=matplotlib.dates.num2date(famstarts[n]+longevity[n]),
+                x_end=matplotlib.dates.num2date(hTr[0]-barpadr),
+                y_start=longevity[n], y_end=longevity[n]))
             
     # Build hover to show an image of the cluster core
     hover = HoverTool(
@@ -375,11 +380,11 @@ def plotTimelines(rtable, ftable, ttable, opt):
             if min(dt[members])<hRr[0]:
                 
                 source = ColumnDataSource(dict(x=np.array((matplotlib.dates.num2date(
-                    hTr[0]), matplotlib.dates.num2date(max(dt[members])))),
+                    hTr[0]-barpadr), matplotlib.dates.num2date(max(dt[members])))),
                     y=np.array((m, m))))
                 r1.add_glyph(source, Line(x="x", y="y", line_color='black'))
             
-                r1.add_layout(Arrow(end=VeeHead(size=3),
+                r1.add_layout(Arrow(end=VeeHead(size=5),
                     x_start=matplotlib.dates.num2date(hTr[0]+0.01),
                     x_end=matplotlib.dates.num2date(hTr[0]-barpadr),
                     y_start=m, y_end=m))
