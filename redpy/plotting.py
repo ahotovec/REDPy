@@ -849,10 +849,20 @@ def checkComCat(rtable, ftable, cnum, f, startTime, windowStart, opt):
     latc = np.mean(stalats)
     lonc = np.mean(stalons)
 
+    if opt.matchMax > 0:
+        windowAmp = rtable.cols.windowAmp[:][:,opt.printsta]
+
     members = np.fromstring(ftable[cnum]['members'], dtype=int, sep=' ')
-    order = np.argsort(startTime[members])
-    matchstring = ('</br><b>ComCat matches:</b></br>'
-        '<div style="overflow-y: auto; height:100px; width:1200px;">')
+    if opt.matchMax == 0 or opt.matchMax > len(members):
+        order = np.argsort(startTime[members])
+        matchstring = ('</br><b>ComCat matches (all events):</b></br>'
+            '<div style="overflow-y: auto; height:100px; width:1200px;">')
+    else:
+        nlargest = np.argsort(windowAmp[members])[::-1][:opt.matchMax]
+        order = np.argsort(startTime[members[nlargest]])
+        matchstring = ('</br><b>ComCat matches ({} largest events):</b></br>'
+            '<div style="overflow-y: auto; height:100px; width:1200px;">').format(
+            opt.matchMax)
     
     for m in members[order]:
         t = UTCDateTime(startTime[m])+windowStart[m]/opt.samprate
@@ -866,7 +876,7 @@ def checkComCat(rtable, ftable, cnum, f, startTime, windowStart, opt):
             dep = comcat['Depth/km'].tolist()
             mag = comcat['Magnitude'].tolist()
             place = comcat['EventLocationName'].tolist()
-        except urllib.error.HTTPError:
+        except (urllib.error.HTTPError, urllib.error.URLError):
             otime = []
             lat = []
             lon = []
@@ -888,7 +898,7 @@ def checkComCat(rtable, ftable, cnum, f, startTime, windowStart, opt):
                 dep.extend(ncedc[' Depth/km '].tolist())
                 mag.extend(ncedc[' Magnitude '].tolist())
                 place.extend(ncedc[' EventLocationName'].tolist())
-            except (ValueError, urllib.error.HTTPError):
+            except (ValueError, urllib.error.HTTPError, urllib.error.URLError):
                 pass
         
         n0 = 0

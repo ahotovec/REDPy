@@ -127,6 +127,7 @@ class Options(object):
         regdeg: Degrees of distance to be considered a regional event (default 2.0 degrees)
         regmag: Minimum magnitude for regional events (default M2.5)
         telemag: Minimum magnitude for teleseismic events (default M4.5)
+        matchMax: Number of largest events to match (default 0 (all))
           
         This list will likely expand.       
         """
@@ -236,6 +237,8 @@ class Options(object):
             'Settings','anotfile') else ''
         self.checkComCat=config.getboolean('Settings','checkComCat') if config.has_option(
             'Settings','checkComCat') else False
+        self.matchMax=config.getint('Settings','matchMax') if config.has_option(
+            'Settings','matchMax') else 0
         self.stalats=config.get('Settings','stalats') if config.has_option(
             'Settings','stalats') else ('46.200210,46.209550,46.174280,46.193470,'
                 '46.197170,46.237610,46.147060,46.243860')
