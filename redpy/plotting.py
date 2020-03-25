@@ -859,7 +859,8 @@ def checkComCat(rtable, ftable, cnum, f, startTime, windowStart, opt):
             '<div style="overflow-y: auto; height:100px; width:1200px;">')
     else:
         nlargest = np.argsort(windowAmp[members])[::-1][:opt.matchMax]
-        order = np.argsort(startTime[members[nlargest]])
+        members = members[nlargest]
+        order = np.argsort(startTime[members])
         matchstring = ('</br><b>ComCat matches ({} largest events):</b></br>'
             '<div style="overflow-y: auto; height:100px; width:1200px;">').format(
             opt.matchMax)
