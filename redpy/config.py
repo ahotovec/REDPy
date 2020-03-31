@@ -107,6 +107,8 @@ class Options(object):
         minplot: Minimum number of members required in order to be plotted to timeline
         dybin: Width of bin in days for full histogram (default 1 day)
         hrbin: Width of bin in hours for recent histogram (default 1 hour)
+        occurbin: Width of bin in days for occurrence plot (default 1/24 day)
+        recbin: Width of bin in days for recent occurrence plot (default 1/24 day) 
         recplot: Number of days for 'recent' plot (default 14 days)
         plotsta: Station index in station list to be plotted (default 2)
         verbosecatalog: Add additional columns to the catalog file (default False)
@@ -227,6 +229,10 @@ class Options(object):
             'Settings','dybin') else 1.
         self.hrbin=config.getfloat('Settings','hrbin') if config.has_option(
             'Settings','hrbin') else 1.
+        self.occurbin=config.getfloat('Settings','occurbin') if config.has_option(
+            'Settings','occurbin') else 1/24
+        self.recbin=config.getfloat('Settings','recbin') if config.has_option(
+            'Settings','recbin') else 1/24
         self.recplot=config.getfloat('Settings','recplot') if config.has_option(
             'Settings','recplot') else 14.
         self.printVerboseCat=config.getboolean('Settings','verbosecatalog') if config.has_option(

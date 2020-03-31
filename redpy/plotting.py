@@ -323,6 +323,29 @@ def plotTimelines(rtable, ftable, ttable, opt):
     m = 0
     cloc1 = 335
     cloc2 = 335
+        
+    # Determine legend wording
+    if opt.occurbin == 1/24:
+        legtext = 'Hour'
+    elif opt.occurbin == 1:
+        legtext = 'Day'
+    elif opt.occurbin == 7:
+        legtext = 'Week'
+    elif opt.occurbin < 2:
+        legtext = '{} Hours'.format(opt.occurbin*24)
+    else:
+        legtext = '{} Days'.format(opt.occurbin)
+
+    if opt.recbin == 1/24:
+        legtext_r = 'Hour'
+    elif opt.recbin == 1:
+        legtext_r = 'Day'
+    elif opt.recbin == 7:
+        legtext_r = 'Week'
+    elif opt.recbin < 2:
+        legtext_r = '{} Hours'.format(opt.recbin*24)
+    else:
+        legtext_r = '{} Days'.format(opt.recbin)    
       
     for clustNum in range(ftable.attrs.nClust):
         
@@ -330,12 +353,25 @@ def plotTimelines(rtable, ftable, ttable, opt):
         
         # Create histogram of events/hour
         hist, h = np.histogram(dt[members], bins=np.arange(min(dt[members]),
-            max(dt[members]+1.0/24), 1.0/24))
+            max(dt[members]+opt.occurbin), opt.occurbin))
+        hist_r, h_r = np.histogram(dt[members], bins=np.arange(min(dt[members]),
+            max(dt[members]+opt.recbin), opt.recbin))
         d1 = matplotlib.dates.num2date(h[np.where(hist>0)])
-        d2 = matplotlib.dates.num2date(h[np.where(hist>0)]+1.0/24)
+        d2 = matplotlib.dates.num2date(h[np.where(hist>0)]+opt.occurbin)
+        d1_r = matplotlib.dates.num2date(h_r[np.where(hist_r>0)])
+        d2_r = matplotlib.dates.num2date(h_r[np.where(hist_r>0)]+opt.recbin)
         histlog = np.log10(hist[hist>0])
-        ind = [int(min(255,255*(i/2))) for i in histlog]
+        histlog_r = np.log10(hist_r[hist_r>0])
+        if opt.occurbin > 1:
+            ind = [int(min(255,255*(i/3))) for i in histlog]
+        else:
+            ind = [int(min(255,255*(i/2))) for i in histlog]
+        if opt.recbin > 1:
+            ind_r = [int(min(255,255*(i/3))) for i in histlog_r]
+        else:
+            ind_r = [int(min(255,255*(i/2))) for i in histlog_r]
         colors = [bokehpalette[i] for i in ind]
+        colors_r = [bokehpalette[i] for i in ind_r]
                 
         if len(dt[members]) >= opt.minplot:
             
@@ -351,7 +387,7 @@ def plotTimelines(rtable, ftable, ttable, opt):
                 bottom="bottom", fill_color="color", line_color=None))
             
             p1.add_layout(LabelSet(x=matplotlib.dates.num2date(
-                max(h[np.where(hist>0)]+1.0/24)),
+                max(h[np.where(hist>0)]+opt.occurbin)),
                 y=n, text=['{}'.format(len(dt[members]))], level='glyph',
                 x_offset=5, y_offset=0, render_mode='canvas', text_font_size='9pt',
                 text_baseline='middle'))
@@ -389,7 +425,7 @@ def plotTimelines(rtable, ftable, ttable, opt):
                     x_end=matplotlib.dates.num2date(hTr[0]-barpadr),
                     y_start=m, y_end=m))
 
-                idx = np.where(h[np.where(hist>0)[0]]>hRr[0])[0]
+                idx = np.where(h_r[np.where(hist_r>0)[0]]>hRr[0])[0]
                         
             else:
             
@@ -398,15 +434,15 @@ def plotTimelines(rtable, ftable, ttable, opt):
                     y=np.array((m, m))))
                 r1.add_glyph(source, Line(x="x", y="y", line_color='black'))
                 
-                idx = np.arange(len(d1))            
+                idx = np.arange(len(d1_r))            
             
             source = ColumnDataSource(dict(top=np.ones(len(idx))*(m+0.3), bottom=np.ones(
-                len(idx))*(m-0.3), left=np.array(d1)[idx], right=np.array(d2)[idx],
-                color=np.array(colors)[idx]))
+                len(idx))*(m-0.3), left=np.array(d1_r)[idx], right=np.array(d2_r)[idx],
+                color=np.array(colors_r)[idx]))
             r1.add_glyph(source, Quad(left="left", right="right", top="top",
                 bottom="bottom", fill_color="color", line_color=None))
                 
-            r1.add_layout(LabelSet(x=np.array(d2)[-1],
+            r1.add_layout(LabelSet(x=np.array(d2_r)[-1],
                 y=m, text=['{}'.format(len(dt[members]))], level='glyph',
                 x_offset=5, y_offset=0, render_mode='canvas', text_font_size='9pt',
                 text_baseline='middle'))
@@ -472,18 +508,24 @@ def plotTimelines(rtable, ftable, ttable, opt):
     else: 
         r1.circle(matplotlib.dates.num2date(hTr[0:2]), [0, 0], line_alpha=0, fill_alpha=0)
     
-    color_mapper = LogColorMapper(palette=bokehpalette, low=1, high=100)
-    color_mapper2 = LogColorMapper(palette=bokehpalette, low=1, high=100)
+    if opt.occurbin >= 1:
+        color_mapper = LogColorMapper(palette=bokehpalette, low=1, high=1000)
+    else:
+        color_mapper = LogColorMapper(palette=bokehpalette, low=1, high=100)
+    if opt.recbin >= 1:
+        color_mapper_r = LogColorMapper(palette=bokehpalette, low=1, high=1000)
+    else:
+        color_mapper_r = LogColorMapper(palette=bokehpalette, low=1, high=100)
     color_bar = ColorBar(color_mapper=color_mapper, ticker=LogTicker(),
         border_line_color='#eeeeee', location=(7,cloc1), orientation='horizontal',
-        width=100, height=15, title='Events per Hour', padding=15,
+        width=150, height=15, title='Events per {}'.format(legtext), padding=15,
         major_tick_line_alpha=0)
-    color_bar2 = ColorBar(color_mapper=color_mapper2, ticker=LogTicker(),
+    color_bar_r = ColorBar(color_mapper=color_mapper_r, ticker=LogTicker(),
         border_line_color='#eeeeee', location=(7,cloc2), orientation='horizontal',
-        width=100, height=15, title='Events per Hour', padding=15,
+        width=150, height=15, title='Events per {}'.format(legtext_r), padding=15,
         major_tick_line_alpha=0)
     p1.add_layout(color_bar)
-    r1.add_layout(color_bar2)
+    r1.add_layout(color_bar_r)
     
     o = gridplot([[Div(text='<h1>{0}</h1>'.format(
                        opt.title), width=1000)],[o0],[o1],[p1],[o2]])
