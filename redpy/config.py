@@ -229,7 +229,7 @@ class Options(object):
             'Settings','dybin') else 1.
         self.hrbin=config.getfloat('Settings','hrbin') if config.has_option(
             'Settings','hrbin') else 1.
-        self.pp=config.getfloat('Settings','occurbin')/24 if config.has_option(   # settings.cfg (hours) immediately converted to days
+        self.occurbin=config.getfloat('Settings','occurbin')/24 if config.has_option(   # settings.cfg (hours) immediately converted to days
             'Settings','occurbin') else 1/24
         self.recbin=config.getfloat('Settings','recbin')/24 if config.has_option( # settings.cfg (hours) immediately converted to days
             'Settings','recbin') else 1/24
