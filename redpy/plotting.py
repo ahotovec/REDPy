@@ -33,6 +33,7 @@ from bokeh.models.glyphs import Line, Quad
 from bokeh.layouts import column
 from bokeh.palettes import inferno, all_palettes
 import urllib.request
+
         
 def createPlots(rtable, ftable, ttable, ctable, otable, opt):
     
@@ -72,7 +73,7 @@ def createPlots(rtable, ftable, ttable, ctable, otable, opt):
     for tmp in tmplist:
         os.rename(tmp,tmp[0:-4]) 
     
-    
+  
 def plotTimelines(rtable, ftable, ttable, opt):
     
     """
@@ -95,167 +96,340 @@ def plotTimelines(rtable, ftable, ttable, opt):
     if opt.anotfile != '':
         df = pd.read_csv(opt.anotfile)
     
-    # Create histogram of events/dybin
-    histT, hT = np.histogram(alltrigs, bins=np.arange(min(alltrigs),
-        max(alltrigs+opt.dybin), opt.dybin))
-    histR, hR = np.histogram(dt, bins=np.arange(min(alltrigs),
-        max(alltrigs+opt.dybin), opt.dybin))
-        
+          
     # Determine padding for hover bars (~1% of window range on each side)
     barpad = (max(alltrigs)-min(alltrigs))*0.01
     barpadr = opt.recplot*0.01
         
-    # Create histogram of events/hrbin
-    histTr, hTr = np.histogram(alltrigs, bins=np.arange(max(alltrigs)-opt.recplot,
-        max(alltrigs+opt.hrbin/24), opt.hrbin/24))
-    histRr, hRr = np.histogram(dt, bins=np.arange(max(alltrigs)-opt.recplot,
-        max(alltrigs+opt.hrbin/24), opt.hrbin/24))
     
-    oTOOLS = ['pan,box_zoom,reset,save,tap']
+    # Initialize list of produced plots (plot_types is a stub variable until the config file offers this option)    
+    plot_types = 'eqrate,fi,occurrence,longevity'.split(',')
+    overview_plots = []
+    recent_plots = []
     
-    if opt.dybin>=1:
-        o0title = 'Repeaters vs. Orphans by {:.1f} Day Bin'.format(opt.dybin)
-    else:
-        o0title = 'Repeaters vs. Orphans by {:.1f} Hour Bin'.format(opt.dybin*24)
     
-    o0 = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime',
-        title=o0title)
-    o0.grid.grid_line_alpha = 0.3
-    o0.xaxis.axis_label = 'Date'
-    o0.yaxis.axis_label = 'Events'
+    # Create each of the subplots specified in the configuration file
+    for p in plot_types:
     
-    if opt.anotfile != '':
-        for row in df.itertuples():
-            spantime = (datetime.datetime.strptime(row[1]
-                ,'%Y-%m-%dT%H:%M:%S')-datetime.datetime(1970, 1, 1)).total_seconds()
-            o0.add_layout(Span(location=spantime*1000, dimension='height',
-                line_color=row[2], line_width=row[3], line_dash=row[4],
-                line_alpha=row[5]))
-    
-    o0.line(matplotlib.dates.num2date(hT[0:-1]+opt.dybin/2), histT-histR, color='black',
-        legend_label='Orphans')
-    o0.line(matplotlib.dates.num2date(hR[0:-1]+opt.dybin/2), histR, color='red',
-        legend_label='Repeaters', line_width=2)
-    o0.legend.location = 'top_left'
-    
-    if opt.hrbin<24:
-        o0rtitle = 'Repeaters vs. Orphans by {1:.1f} Hour Bin'.format(
-            opt.recplot, opt.hrbin)
-    else:
-        o0rtitle = 'Repeaters vs. Orphans by {1:.1f} Day Bin'.format(
-            opt.recplot, opt.hrbin/24)
-    o0r = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime',
-        title=o0rtitle)
-    o0r.grid.grid_line_alpha = 0.3
-    o0r.xaxis.axis_label = 'Date'
-    o0r.yaxis.axis_label = 'Events'
-    
-    if opt.anotfile != '':
-        for row in df.itertuples():
-            spantime = (datetime.datetime.strptime(row[1]
-                ,'%Y-%m-%dT%H:%M:%S')-datetime.datetime(1970, 1, 1)).total_seconds()
-            o0r.add_layout(Span(location=spantime*1000, dimension='height',
-                line_color=row[2], line_width=row[3], line_dash=row[4],
-                line_alpha=row[5]))
-    
-    o0r.line(matplotlib.dates.num2date(hTr[0:-1]+opt.hrbin/48), histTr-histRr,
-        color='black', legend_label='Orphans')
-    o0r.line(matplotlib.dates.num2date(hRr[0:-1]+opt.hrbin/48), histRr, color='red',
-        legend_label='Repeaters', line_width=2)
-    o0r.legend.location = 'top_left'
-        
-    o1 = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime',
-        x_range=o0.x_range, title='Frequency Index')
-    o1.grid.grid_line_alpha = 0.3
-    o1.xaxis.axis_label = 'Date'
-    o1.yaxis.axis_label = 'FI'
-    
-    if opt.anotfile != '':
-        for row in df.itertuples():
-            spantime = (datetime.datetime.strptime(row[1]
-                ,'%Y-%m-%dT%H:%M:%S')-datetime.datetime(1970, 1, 1)).total_seconds()
-            o1.add_layout(Span(location=spantime*1000, dimension='height',
-                line_color=row[2], line_width=row[3], line_dash=row[4],
-                line_alpha=row[5]))
-    o1.circle(matplotlib.dates.num2date(dt), fi, color='red', line_alpha=0,
-        size=3, fill_alpha=0.5)
-        
-    o1r = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime',
-        x_range=o0r.x_range, title='Frequency Index')
-    o1r.grid.grid_line_alpha = 0.3
-    o1r.xaxis.axis_label = 'Date'
-    o1r.yaxis.axis_label = 'FI'
-    
-    if opt.anotfile != '':
-        for row in df.itertuples():
-            spantime = (datetime.datetime.strptime(row[1]
-                ,'%Y-%m-%dT%H:%M:%S')-datetime.datetime(1970, 1, 1)).total_seconds()
-            o1r.add_layout(Span(location=spantime*1000, dimension='height',
-                line_color=row[2], line_width=row[3], line_dash=row[4],
-                line_alpha=row[5]))
-    # Put invisible points in for case that there are no events
-    o1r.circle(matplotlib.dates.num2date(hTr[0:2]), [1, 1], line_alpha=0, fill_alpha=0)
-    o1r.circle(matplotlib.dates.num2date(dt[dt>(max(alltrigs)-opt.recplot)]),
-        fi[dt>(max(alltrigs)-opt.recplot)], color='red', line_alpha=0,
-        size=3, fill_alpha=0.5)
-        
-    o2 = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime',
-        x_range=o0.x_range, y_axis_type='log', y_range=[0.1,
-        np.sort(alltrigs)[-1]-np.sort(alltrigs)[0]], title='Cluster Longevity')
-    o2.grid.grid_line_alpha = 0.3
-    o2.xaxis.axis_label = 'Date'
-    o2.yaxis.axis_label = 'Days'
-    
-    if opt.anotfile != '':
-        for row in df.itertuples():
-            spantime = (datetime.datetime.strptime(row[1]
-                ,'%Y-%m-%dT%H:%M:%S')-datetime.datetime(1970, 1, 1)).total_seconds()
-            o2.add_layout(Span(location=spantime*1000, dimension='height',
-                line_color=row[2], line_width=row[3], line_dash=row[4],
-                line_alpha=row[5]))
-    for n in range(len(famstarts)):
-        source = ColumnDataSource(dict(x=np.array((matplotlib.dates.num2date(
-                famstarts[n]), matplotlib.dates.num2date(famstarts[n]+longevity[n]))),
-                y=np.array((longevity[n], longevity[n]))))
-        o2.add_glyph(source, Line(x="x", y="y", line_color='red',
-                line_alpha=0.5))
-        
-    o2r = figure(tools=oTOOLS, plot_width=1250, plot_height=250, x_axis_type='datetime',
-        x_range=o0r.x_range, y_axis_type='log', y_range=[0.1,
-        np.sort(alltrigs)[-1]-np.sort(alltrigs)[0]], title='Cluster Longevity')
-    o2r.grid.grid_line_alpha = 0.3
-    o2r.xaxis.axis_label = 'Date'
-    o2r.yaxis.axis_label = 'Days'
-    
-    if opt.anotfile != '':
-        for row in df.itertuples():
-            spantime = (datetime.datetime.strptime(row[1]
-                ,'%Y-%m-%dT%H:%M:%S')-datetime.datetime(1970, 1, 1)).total_seconds()
-            o2r.add_layout(Span(location=spantime*1000, dimension='height',
-                line_color=row[2], line_width=row[3], line_dash=row[4],
-                line_alpha=row[5]))
-    # Put invisible points in for case that there are no events
-    o2r.circle(matplotlib.dates.num2date(hTr[0:2]), [1, 1], line_alpha=0, fill_alpha=0)
-    for n in range(len(famstarts)):
-        if (max(alltrigs)-opt.recplot)<=famstarts[n]:
-            source = ColumnDataSource(dict(x=np.array((matplotlib.dates.num2date(
-                famstarts[n]), matplotlib.dates.num2date(famstarts[n]+longevity[n]))),
-                y=np.array((longevity[n], longevity[n]))))
-            o2r.add_glyph(source, Line(x="x", y="y", line_color='red',
-                line_alpha=0.5))
-        elif (max(alltrigs)-opt.recplot)<=famstarts[n]+longevity[n]:
-            source = ColumnDataSource(dict(x=np.array((matplotlib.dates.num2date(
-                hTr[0]-barpadr), matplotlib.dates.num2date(famstarts[n]+longevity[n]))),
-                y=np.array((longevity[n], longevity[n]))))
-            o2r.add_glyph(source, Line(x="x", y="y", line_color='red',
-                line_alpha=0.5))
-            o2r.add_layout(Arrow(end=VeeHead(size=5, fill_color='red', line_color='red',
-                line_alpha=0.5), line_alpha=0,
-                x_start=matplotlib.dates.num2date(famstarts[n]+longevity[n]),
-                x_end=matplotlib.dates.num2date(hTr[0]-barpadr),
-                y_start=longevity[n], y_end=longevity[n]))
+        if p == 'eqrate':
+            # Plot EQ Rates (Repeaters and Orphans)
+            overview_plots.append(plot_eqrate(alltrigs, dt, opt.dybin))
+            recent_plots.append(  plot_eqrate(alltrigs[dt>(max(alltrigs)-opt.recplot)], dt[dt>(max(alltrigs)-opt.recplot)], opt.hrbin/24))
             
-    # Build hover to show an image of the cluster core
+        elif p == 'fi':
+            # Plot Frequency Index
+            overview_plots.append(plot_fi(dt, fi)) # Overview
+            recent_plots.append(plot_fi(dt[dt>(max(alltrigs)-opt.recplot)], fi[dt>(max(alltrigs)-opt.recplot)])) # Recent
+    
+        elif p == 'longevity':
+	        # Plot Cluster Longevity — This needs to be further functionalized!
+            overview_plots.append(plot_longevity(alltrigs, famstarts, longevity, min(alltrigs),             barpad, opt))
+            recent_plots.append(  plot_longevity(alltrigs, famstarts, longevity, max(alltrigs)-opt.recplot, barpadr, opt))
+	
+        elif p == 'occurrence':
+            # Plot family occurrence
+            overview_plots.append(plot_family_occurrence(dt, ftable, min(alltrigs),             opt.minplot, opt.occurbin, barpad))
+            recent_plots.append(  plot_family_occurrence(dt, ftable, max(alltrigs)-opt.recplot, 0,           opt.recbin,   barpadr))
+    
+        else:
+        	print('{} is not a valid plot type. Moving on.'.format(p))
+    
+    
+    # Set ranges
+    for i in overview_plots:
+        i.x_range = overview_plots[0].x_range
+    for i in recent_plots:
+        i.x_range = recent_plots[0].x_range
+    
+    
+    # Add annotations
+    if opt.anotfile != '':
+        for i in [overview_plots, recent_plots]:
+            for j in i:
+                for row in df.itertuples():
+                    spantime = (datetime.datetime.strptime(row[1]
+                        ,'%Y-%m-%dT%H:%M:%S')-datetime.datetime(1970, 1, 1)).total_seconds()
+                    j.add_layout(Span(location=spantime*1000, dimension='height',
+                        line_color=row[2], line_width=row[3], line_dash=row[4],
+                        line_alpha=row[5], level='underlay'))
+ 
+
+    # Create output and save
+    # gridplot_items should look like this: [[Div(text=...)],[panel1],[panel2],...]
+    gridplot_items = [[Div(text='<h1>{0}</h1>'.format(opt.title), width=1000)]] + [[el] for el in overview_plots]
+    o = gridplot(gridplot_items)
+    output_file('{}{}/overview.html'.format(opt.outputPath, opt.groupName), title='{} Overview'.format(opt.title))
+    save(o)
+    
+    gridplot_items = [[Div(text='<h1>{0}</h1>'.format(opt.title), width=1000)]] + [[el] for el in recent_plots]
+    r = gridplot(gridplot_items)
+    output_file('{}{}/overview_recent.html'.format(opt.outputPath, opt.groupName), title='{0} Overview - Last {1:.1f} Days'.format(opt.title, opt.recplot))
+    save(r)
+
+         
+def bokeh_figure(**kwargs):
+    
+    # default values for bokeh_figures
+    if 'tools' not in kwargs:
+        kwargs['tools'] = ['pan,box_zoom,reset,save,tap']
+    if 'plot_width' not in kwargs:
+        kwargs['plot_width'] = 1250
+    if 'plot_height' not in kwargs:
+        kwargs['plot_height'] = 250
+    if 'x_axis_type' not in kwargs:
+        kwargs['x_axis_type'] = 'datetime'
+        
+    # Create figure
+    fig = figure(**kwargs)
+        
+    fig.grid.grid_line_alpha = 0.3
+    fig.xaxis.axis_label = 'Date'
+    fig.yaxis.axis_label = ''
+    
+    return fig
+
+
+def plot_eqrate(alltrigs, dt, binsize):
+
+    hr_days = 'Day Bin' if binsize>=1 else 'Hour Bin'
+    dt_offset = binsize/2 # used to create the lines
+    title = 'Repeaters vs. Orphans by {:.1f} {}'.format(binsize,hr_days)
+     
+    # Create histogram of events/dybin
+    histT, hT = np.histogram(alltrigs, bins=np.arange(min(alltrigs),
+        max(alltrigs+binsize), binsize))
+    histR, hR = np.histogram(dt, bins=np.arange(min(alltrigs),
+        max(alltrigs+binsize), binsize))  
+            
+    # Plot data
+    fig = bokeh_figure(title=title)
+    fig.yaxis.axis_label = 'Events'
+    fig.line(matplotlib.dates.num2date(hT[0:-1]+dt_offset), histT-histR, color='black',
+        legend_label='Orphans')
+    fig.line(matplotlib.dates.num2date(hR[0:-1]+dt_offset), histR, color='red',
+        legend_label='Repeaters', line_width=2)
+    fig.legend.location = 'top_left'
+    
+    return fig
+
+
+def plot_fi(dt, fi):
+	
+    fig = bokeh_figure(title='Frequency Index')
+    fig.yaxis.axis_label = 'FI'
+    fig.circle(matplotlib.dates.num2date(dt), fi, color='red', line_alpha=0,
+        size=3, fill_alpha=0.5)
+    
+    return fig
+
+
+def plot_longevity(alltrigs, famstarts, longevity, t1, barpad, opt):
+
+    fig = bokeh_figure(y_axis_type='log',
+        y_range=[0.1, np.sort(alltrigs)[-1]-np.sort(alltrigs)[0]],
+        title='Cluster Longevity')
+    fig.yaxis.axis_label = 'Days'
+
+    add_line = True    # Draw a line for the longevity data (turns off if data don't fall within time window)
+    add_arrow = True   # Draw an arrow if longevity line extends beyond the data window
+
+    # Plot Data            
+    for n in range(len(famstarts)):
+        if (max(alltrigs)-opt.recplot)<=famstarts[n]: # family start is after recplot
+            
+            x1 = famstarts[n]+longevity[n]
+            add_line = True
+            add_arrow = False
+
+        elif (max(alltrigs)-opt.recplot)<=famstarts[n]+longevity[n]: # family end is after recplot
+
+            x1 = t1-barpad
+            add_line = True
+            add_arrow = True
+
+        else: # family start and end are before recplot (ie, entire family is before plot window)
+            print('I did get here.')
+            add_line = False
+            add_arrow = False
+            #x1=0# this shouldn't (couldn't?) happen
+    
+        if add_line:
+            source = ColumnDataSource(dict(
+                x=np.array(
+                (matplotlib.dates.num2date(x1),
+                matplotlib.dates.num2date(famstarts[n]+longevity[n]))),
+                y=np.array((longevity[n],longevity[n]))))
+            fig.add_glyph(source, Line(x="x", y="y", line_color='red',
+                line_alpha=0.5))
+            if add_arrow:
+                fig.add_layout(Arrow(end=VeeHead(size=5, fill_color='red', line_color='red',
+                    line_alpha=0.5), line_alpha=0,
+                    x_start=matplotlib.dates.num2date(famstarts[n]+longevity[n]),
+                    x_end=matplotlib.dates.num2date(t1-barpad),
+                    y_start=longevity[n], y_end=longevity[n]))
+
+    return fig
+
+
+def plot_family_occurrence(dt, ftable, t1, minplot, binsize, barpad):
+
+    t0 = t1
+    #print(t1)
+    #print(t0)
+   
+    p1 = figure(tools=[create_hover_tool(),'pan,box_zoom,reset,save,tap'],
+        title='Occurrence Timeline', plot_height=500, plot_width=1250)
+    p1.yaxis.axis_label = 'Cluster by Date' + (' ({}+ Members)'.format(minplot) if minplot>0 else '')
+    
+    # Steal YlOrRd (len=256) colormap from matplotlib
+    colormap = matplotlib.cm.get_cmap('YlOrRd')
+    bokehpalette = [matplotlib.colors.rgb2hex(m) for m in colormap(
+        np.arange(colormap.N)[::-1])]
+
+    # Build the lists and dictionaries    
+    n = 0  
+    cloc1 = 335
+    
+    legtext = determine_legend_text(binsize)
+      
+    for clustNum in range(ftable.attrs.nClust):
+        
+        members = np.fromstring(ftable[clustNum]['members'], dtype=int, sep=' ')
+        
+        # Create histogram of events/hour
+        hist, h = np.histogram(dt[members], bins=np.arange(min(dt[members]),
+            max(dt[members]+binsize), binsize))
+        d1 = matplotlib.dates.num2date(h[np.where(hist>0)])
+        d2 = matplotlib.dates.num2date(h[np.where(hist>0)]+1.0/24)
+        histlog = np.log10(hist[hist>0])
+        ind = [int(min(255,255*(i/2))) for i in histlog]
+        colors = [bokehpalette[i] for i in ind]
+                    
+
+        if len(dt[members]) >= minplot:
+
+            if max(dt[members])>t1:
+            
+                if min(dt[members])<t1:
+                    
+                    # add line w arrow
+                    p1.line((matplotlib.dates.num2date(t0),
+                        matplotlib.dates.num2date(max(dt[members]))), (n, n),
+                        color='black')
+                    p1.add_layout(Arrow(end=VeeHead(size=3),
+                        x_start=matplotlib.dates.num2date(t0+0.01),
+                        x_end=matplotlib.dates.num2date(t0-0.5),
+                        y_start=n, y_end=n))
+
+                    idx = np.where(h[np.where(hist>0)[0]]>t1)[0]
+                        
+                else:
+                
+                    # Just add line
+                    # Date is required as datenum
+                    p1.line((matplotlib.dates.num2date(min(dt[members])),
+                        matplotlib.dates.num2date(max(dt[members]))), (n, n),
+                        color='black')
+                    idx = np.arange(len(d1))
+                
+                # always add a box
+                p1.quad(top=n+0.3, bottom=n-0.3,
+                    left=np.array(d1)[idx],
+                    right=np.array(d2)[idx],
+                    color=np.array(colors)[idx])                   
+                
+                # Text doesn't understand datetimes, need to convert to a number and subtract
+                # about 8 hours
+                p1.text(time.mktime(matplotlib.dates.num2date(
+                    max(dt[members])).timetuple())*1000 - 28799000, n,
+                    text=['   {}'.format(len(dt[members]))], text_font_size='9pt',
+                    text_baseline='middle')
+                 
+                # Build source for hover patches
+                fnum = clustNum
+                if n == 0:
+                    xs=[[matplotlib.dates.num2date(max(min(dt[members]),t1)-barpad),
+                        matplotlib.dates.num2date(max(min(dt[members]),t1)-barpad),
+                        matplotlib.dates.num2date(max(dt[members])+barpad),
+                        matplotlib.dates.num2date(max(dt[members])+barpad)]]
+                    ys=[[n-0.5, n+0.5, n+0.5, n-0.5]]
+                    famnum=[[fnum]]
+                else:
+                    xs.append([matplotlib.dates.num2date(max(min(dt[members]),t1)-barpad),
+                        matplotlib.dates.num2date(max(min(dt[members]),t1)-barpad),
+                        matplotlib.dates.num2date(max(dt[members])+barpad),
+                        matplotlib.dates.num2date(max(dt[members])+barpad)])
+                    ys.append([n-0.5, n+0.5, n+0.5, n-0.5])
+                    famnum.append([fnum])
+
+                n = n+1
+         
+    if n > 0:
+        # Patches allow hovering for image of core and cluster number
+        source = ColumnDataSource(data=dict(xs=xs, ys=ys, famnum=famnum))
+        p1.patches('xs', 'ys', source=source, name='patch', alpha=0,
+            selection_fill_alpha=0, selection_line_alpha=0, nonselection_fill_alpha=0,
+            nonselection_line_alpha=0)
+                        
+        # Tapping on one of the patches will open a window to a file with more information
+        # on the cluster in question.   
+        url = './clusters/@famnum.html'
+        renderer = p1.select(name='patch')
+        taptool = p1.select(type=TapTool)[0]
+        taptool.names.append('patch')
+        taptool.callback = OpenURL(url=url)
+                    
+        if n > 30:
+            p1.plot_height = n*15
+            p1.y_range = Range1d(-1, n)
+            cloc1 = n*15-165
+        
+    else: 
+        p1.circle(matplotlib.dates.num2date(t0), 0, line_alpha=0, fill_alpha=0)
+
+
+    color_bar = ColorBar(color_mapper=determine_color_mapper(binsize), ticker=LogTicker(),
+        border_line_color='#eeeeee', location=(7,cloc1), orientation='horizontal',
+        width=150, height=15, title='Events per {}'.format(determine_legend_text(binsize)), padding=15,
+        major_tick_line_alpha=0)    
+#    color_mapper = LogColorMapper(palette=bokehpalette, low=1, high=100)
+#    color_bar = ColorBar(color_mapper=color_mapper, ticker=LogTicker(),
+#        border_line_color='#eeeeee', location=(7,cloc1), orientation='horizontal',
+#        width=100, height=15, title='Events per Hour', padding=15,
+#        major_tick_line_alpha=0)
+    p1.add_layout(color_bar)
+
+    return p1
+
+
+def determine_legend_text(binsize):
+    # Determine legend wording
+    if binsize == 1/24:
+        legtext = 'Hour'
+    elif binsize == 1:
+        legtext = 'Day'
+    elif binsize == 7:
+        legtext = 'Week'
+    elif binsize < 2:
+        legtext = '{} Hours'.format(binsize*24)
+    else:
+        legtext = '{} Days'.format(binsize)
+
+    return legtext
+
+
+def determine_color_mapper(binsize):
+    # Steal YlOrRd (len=256) colormap from matplotlib
+    colormap = matplotlib.cm.get_cmap('YlOrRd')
+    bokehpalette = [matplotlib.colors.rgb2hex(m) for m in colormap(
+        np.arange(colormap.N)[::-1])]
+    if binsize >= 1:
+        color_mapper = LogColorMapper(palette=bokehpalette, low=1, high=1000)
+    else:
+        color_mapper = LogColorMapper(palette=bokehpalette, low=1, high=100)
+
+
+def create_hover_tool():
     hover = HoverTool(
         tooltips="""
         <div>
@@ -267,278 +441,8 @@ def plotTimelines(rtable, ftable, ttable, opt):
         </div>
         </div>
         """, names=["patch"])
-    
-    TOOLS = [hover,'pan,box_zoom,reset,save,tap']
-    
-    # Build hover to show an image of the cluster core
-    hoverr = HoverTool(
-        tooltips="""
-        <div>
-        <div>
-            <img src="./clusters/@famnum.png" style="height: 100px; width: 500px;
-                vertical-align: middle;" />
-            <span style="font-size: 9px; font-family: Helvetica;">Cluster ID: </span>
-            <span style="font-size: 12px; font-family: Helvetica;">@famnum</span>
-        </div>
-        </div>
-        """, names=["patchr"])
-    
-    TOOLSrec = [hoverr,'pan,box_zoom,reset,save,tap']
-        
-    p1 = figure(tools=TOOLS, plot_width=1250, plot_height=500, x_axis_type='datetime',
-        x_range=o0.x_range, title='Occurrence Timeline')
-    p1.grid.grid_line_alpha = 0.3
-    p1.xaxis.axis_label = 'Date'
-    p1.yaxis.axis_label = 'Cluster by Date ({}+ Members)'.format(opt.minplot)
-    
-    if opt.anotfile != '':
-        for row in df.itertuples():
-            spantime = (datetime.datetime.strptime(row[1]
-                ,'%Y-%m-%dT%H:%M:%S')-datetime.datetime(1970, 1, 1)).total_seconds()
-            p1.add_layout(Span(location=spantime*1000, dimension='height',
-                line_color=row[2], line_width=row[3], line_dash=row[4],
-                line_alpha=row[5]))
-    
-    r1 = figure(tools=TOOLSrec, plot_width=1250, plot_height=500, x_axis_type='datetime',
-        x_range=o0r.x_range, title = 'Occurrence Timeline')
-    r1.grid.grid_line_alpha = 0.3
-    r1.xaxis.axis_label = 'Date'
-    r1.yaxis.axis_label = 'Cluster by Date'    
-    
-    if opt.anotfile != '':
-        for row in df.itertuples():
-            spantime = (datetime.datetime.strptime(row[1]
-                ,'%Y-%m-%dT%H:%M:%S')-datetime.datetime(1970, 1, 1)).total_seconds()
-            r1.add_layout(Span(location=spantime*1000, dimension='height',
-                line_color=row[2], line_width=row[3], line_dash=row[4],
-                line_alpha=row[5]))
-    
-    # Steal YlOrRd (len=256) colormap from matplotlib
-    colormap = matplotlib.cm.get_cmap('YlOrRd')
-    bokehpalette = [matplotlib.colors.rgb2hex(m) for m in colormap(
-        np.arange(colormap.N)[::-1])]
 
-    # Build the lists and dictionaries    
-    n = 0  
-    m = 0
-    cloc1 = 335
-    cloc2 = 335
-        
-    # Determine legend wording
-    if opt.occurbin == 1/24:
-        legtext = 'Hour'
-    elif opt.occurbin == 1:
-        legtext = 'Day'
-    elif opt.occurbin == 7:
-        legtext = 'Week'
-    elif opt.occurbin < 2:
-        legtext = '{} Hours'.format(opt.occurbin*24)
-    else:
-        legtext = '{} Days'.format(opt.occurbin)
-
-    if opt.recbin == 1/24:
-        legtext_r = 'Hour'
-    elif opt.recbin == 1:
-        legtext_r = 'Day'
-    elif opt.recbin == 7:
-        legtext_r = 'Week'
-    elif opt.recbin < 2:
-        legtext_r = '{} Hours'.format(opt.recbin*24)
-    else:
-        legtext_r = '{} Days'.format(opt.recbin)    
-      
-    for clustNum in range(ftable.attrs.nClust):
-        
-        members = np.fromstring(ftable[clustNum]['members'], dtype=int, sep=' ')
-        
-        # Create histogram of events/hour
-        hist, h = np.histogram(dt[members], bins=np.arange(min(dt[members]),
-            max(dt[members]+opt.occurbin), opt.occurbin))
-        hist_r, h_r = np.histogram(dt[members], bins=np.arange(min(dt[members]),
-            max(dt[members]+opt.recbin), opt.recbin))
-        d1 = matplotlib.dates.num2date(h[np.where(hist>0)])
-        d2 = matplotlib.dates.num2date(h[np.where(hist>0)]+opt.occurbin)
-        d1_r = matplotlib.dates.num2date(h_r[np.where(hist_r>0)])
-        d2_r = matplotlib.dates.num2date(h_r[np.where(hist_r>0)]+opt.recbin)
-        histlog = np.log10(hist[hist>0])
-        histlog_r = np.log10(hist_r[hist_r>0])
-        if opt.occurbin > 1:
-            ind = [int(min(255,255*(i/3))) for i in histlog]
-        else:
-            ind = [int(min(255,255*(i/2))) for i in histlog]
-        if opt.recbin > 1:
-            ind_r = [int(min(255,255*(i/3))) for i in histlog_r]
-        else:
-            ind_r = [int(min(255,255*(i/2))) for i in histlog_r]
-        colors = [bokehpalette[i] for i in ind]
-        colors_r = [bokehpalette[i] for i in ind_r]
-                
-        if len(dt[members]) >= opt.minplot:
-            
-            source = ColumnDataSource(dict(x=np.array((matplotlib.dates.num2date(
-                min(dt[members])), matplotlib.dates.num2date(max(dt[members])))),
-                y=np.array((n, n))))
-            p1.add_glyph(source, Line(x="x", y="y", line_color='black'))
-            
-            source = ColumnDataSource(dict(top=np.ones(len(d1))*(n+0.3),
-                bottom=np.ones(len(d1))*(n-0.3), left=np.array(d1), right=np.array(d2),
-                color=np.array(colors)))
-            p1.add_glyph(source, Quad(left="left", right="right", top="top",
-                bottom="bottom", fill_color="color", line_color=None))
-            
-            p1.add_layout(LabelSet(x=matplotlib.dates.num2date(
-                max(h[np.where(hist>0)]+opt.occurbin)),
-                y=n, text=['{}'.format(len(dt[members]))], level='glyph',
-                x_offset=5, y_offset=0, render_mode='canvas', text_font_size='9pt',
-                text_baseline='middle'))
-                 
-            # Build source for hover patches
-            fnum = clustNum
-            if n == 0:
-                xs=[[matplotlib.dates.num2date(min(dt[members])-barpad),
-                    matplotlib.dates.num2date(min(dt[members])-barpad),
-                    matplotlib.dates.num2date(max(dt[members])+barpad),
-                    matplotlib.dates.num2date(max(dt[members])+barpad)]]
-                ys=[[n-0.5, n+0.5, n+0.5, n-0.5]]
-                famnum=[[fnum]]
-            else:
-                xs.append([matplotlib.dates.num2date(min(dt[members])-barpad),
-                    matplotlib.dates.num2date(min(dt[members])-barpad),
-                    matplotlib.dates.num2date(max(dt[members])+barpad),
-                    matplotlib.dates.num2date(max(dt[members])+barpad)])
-                ys.append([n-0.5, n+0.5, n+0.5, n-0.5])
-                famnum.append([fnum])
-            
-            n = n+1
-            
-        if max(dt[members])>hRr[0]:
-            
-            if min(dt[members])<hRr[0]:
-                
-                source = ColumnDataSource(dict(x=np.array((matplotlib.dates.num2date(
-                    hTr[0]-barpadr), matplotlib.dates.num2date(max(dt[members])))),
-                    y=np.array((m, m))))
-                r1.add_glyph(source, Line(x="x", y="y", line_color='black'))
-            
-                r1.add_layout(Arrow(end=VeeHead(size=5),
-                    x_start=matplotlib.dates.num2date(hTr[0]+0.01),
-                    x_end=matplotlib.dates.num2date(hTr[0]-barpadr),
-                    y_start=m, y_end=m))
-
-                idx = np.where(h_r[np.where(hist_r>0)[0]]>hRr[0])[0]
-                        
-            else:
-            
-                source = ColumnDataSource(dict(x=np.array((matplotlib.dates.num2date(
-                    min(dt[members])), matplotlib.dates.num2date(max(dt[members])))),
-                    y=np.array((m, m))))
-                r1.add_glyph(source, Line(x="x", y="y", line_color='black'))
-                
-                idx = np.arange(len(d1_r))            
-            
-            source = ColumnDataSource(dict(top=np.ones(len(idx))*(m+0.3), bottom=np.ones(
-                len(idx))*(m-0.3), left=np.array(d1_r)[idx], right=np.array(d2_r)[idx],
-                color=np.array(colors_r)[idx]))
-            r1.add_glyph(source, Quad(left="left", right="right", top="top",
-                bottom="bottom", fill_color="color", line_color=None))
-                
-            r1.add_layout(LabelSet(x=np.array(d2_r)[-1],
-                y=m, text=['{}'.format(len(dt[members]))], level='glyph',
-                x_offset=5, y_offset=0, render_mode='canvas', text_font_size='9pt',
-                text_baseline='middle'))
-            
-            # Build source for hover patches
-            fnumr = clustNum
-            if m == 0:
-                xsr=[[matplotlib.dates.num2date(max(min(dt[members]),hRr[0])-barpadr),
-                    matplotlib.dates.num2date(max(min(dt[members]),hRr[0])-barpadr),
-                    matplotlib.dates.num2date(max(dt[members])+barpadr),
-                    matplotlib.dates.num2date(max(dt[members])+barpadr)]]
-                ysr=[[m-0.5, m+0.5, m+0.5, m-0.5]]
-                famnumr=[[fnumr]]
-            else:
-                xsr.append([matplotlib.dates.num2date(max(min(dt[members]),hRr[0])-
-                    barpadr), matplotlib.dates.num2date(max(min(dt[members]),hRr[0])-
-                    barpadr),matplotlib.dates.num2date(max(dt[members])+barpadr),
-                    matplotlib.dates.num2date(max(dt[members])+barpadr)])
-                ysr.append([m-0.5, m+0.5, m+0.5, m-0.5])
-                famnumr.append([fnumr])
-            m = m+1
-            
-    if n > 0:
-        # Patches allow hovering for image of core and cluster number
-        source = ColumnDataSource(data=dict(xs=xs, ys=ys, famnum=famnum))
-        p1.patches('xs', 'ys', source=source, name='patch', alpha=0,
-            selection_fill_alpha=0, selection_line_alpha=0, nonselection_fill_alpha=0,
-            nonselection_line_alpha=0)
-                
-        # Tapping on one of the patches will open a window to a file with more information
-        # on the cluster in question.        
-        url = './clusters/@famnum.html'
-        renderer = p1.select(name='patch')
-        taptool = p1.select(type=TapTool)[0]
-        taptool.names.append('patch')
-        taptool.callback = OpenURL(url=url)
-        
-        if n > 30:
-            p1.plot_height = n*15
-            p1.y_range = Range1d(-1, n)
-            cloc1 = n*15-165
-    
-    else:
-        p1.circle(matplotlib.dates.num2date(hTr[0:2]), [0, 0], line_alpha=0, fill_alpha=0)
-        
-    if m > 0:
-        sourcer = ColumnDataSource(data=dict(xs=xsr, ys=ysr, famnum=famnumr))
-        r1.patches('xs', 'ys', source=sourcer, name='patchr', alpha=0,
-            selection_fill_alpha=0, selection_line_alpha=0, nonselection_fill_alpha=0,
-            nonselection_line_alpha=0)
-        
-        url = './clusters/@famnum.html'
-        renderer = r1.select(name='patchr')
-        taptool = r1.select(type=TapTool)[0]
-        taptool.names.append('patchr')
-        taptool.callback = OpenURL(url=url)
-                    
-        if m > 30:
-            r1.plot_height = m*15
-            r1.y_range = Range1d(-1, m)
-            cloc2 = m*15-165
-        
-    else: 
-        r1.circle(matplotlib.dates.num2date(hTr[0:2]), [0, 0], line_alpha=0, fill_alpha=0)
-    
-    if opt.occurbin >= 1:
-        color_mapper = LogColorMapper(palette=bokehpalette, low=1, high=1000)
-    else:
-        color_mapper = LogColorMapper(palette=bokehpalette, low=1, high=100)
-    if opt.recbin >= 1:
-        color_mapper_r = LogColorMapper(palette=bokehpalette, low=1, high=1000)
-    else:
-        color_mapper_r = LogColorMapper(palette=bokehpalette, low=1, high=100)
-    color_bar = ColorBar(color_mapper=color_mapper, ticker=LogTicker(),
-        border_line_color='#eeeeee', location=(7,cloc1), orientation='horizontal',
-        width=150, height=15, title='Events per {}'.format(legtext), padding=15,
-        major_tick_line_alpha=0)
-    color_bar_r = ColorBar(color_mapper=color_mapper_r, ticker=LogTicker(),
-        border_line_color='#eeeeee', location=(7,cloc2), orientation='horizontal',
-        width=150, height=15, title='Events per {}'.format(legtext_r), padding=15,
-        major_tick_line_alpha=0)
-    p1.add_layout(color_bar)
-    r1.add_layout(color_bar_r)
-    
-    o = gridplot([[Div(text='<h1>{0}</h1>'.format(
-                       opt.title), width=1000)],[o0],[o1],[p1],[o2]])
-    o_recent = gridplot([[Div(text='<h1>{0} (Last {1:.1f} Days)</h1>'.format(
-                       opt.title,opt.recplot), width=1000)],[o0r],[o1r],[r1],[o2r]])
-        
-    output_file('{}{}/overview.html'.format(opt.outputPath, opt.groupName),
-        title='{} Overview'.format(opt.title))
-    save(o)
-    
-    output_file('{}{}/overview_recent.html'.format(opt.outputPath, opt.groupName),
-            title='{0} Overview - Last {1:.1f} Days'.format(opt.title, opt.recplot))
-    save(o_recent)
+    return hover
 
 
 def plotCores(rtable, ftable, opt):
@@ -585,8 +489,8 @@ def plotCores(rtable, ftable, opt):
             plt.savefig('{}{}/clusters/{}.png'.format(opt.outputPath, opt.groupName, n),
                 dpi=100)
             plt.close(fig)
-
-
+            
+            
 def plotFamilies(rtable, ftable, ctable, opt):
 
     """
