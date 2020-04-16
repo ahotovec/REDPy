@@ -27,16 +27,6 @@ def printCatalog(rtable, ftable, opt):
             for i in np.argsort(startTimes[fam]):
                 f.write("{0} {1}\n".format(cnum,(UTCDateTime(startTimes[fam][i]) +
                     windowStarts[fam][i]/opt.samprate).isoformat()))
-    
-    """
-    startTimes = rtable.cols.startTime[:]
-    windowStarts = rtable.cols.windowStart[:]
-    famNums = np.ones(len(windowStarts), dtype=int)
-    for cnum in range(ftable.attrs.nClust):
-        fam = np.fromstring(ftable[cnum]['members'], dtype=int, sep=' ')
-        famNums[fam] = cnum
-    print(famNums)   
-    """ 
 
 
 def printTriggerCatalog(ttable, opt):
@@ -74,6 +64,7 @@ def printOrphanCatalog(otable, opt):
         
         for i in np.argsort(startTimes):
             f.write("{0}\n".format((UTCDateTime(startTimes[i])+opt.ptrig).isoformat()))
+
 
 def printJunk(jtable, opt):
 	"""
