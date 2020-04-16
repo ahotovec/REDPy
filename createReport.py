@@ -49,7 +49,7 @@ h5file, rtable, otable, ttable, ctable, jtable, dtable, ftable = redpy.table.ope
 
 for fnum in args.famnum:
     if args.verbose: print("Creating report for family {}...".format(fnum))
-    redpy.plotting.plotReport(rtable, ftable, ctable, opt, fnum, args.ordered)
+    redpy.plotting.plotReport(rtable, ftable, ctable, fnum, args.ordered, opt)
 
 if args.verbose: print("Closing table...")
 h5file.close()
