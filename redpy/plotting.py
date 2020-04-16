@@ -110,15 +110,14 @@ def plotTimelines(rtable, ftable, ttable, opt):
     
         if p == 'eqrate':
             # Plot EQ Rates (Repeaters and Orphans)
-            overview_plots.append(plotRate(alltrigs, dt, opt.dybin))
-            recent_plots.append(plotRate(alltrigs[alltrigs>(max(alltrigs)-opt.recplot)],
-                                dt[dt>(max(alltrigs)-opt.recplot)], opt.hrbin/24))
+            overview_plots.append(plotRate(alltrigs, dt, opt.dybin, min(alltrigs)))
+            recent_plots.append(plotRate(alltrigs, dt, opt.hrbin/24,
+                                max(alltrigs)-opt.recplot))
             
         elif p == 'fi':
             # Plot Frequency Index
-            overview_plots.append(plotFI(dt, fi))
-            recent_plots.append(plotFI(dt[dt>(max(alltrigs)-opt.recplot)],
-                                fi[dt>(max(alltrigs)-opt.recplot)]))
+            overview_plots.append(plotFI(dt, fi, min(alltrigs)))
+            recent_plots.append(plotFI(dt, fi, max(alltrigs)-opt.recplot))
     
         elif p == 'longevity':
 	        # Plot Cluster Longevity — This needs to be further functionalized!
@@ -164,8 +163,8 @@ def plotTimelines(rtable, ftable, ttable, opt):
                 title='{} Overview'.format(opt.title))
     save(o)
     
-    gridplot_items = [[Div(text='<h1>{0}</h1>'.format(opt.title), width=1000)]] + [
-                      [el] for el in recent_plots]
+    gridplot_items = [[Div(text='<h1>{0} - Last {1:.1f} Days</h1>'.format(opt.title,
+                      opt.recplot), width=1000)]] + [[el] for el in recent_plots]
     r = gridplot(gridplot_items)
     output_file('{}{}/overview_recent.html'.format(opt.outputPath, opt.groupName),
                 title='{0} Overview - Last {1:.1f} Days'.format(opt.title, opt.recplot))
@@ -205,7 +204,7 @@ def bokehFigure(**kwargs):
     return fig
 
 
-def plotRate(alltrigs, dt, binsize):
+def plotRate(alltrigs, dt, binsize, mintime):
     
     """
     Creates subplot for rate of orphans and repeaters
@@ -213,17 +212,22 @@ def plotRate(alltrigs, dt, binsize):
     alltrigs: Array containing times of all triggers
     dt: Array containing times of repeaters
     binsize: Width (in days) of each time bin
+    mintime: Minimum time to be plotted
     
     """
     
-    hr_days = 'Day Bin' if binsize>=1 else 'Hour Bin'
     dt_offset = binsize/2 # used to create the lines
-    title = 'Repeaters vs. Orphans by {:.1f} {}'.format(binsize,hr_days)
+    
+    hr_days = 'Day Bin' if binsize>=1 else 'Hour Bin'
+    if binsize >= 1:
+        title = 'Repeaters vs. Orphans by {:.1f} Day Bin'.format(binsize)
+    else:
+        title = 'Repeaters vs. Orphans by {:.1f} Hour Bin'.format(binsize*24)
      
     # Create histogram of events/dybin
-    histT, hT = np.histogram(alltrigs, bins=np.arange(min(alltrigs),
+    histT, hT = np.histogram(alltrigs, bins=np.arange(mintime,
         max(alltrigs+binsize), binsize))
-    histR, hR = np.histogram(dt, bins=np.arange(min(alltrigs),
+    histR, hR = np.histogram(dt, bins=np.arange(mintime,
         max(alltrigs+binsize), binsize))  
             
     # Plot data
@@ -238,20 +242,21 @@ def plotRate(alltrigs, dt, binsize):
     return fig
 
 
-def plotFI(dt, fi):
+def plotFI(dt, fi, mintime):
     
     """
     Creates subplot for frequency index scatterplot
     
     dt: Array containing times of repeaters
     fi: Array containing frequency index values of repeaters
+    mintime: Minimum time to be plotted
     
     """
     
     fig = bokehFigure(title='Frequency Index')
     fig.yaxis.axis_label = 'FI'
-    fig.circle(matplotlib.dates.num2date(dt), fi, color='red', line_alpha=0,
-        size=3, fill_alpha=0.5)
+    fig.circle(matplotlib.dates.num2date(dt[dt>=mintime]), fi[dt>=mintime], color='red',
+        line_alpha=0, size=3, fill_alpha=0.5)
     
     return fig
 
@@ -280,7 +285,7 @@ def plotLongevity(alltrigs, famstarts, longevity, mintime, barpad, opt):
     # Draw a line for the longevity data (turns off if data don't fall within time window)
     # Draw an arrow if longevity line extends beyond the data window
 
-    print('starting...')
+
     # Plot Data            
     for n in range(len(famstarts)):
         # Three options:
@@ -448,11 +453,10 @@ def plotFamilyOccurrence(dt, ftable, mintime, minplot, binsize, barpad):
     else: 
         fig.circle(matplotlib.dates.num2date(mintime), 0, line_alpha=0, fill_alpha=0)
 
-
     color_bar = ColorBar(color_mapper=determineColorMapper(binsize), ticker=LogTicker(),
         border_line_color='#eeeeee', location=(7,cloc1), orientation='horizontal',
         width=150, height=15, title='Events per {}'.format(determineLegendText(binsize)),
-        padding=15, major_tick_line_alpha=0)    
+        padding=15, major_tick_line_alpha=0)
 
     fig.add_layout(color_bar)
 
@@ -499,6 +503,8 @@ def determineColorMapper(binsize):
         color_mapper = LogColorMapper(palette=bokehpalette, low=1, high=1000)
     else:
         color_mapper = LogColorMapper(palette=bokehpalette, low=1, high=100)
+    
+    return color_mapper
 
 
 def createHoverTool():
