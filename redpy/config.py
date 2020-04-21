@@ -3,41 +3,36 @@
 # Licensed under GNU GPLv3 (see LICENSE.txt)
 
 import numpy as np
-try:
-    # Python 3
-    import configparser
-except ImportError:
-    # Python 2.7
-    import ConfigParser as configparser
+import configparser
 
 class Options(object):
-    
+
     def __init__(self, configfile='settings.cfg'):
-        
+
         """
         Defines the settings that are often passed to routines and that define the table.
         These are also written to the attributes of the table for posterity.
-        
+
         Requires a configuration file with section header [Settings] on the first line and
         any of the following configurations below it. Passing a configuration file with
         only the header defaults to a test run laid out with the settings below. Format of
         the file below the header is simply:
-        
+
         name=value
-                
+
         where name is the name of the parameter, and value is either a string (no quotes)
         or number. Comments are allowed on separate lines beginning with a #, and the
         parameters may be in any order desired. An example configuration file called
         'settings.cfg' is included in the distribution that contains all of the default
-        settings and may be edited. The name of the configfile used is also stored.       
-    
+        settings and may be edited. The name of the configfile used is also stored.
+
         TABLE DEFINITIONS:
         title: Name of the table, used also in plotting titles (default 'REDPy Catalog')
         filename: Filename/path for the table, should end in .h5 (default 'redpytable.h5')
         outputPath: Absolute or relative path to outputs (defaults to current directory)
         groupName: Short string describing the name of the station, may not contain spaces
             (default 'default')
-        
+
         STATION PARAMETERS:
         nsta: Number of stations (default 8)
         station: String of ordered station names
@@ -47,21 +42,22 @@ class Options(object):
         network: String of network code (default 'UW,UW,UW,UW,UW,UW,UW,UW')
         location: String of location code (default '--,--,--,--,--,--,--,--')
         samprate: Sampling rate of that station (default 100.0 Hz)
-        server: Source of data (default "IRIS", otherwise "file" or name of waveserver)
-        port: Port number for server (default 16017, not used if using IRIS)
+        server: Source of data (fdsnws://server, waveserver://ws_name:ws_port,
+            seedlink://sl_IP,sl_port; default "IRIS", otherwise "file")
+        port: Port number for server (deprecated, default 16017, not used if using IRIS)
         searchdir: Path to directory with local files ending in / (default './', not used
             if using IRIS or waveserver)
         filepattern: Wildcard for selecting subset of files based on their name
             (default "*")
-        nsec: Number of seconds to download from server at a time (default 3600 s) 
-        
+        nsec: Number of seconds to download from server at a time (default 3600 s)
+
         WINDOWING PARAMETERS:
         winlen: Length of window for cross-correlation (default 1024 samples, 2^n is best)
         ptrig: Length of time cut prior to trigger (default 10.0 s)
         atrig: Length of time cut after trigger (default 20.0 s)
         wshape: A derived value (cannot be explicitly defined) corresponding to the number
             of samples that will be cut based on ptrig and atrig
-                
+
         TRIGGERING PARAMETERS:
         trigalg: Trigger algorithm to be used for STALTA (default 'classicstalta')
         lwin: Length of long window for STALTA (default 7.0 s)
@@ -82,27 +78,27 @@ class Options(object):
             time, will be centered on the trigger time (default 5 s)
         oratiomax: Maximum ratio of outliers to total number of datapoints in trace
             (default 0.15 (15%))
-    
+
         FILTERING PARAMETERS:
         fmin: Lower band of bandpass filter (default 1.0 Hz)
         fmax: Upper band of bandpass filter (default 10.0 Hz)
-        
+
         FREQUENCY INDEX WINDOWS:
         filomin: Lower bound on low window (default 2.0 Hz)
         filomax: Upper bound on low window (default 4.0 Hz)
         fiupmin: Lower bound on upper window (default 7.0 Hz)
         fiupmax: Upper bound on upper window (default 9.0 Hz)
-        
+
         CLUSTERING PARAMETERS:
         cmin: Minimum correlation to be considered a repeater (default 0.7)
         ncor: Number of stations correlation must be exceeded on (default 4)
-        
+
         ORPHAN EXPIRATION PARAMETERS
         minorph: Minimum amount of time (days) to keep the smaller orphans alive
             (corresponds to trigon) (default 7 days)
         maxorph: Maximum amount of time (days) to keep the largest orphans alive
             (corresponds to trigon+7) (default 30 days)
-            
+
         PLOTTING PARAMETERS
         minplot: Minimum number of members required in order to be plotted to timeline
         dybin: Width of bin in days for full histogram (default 1 day)
@@ -113,7 +109,7 @@ class Options(object):
         plotsta: Station index in station list to be plotted (default 2)
         verbosecatalog: Add additional columns to the catalog file (default False)
         amplims: Use 'global' or 'family' to define amplitude plot limits (default global)
-        
+
         COMCAT PARAMETERS
         checkComCat: Use ComCat to find located seismicity that might match repeaters
             (default False)
@@ -122,7 +118,7 @@ class Options(object):
             46.243860')
         stalons: List of station longitudes (defaults to MSH network:
             '-122.190600,-122.188990,-122.180650,-122.236350,-122.151210,-122.223960,
-            -122.152430,-122.137870') 
+            -122.152430,-122.137870')
         serr: Seconds of allowable difference in trigger and projected arrival time
             (default 5.0 s)
         locdeg: Degrees of distance to be considered a local event (default 0.5 degrees)
@@ -133,14 +129,14 @@ class Options(object):
           
         This list will likely expand.       
         """
-        
+
         self.configfile = configfile
-                
+
         # Load parameters from config file
         config = configparser.ConfigParser()
         config.read(self.configfile)
-        
-        # Set parameters to default if not in config file       
+
+        # Set parameters to default if not in config file
         self.title=config.get('Settings','title') if config.has_option(
             'Settings','title') else 'REDPy Catalog'
         self.filename=config.get('Settings','filename') if config.has_option(
@@ -152,7 +148,7 @@ class Options(object):
         self.groupDesc=config.get('Settings','groupDesc') if config.has_option(
             'Settings','groupDesc') else 'Default Test Run'
         self.nsta=config.getint('Settings','nsta') if config.has_option(
-            'Settings','nsta') else 8 
+            'Settings','nsta') else 8
         self.station=config.get('Settings','station') if config.has_option(
             'Settings','station') else 'SEP,YEL,HSR,SHW,EDM,STD,JUN,SOS'
         self.channel=config.get('Settings','channel') if config.has_option(
@@ -214,7 +210,7 @@ class Options(object):
         self.telefi=config.getfloat('Settings','telefi') if config.has_option(
             'Settings','telefi') else -1.
         self.teleok=config.getint('Settings','teleok') if config.has_option(
-            'Settings','teleok') else 1    
+            'Settings','teleok') else 1
         self.cmin=config.getfloat('Settings','cmin') if config.has_option(
             'Settings','cmin') else 0.7
         self.ncor=config.getint('Settings','ncor') if config.has_option(
@@ -261,11 +257,10 @@ class Options(object):
             'Settings','regmag') else 2.5
         self.telemag=config.getfloat('Settings','telemag') if config.has_option(
             'Settings','telemag') else 4.5
-        
+
         # Derived Settings
         self.ptrig=1.5*self.winlen/self.samprate
         self.atrig=3*self.winlen/self.samprate
         self.mintrig=0.75*self.winlen/self.samprate
         self.wshape = int((self.ptrig + self.atrig)*self.samprate) + 1
         self.maxdt = np.max(np.fromstring(self.offset, sep=','))
-        
