@@ -778,24 +778,33 @@ def plotFamilies(rtable, ftable, ctable, opt):
             # Plot correlation timeline
             idf = ids[fam]
             ix = np.where(np.in1d(id2,idf))
-            r = np.zeros((max(idf)+1,)).astype('int')
-            r[idf] = range(len(idf))
-            C = np.zeros((len(idf),len(idf)))
-            C[r[id2[ix]],r[id1[ix]]] = ccc[ix]
-            C[r[id1[ix]],r[id2[ix]]] = ccc[ix]
-            C[range(len(idf)),range(len(idf))] = 1.0
+            C = np.eye(len(idf))
+            r1 = [np.where(idf==xx)[0][0] for xx in id1[ix]]
+            r2 = [np.where(idf==xx)[0][0] for xx in id2[ix]]
+            C[r1,r2] = ccc[ix]
+            C[r2,r1] = ccc[ix]
+            Cprint = C[np.argmax(np.sum(C,0)),:]
             
             ax5 = fig.add_subplot(9, 3, (22,27))
-            ax5.plot_date(catalog, C[np.argmax(np.sum(C,0)),:], 'ro', alpha=0.5,
+            ax5.plot_date(catalog, Cprint, 'ro', alpha=0.5,
                 markeredgecolor='r', markeredgewidth=0.5, markersize=3)
-            ax5.plot_date(catalog, C[np.argmax(np.sum(C,0)),:]+opt.cmin, 'wo', alpha=0.5,
+            ax5.plot_date(catalog[np.where(fam==core)[0][0]],
+                Cprint[np.where(fam==core)[0][0]], 'ro', markeredgecolor='k',
+                markeredgewidth=0.5, markersize=3)
+            Cprint[Cprint<opt.cmin] = opt.cmin
+            Cprint[Cprint>opt.cmin] = np.nan
+            ax5.plot_date(catalog, Cprint, 'wo', alpha=0.5,
                 markeredgecolor='r', markeredgewidth=0.5)
+            ax5.plot_date(catalog[np.where(fam==core)[0][0]],
+                Cprint[np.where(fam==core)[0][0]], 'wo', markeredgecolor='k',
+                markeredgewidth=0.5, markersize=3)
             myFmt = matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M')
             ax5.xaxis.set_major_formatter(myFmt)
             ax5.set_xlim(ax3.get_xlim())
             ax5.set_ylim(opt.cmin-0.02, 1.02)
             ax5.margins(0.05)
-            ax5.set_ylabel('Cross-correlation coefficient', style='italic')
+            ax5.set_ylabel('Cross-correlation coefficient',
+                           style='italic')
             ax5.set_xlabel('Date', style='italic')
         
             plt.tight_layout()
@@ -1159,13 +1168,12 @@ def plotReport(rtable, ftable, ctable, fnum, ordered, opt):
 
     idf = ids[fam]
     ix = np.where(np.in1d(id2,idf))
-    r = np.zeros((max(idf)+1,)).astype('int')
-    r[idf] = range(len(idf))
-    C = np.zeros((len(idf),len(idf)))
-    C[r[id2[ix]],r[id1[ix]]] = ccc[ix]
-    C[r[id1[ix]],r[id2[ix]]] = ccc[ix]
-    C[range(len(idf)),range(len(idf))] = 1.0
-    
+    C = np.eye(len(idf))
+    r1 = [np.where(idf==xx)[0][0] for xx in id1[ix]]
+    r2 = [np.where(idf==xx)[0][0] for xx in id2[ix]]
+    C[r1,r2] = ccc[ix]
+    C[r2,r1] = ccc[ix]
+
     # Copy static preview image in case cluster changes
     shutil.copy('{}{}/clusters/{}.png'.format(opt.outputPath, opt.groupName, fnum),
                 '{}{}/clusters/{}-report.png'.format(opt.outputPath, opt.groupName, fnum))
