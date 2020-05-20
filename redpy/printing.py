@@ -158,8 +158,8 @@ def printVerboseCatalog(rtable, ftable, ctable, opt):
 	opt: Options object describing station/run parameters
 
 	Columns correspond to cluster number, event time, frequency index, amplitude, time
-	since last event in hours, and correlation coefficient with respect to the best
-	correlated event.
+	since last event in hours, correlation coefficient with respect to the best
+	correlated event, and correlation coefficient with respect to the core event.
 	"""
 
 	with open('{}{}/catalog.txt'.format(opt.outputPath, opt.groupName), 'w') as f:
@@ -174,23 +174,23 @@ def printVerboseCatalog(rtable, ftable, ctable, opt):
 		ccc = ctable.cols.ccc[:]
 		fi = np.nanmean(rtable.cols.FI[:], axis=1)
 	
-		f.write("cnum\tevTime                        \tfi\tamps\tdt\t\txcorr\n")
+		f.write("cnum\tevTime                    \tfi\txcormax\txcorcore\tdt(hr)\tamps\n")
 		for cnum in range(ftable.attrs.nClust):
 			fam = np.fromstring(ftable[cnum]['members'], dtype=int, sep=' ')
 		
 			catalogind = np.argsort(startTimeMPL[fam])
 			catalog = startTimeMPL[fam][catalogind]
 			spacing = np.diff(catalog)*24
-		
 			idf = ids[fam]
 			ix = np.where(np.in1d(id2,idf))
-			r = np.zeros((max(idf)+1,)).astype('int')
-			r[idf] = range(len(idf))
-			C = np.zeros((len(idf),len(idf)))
-			C[r[id2[ix]],r[id1[ix]]] = ccc[ix]
-			C[r[id1[ix]],r[id2[ix]]] = ccc[ix]
-			C[range(len(idf)),range(len(idf))] = 1.0
-			xcorr = C[np.argmax(np.sum(C,0)),:]
+			C = np.eye(len(idf))
+			r1 = [np.where(idf==xx)[0][0] for xx in id1[ix]]
+			r2 = [np.where(idf==xx)[0][0] for xx in id2[ix]]
+			C[r1,r2] = ccc[ix]
+			C[r2,r1] = ccc[ix]
+			xcorrmax = C[np.argmax(np.sum(C,0)),:]
+			core = ftable[cnum]['core']
+			xcorrcore = C[np.where(fam==core)[0][0],:]
 		
 			j = -1
 			for i in catalogind:
@@ -198,15 +198,16 @@ def printVerboseCatalog(rtable, ftable, ctable, opt):
 					windowStarts[fam][i]/opt.samprate)
 				amp = windowAmps[fam[i],:]
 				if j == -1:
-					dt = 'NaN         '
+					dt = np.nan
 				else:
 					dt = spacing[j]
 				j += 1
 			
-				f.write("{0}\t{1}\t{2:4.3f}\t[".format(cnum,evTime.isoformat(),fi[fam][i]))
+				f.write("{0}\t{1}\t{2: 4.3f}\t{4:3.2f}\t{5:3.2f}\t{3:12.6f}\t[".format(
+				    cnum,evTime.isoformat(),fi[fam][i],dt,xcorrmax[i],xcorrcore[i]))
 				for a in amp:
-					f.write(" {} ".format(a))
-				f.write("]\t{0}\t\t{1:3.2f}\n".format(dt,xcorr[i]))
+					f.write(" {:10.2f} ".format(a))
+				f.write("]\n")
 
 
 def printSwarmCatalog(rtable, ftable, ttable, opt):
