@@ -578,7 +578,8 @@ def plotCores(rtable, ftable, opt):
 def plotFamilies(rtable, ftable, ctable, opt):
 
     """
-    Creates a multi-paneled family plot.
+    Creates a multi-paneled family plot. In bottom panels the core event is plotted in
+    black.
     
     rtable: Repeater table
     ftable: Families table
@@ -621,6 +622,7 @@ def plotFamilies(rtable, ftable, ctable, opt):
         spacing = np.diff(catalog)*24
         minind = fam[catalogind[0]]
         maxind = fam[catalogind[-1]]
+        coreind = np.where(fam==core)[0][0]
 
         if ftable.cols.printme[cnum] != 0:
         
@@ -754,6 +756,9 @@ def plotFamilies(rtable, ftable, ctable, opt):
             ax3.plot_date(catalog, windowAmp[fam[catalogind]],
                     'ro', alpha=0.5, markeredgecolor='r', markeredgewidth=0.5,
                     markersize=3)
+            ax3.plot_date(catalog[coreind], windowAmp[fam[catalogind]][coreind],
+                    'ko', markeredgecolor='k', markeredgewidth=0.5,
+                    markersize=3)
             myFmt = matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M')
             ax3.xaxis.set_major_formatter(myFmt)
             ax3.set_ylim(ymin, ymax)
@@ -766,6 +771,9 @@ def plotFamilies(rtable, ftable, ctable, opt):
             ax4 = fig.add_subplot(9, 3, (16,21)) 
             ax4.plot_date(catalog[1:], spacing, 'ro', alpha=0.5, markeredgecolor='r',
                 markeredgewidth=0.5, markersize=3)
+            if coreind>0:
+                ax4.plot_date(catalog[coreind], spacing[coreind-1], 'ko',
+                    markeredgecolor='k', markeredgewidth=0.5, markersize=3)
             myFmt = matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M')
             ax4.xaxis.set_major_formatter(myFmt)
             ax4.set_xlim(ax3.get_xlim())
@@ -788,16 +796,14 @@ def plotFamilies(rtable, ftable, ctable, opt):
             ax5 = fig.add_subplot(9, 3, (22,27))
             ax5.plot_date(catalog, Cprint, 'ro', alpha=0.5,
                 markeredgecolor='r', markeredgewidth=0.5, markersize=3)
-            ax5.plot_date(catalog[np.where(fam==core)[0][0]],
-                Cprint[np.where(fam==core)[0][0]], 'ro', markeredgecolor='k',
-                markeredgewidth=0.5, markersize=3)
+            ax5.plot_date(catalog[coreind], Cprint[coreind], 'ko',
+                markeredgecolor='k', markeredgewidth=0.5, markersize=3)
             Cprint[Cprint<opt.cmin] = opt.cmin
             Cprint[Cprint>opt.cmin] = np.nan
             ax5.plot_date(catalog, Cprint, 'wo', alpha=0.5,
                 markeredgecolor='r', markeredgewidth=0.5)
-            ax5.plot_date(catalog[np.where(fam==core)[0][0]],
-                Cprint[np.where(fam==core)[0][0]], 'wo', markeredgecolor='k',
-                markeredgewidth=0.5, markersize=3)
+            ax5.plot_date(catalog[np.where(fam==core)[0][0]], Cprint[coreind], 'wo',
+                markeredgecolor='k', markeredgewidth=0.5, markersize=3)
             myFmt = matplotlib.dates.DateFormatter('%Y-%m-%d\n%H:%M')
             ax5.xaxis.set_major_formatter(myFmt)
             ax5.set_xlim(ax3.get_xlim())
