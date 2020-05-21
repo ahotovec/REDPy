@@ -406,7 +406,8 @@ def plotFamilyOccurrence(dt, ftable, mintime, minplot, binsize, barpad):
                 
                 # Text doesn't understand datetimes, need to convert to a number and
                 # subtract about 8 hours
-                fig.text(time.mktime(max(d2).timetuple())*1000 - 28799000, n,
+                fig.text(time.mktime(max(matplotlib.dates.num2date(h[np.where(hist>0)]+
+                    2*binsize)).timetuple())*1000 - 28799000, n,
                     text=['   {}'.format(len(dt[members]))], text_font_size='9pt',
                     text_baseline='middle')
                  
