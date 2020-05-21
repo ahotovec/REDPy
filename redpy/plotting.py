@@ -62,6 +62,7 @@ def createPlots(rtable, ftable, ttable, ctable, otable, opt):
             printEventsperDay(rtable, ftable, opt)
             plotCores(rtable, ftable, opt)
             plotFamilies(rtable, ftable, ctable, opt)
+            plotFamilyHTML(rtable, ftable, opt)
             ftable.cols.printme[:] = np.zeros((len(ftable),))
             ftable.cols.lastprint[:] = np.arange(len(ftable))
     else:
@@ -581,11 +582,13 @@ def plotFamilies(rtable, ftable, ctable, opt):
     
     rtable: Repeater table
     ftable: Families table
+    ctable: Correlation table
     opt: Options object describing station/run parameters
     
-    Top row: Ordered waveforms
-    Middle row: Timeline of amplitude
-    Bottom row: Timeline of event spacing 
+    Top row: Ordered waveforms, stacked FFT
+    Seocond row: Timeline of amplitude
+    Third row: Timeline of event spacing
+    Last row: Correlation with time relative to best-correlated event (most measurements)
     """
     
     # Adjust the font face
@@ -595,7 +598,6 @@ def plotFamilies(rtable, ftable, ctable, opt):
     
     # Load into memory
     startTimeMPL = rtable.cols.startTimeMPL[:]
-    startTime = rtable.cols.startTime[:]
     windowAmp = rtable.cols.windowAmp[:][:,opt.printsta]
     windowStart = rtable.cols.windowStart[:]
     fi = rtable.cols.FI[:]
@@ -616,10 +618,7 @@ def plotFamilies(rtable, ftable, ctable, opt):
         # Prep catalog
         catalogind = np.argsort(startTimeMPL[fam])
         catalog = startTimeMPL[fam][catalogind]
-        longevity = ftable[cnum]['longevity']
         spacing = np.diff(catalog)*24
-        minind = fam[catalogind[0]]
-        maxind = fam[catalogind[-1]]
         coreind = np.where(fam==core)[0][0]
 
         if ftable.cols.printme[cnum] != 0:
@@ -815,6 +814,40 @@ def plotFamilies(rtable, ftable, ctable, opt):
             plt.savefig('{}{}/clusters/fam{}.png'.format(opt.outputPath, opt.groupName,
                 cnum), dpi=100)
             plt.close(fig)
+
+    
+def plotFamilyHTML(rtable, ftable, opt):
+
+    """
+    Creates the HTML for the individual family pages.
+    
+    rtable: Repeater table
+    ftable: Families table
+    opt: Options object describing station/run parameters
+    
+    HTML will hold navigation, images, and basic statistics. May also include location
+    information if external catalog is queried. 
+    """
+   
+    # Load into memory
+    startTime = rtable.cols.startTime[:]
+    startTimeMPL = rtable.cols.startTimeMPL[:]
+    windowStart = rtable.cols.windowStart[:]
+    fi = rtable.cols.FI[:]
+    
+    for cnum in range(ftable.attrs.nClust):
+        
+        fam = np.fromstring(ftable[cnum]['members'], dtype=int, sep=' ')
+        core = ftable[cnum]['core']
+        
+        # Prep catalog
+        catalogind = np.argsort(startTimeMPL[fam])
+        catalog = startTimeMPL[fam][catalogind]
+        longevity = ftable[cnum]['longevity']
+        spacing = np.diff(catalog)*24
+        minind = fam[catalogind[0]]
+        maxind = fam[catalogind[-1]]
+        coreind = np.where(fam==core)[0][0]
         
         if ftable.cols.printme[cnum] != 0 or ftable.cols.lastprint[cnum] != cnum:
             if cnum>0:

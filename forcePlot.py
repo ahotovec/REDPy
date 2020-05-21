@@ -18,6 +18,8 @@ optional arguments:
   -h, --help            show this help message and exit
   -v, --verbose         increase written print statements
   -a, --all             replot everything, not just updated families
+  -f, --famplot         only replot the family plots, not html files
+  -l, --html            only render the html, not any images
   -c CONFIGFILE, --configfile CONFIGFILE
                         use configuration file named CONFIGFILE instead of
                         default settings.cfg
@@ -29,6 +31,10 @@ parser.add_argument("-v", "--verbose", action="count", default=0,
     help="increase written print statements")
 parser.add_argument("-a", "--all", action="count", default=0,
     help="replot everything, not just updated families")
+parser.add_argument("-f", "--famplot", action="count", default=0,
+    help="only replot the family plots, not html files")
+parser.add_argument("-l", "--html", action="count", default=0,
+    help="only render the html, not any images")
 parser.add_argument("-c", "--configfile",
     help="use configuration file named CONFIGFILE instead of default settings.cfg")
 args = parser.parse_args()
@@ -47,8 +53,20 @@ if args.all:
     if args.verbose: print("Resetting plotting column...")
     ftable.cols.printme[0:ftable.attrs.nClust] = np.ones((ftable.attrs.nClust,))
 
-if args.verbose: print("Creating plots...")
-redpy.plotting.createPlots(rtable, ftable, ttable, ctable, otable, opt)
+if args.verbose: print("Creating requested plots...")
+
+if args.famplot:
+    redpy.plotting.plotFamilies(rtable, ftable, ctable, opt)
+
+if args.html:
+    redpy.plotting.plotFamilyHTML(rtable, ftable, opt)
+
+if args.html or args.famplot:
+    ftable.cols.printme[:] = np.zeros((len(ftable),))
+    ftable.cols.lastprint[:] = np.arange(len(ftable))
+else:
+    redpy.plotting.createPlots(rtable, ftable, ttable, ctable, otable, opt)
+
 
 if args.verbose: print("Closing table...")
 h5file.close()
