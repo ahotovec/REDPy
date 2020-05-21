@@ -366,7 +366,7 @@ def plotFamilyOccurrence(dt, ftable, mintime, minplot, binsize, barpad):
         hist, h = np.histogram(dt[members], bins=np.arange(min(dt[members]),
             max(dt[members]+binsize), binsize))
         d1 = matplotlib.dates.num2date(h[np.where(hist>0)])
-        d2 = matplotlib.dates.num2date(h[np.where(hist>0)]+1.0/24)
+        d2 = matplotlib.dates.num2date(h[np.where(hist>0)]+binsize)
         histlog = np.log10(hist[hist>0])
         ind = [int(min(255,255*(i/2))) for i in histlog]
         colors = [bokehpalette[i] for i in ind]
