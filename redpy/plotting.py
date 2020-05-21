@@ -28,7 +28,7 @@ from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 from matplotlib.transforms import offset_copy
 from bokeh.plotting import figure, output_file, save, gridplot
 from bokeh.models import HoverTool, ColumnDataSource, OpenURL, TapTool, Range1d, Div, Span
-from bokeh.models import Arrow, VeeHead, ColorBar, LogColorMapper, LogTicker, LabelSet
+from bokeh.models import Arrow, VeeHead, ColorBar, LogColorMapper, LogTicker, Label
 from bokeh.models.glyphs import Line, Quad
 from bokeh.layouts import column
 from bokeh.palettes import inferno, all_palettes
@@ -398,19 +398,17 @@ def plotFamilyOccurrence(dt, ftable, mintime, minplot, binsize, barpad):
                         color='black')
                     idx = np.arange(len(d1))
                 
-                # always add a box
+                # Always add a box
                 fig.quad(top=n+0.3, bottom=n-0.3,
                     left=np.array(d1)[idx],
                     right=np.array(d2)[idx],
                     color=np.array(colors)[idx])                   
                 
-                # Text doesn't understand datetimes, need to convert to a number and
-                # subtract about 8 hours
-                fig.text(time.mktime(max(matplotlib.dates.num2date(h[np.where(hist>0)]+
-                    2*binsize)).timetuple())*1000 - 28799000, n,
-                    text=['   {}'.format(len(dt[members]))], text_font_size='9pt',
-                    text_baseline='middle')
-                 
+                # Add label
+                label = Label(x=max(d2), y=n, text='  {}'.format(len(dt[members])),
+                    text_font_size='9pt', text_baseline='middle')
+                fig.add_layout(label)
+                
                 # Build source for hover patches
                 fnum = clustNum
                 if n == 0:
