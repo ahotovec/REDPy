@@ -18,6 +18,11 @@ optional arguments:
   -h, --help            show this help message and exit
   -v, --verbose         increase written print statements
   -a, --all             replot everything, not just updated families
+  -r, --resetlp         reset the 'last print' column (use for 'missing file' errors)
+  -s STARTFAM, --startfam STARTFAM
+                        manual starting family to replot (assumes ENDFAM is -1 if not set)
+  -e ENDFAM, --endfam ENDFAM
+                        manual ending family to replot (assumes STARTFAM is 0 if not set)
   -f, --famplot         only replot the family plots, not html files
   -l, --html            only render the html, not any images
   -c CONFIGFILE, --configfile CONFIGFILE
@@ -31,6 +36,12 @@ parser.add_argument("-v", "--verbose", action="count", default=0,
     help="increase written print statements")
 parser.add_argument("-a", "--all", action="count", default=0,
     help="replot everything, not just updated families")
+parser.add_argument("-r", "--resetlp", action="count", default=0,
+    help="reset the 'last print' column (use for 'missing file' errors)")
+parser.add_argument("-s", "--startfam", type=int, default=0,
+    help="manual starting family to replot (assumes ENDFAM is -1 if not set)")
+parser.add_argument("-e", "--endfam", type=int, default=0,
+    help="manual ending family to replot (assumes STARTFAM is 0 if not set)")
 parser.add_argument("-f", "--famplot", action="count", default=0,
     help="only replot the family plots, not html files")
 parser.add_argument("-l", "--html", action="count", default=0,
@@ -52,6 +63,20 @@ h5file, rtable, otable, ttable, ctable, jtable, dtable, ftable = redpy.table.ope
 if args.all:
     if args.verbose: print("Resetting plotting column...")
     ftable.cols.printme[0:ftable.attrs.nClust] = np.ones((ftable.attrs.nClust,))
+
+if args.resetlp:
+    if args.verbose: print("Resetting last print column...")
+    ftable.cols.lastprint[:] = np.arange(len(ftable))
+    
+if args.startfam or args.endfam:
+    if args.startfam and not args.endfam:
+        ftable.cols.printme[args.startfam:ftable.attrs.nClust] = np.ones(
+                                                     (ftable.attrs.nClust-args.startfam,))
+    elif args.endfam and not args.startfam:
+        ftable.cols.printme[0:args.endfam] = np.ones((args.endfam,))
+    else:
+        ftable.cols.printme[args.startfam:args.endfam] = np.ones(
+                                                             (args.endfam-args.startfam,))
 
 if args.verbose: print("Creating requested plots...")
 
