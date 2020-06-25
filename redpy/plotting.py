@@ -717,7 +717,7 @@ def plotFamilies(rtable, ftable, ctable, opt):
             ax2.get_yaxis().set_visible(False)
             r = rtable[core]
             famtable = rtable[fam]
-            freq = np.linspace(0,opt.samprate/2,opt.winlen/2)
+            freq = np.linspace(0,opt.samprate/2,int(opt.winlen/2))
             fftc = np.zeros((int(opt.winlen/2),))
             fftm = np.zeros((int(opt.winlen/2),))
             for s in range(opt.nsta):

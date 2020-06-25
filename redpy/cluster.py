@@ -3,6 +3,7 @@
 # Licensed under GNU GPLv3 (see LICENSE.txt)
 
 import numpy as np
+import sys
 from tables import *
 from redpy.optics import *
     
@@ -54,8 +55,8 @@ def runFamOPTICS(rtable, ctable, ftable, fnum, opt):
         core = fam[np.argmin(ttree._reachability)]
     
         # Write to ftable
-        np.set_printoptions(threshold=np.nan)
-        np.set_printoptions(linewidth=np.nan)
+        np.set_printoptions(threshold=sys.maxsize)
+        np.set_printoptions(linewidth=sys.maxsize)
         ftable.cols.members[fnum] = np.array2string(fam[order])[1:-1]
         ftable.cols.core[fnum] = core
         
