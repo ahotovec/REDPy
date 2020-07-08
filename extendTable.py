@@ -155,16 +155,16 @@ for ffrom in ftablefrom.iterrows():
     fto['startTime'] = ffrom['startTime']
     fto['longevity'] = ffrom['longevity']
     fto['lastprint'] = ffrom['lastprint']
-    fto['printme'] = 1
+    if args.noplot:
+        fto['printme'] = ffrom['printme']
+    else:
+        fto['printme'] = 1
     fto.append()
 ftableto.attrs.nClust = ftablefrom.attrs.nClust
 ftableto.flush()
 
-if args.noplot:
-    if args.verbose: print("Skipping plots...")
-else:
-    if args.verbose: print("Creating plots...")
-    redpy.plotting.createPlots(rtableto, ftableto, ttableto, ctableto, otableto, optto)
+if args.verbose: print("Creating plots...")
+redpy.plotting.createPlots(rtableto, ftableto, ttableto, ctableto, otableto, optto)
 
 if args.verbose: print("Closing tables...")
 h5filefrom.close()
