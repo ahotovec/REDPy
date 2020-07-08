@@ -11,12 +11,12 @@ import numpy as np
 
 """
 Run this script to create space for additional stations while preserving data in an
-existing table. Additional stations should always be included at the end of the station
-list; reordering that list is currently not supported. Running this script will overwrite
-any existing table with the same name defined by filename in the new .cfg file. If the
-table names in both .cfg files are the same, the original table will be renamed and then
-deleted. All output files are also remade to reflect the additional station, unless
-flagged otherwise.
+existing table or to change the directory name for a run. Additional stations should
+always be included at the end of the station list; reordering that list is currently not
+supported. Running this script will overwrite any existing table with the same name
+defined by filename in the new .cfg file. If the table names in both .cfg files are the
+same, the original table will be renamed and then deleted. All output files are also
+remade to reflect the additional station, unless flagged otherwise.
 
 usage: extendTable.py [-h] [-v] [-n] CONFIGFILE_FROM CONFIGFILE_TO
 
