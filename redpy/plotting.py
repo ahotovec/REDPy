@@ -828,7 +828,12 @@ def plotFamilyHTML(rtable, ftable, opt):
     HTML will hold navigation, images, and basic statistics. May also include location
     information if external catalog is queried. 
     """
-   
+    
+    # Adjust the font face
+    matplotlib.rcParams['font.family'] = 'sans-serif'
+    matplotlib.rcParams['font.sans-serif'] = ['Arial']
+    matplotlib.rcParams['font.size'] = 8.0    
+    
     # Load into memory
     startTime = rtable.cols.startTime[:]
     startTimeMPL = rtable.cols.startTimeMPL[:]
