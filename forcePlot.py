@@ -11,6 +11,8 @@ import os
 
 """
 Run this script to force plotting. Can be used after killing mid-run or updating settings.
+Note that the -s and -e settings follow Python convention for arrays, i.e., start at 0
+and do not include the ending number. For example, -s 1 -e 5 would replot 1, 2, 3, and 4.
 
 usage: forcePlot.py [-h] [-v] [-a] [-c CONFIGFILE]
 
@@ -22,7 +24,8 @@ optional arguments:
   -s STARTFAM, --startfam STARTFAM
                         manual starting family to replot (assumes ENDFAM is -1 if not set)
   -e ENDFAM, --endfam ENDFAM
-                        manual ending family to replot (assumes STARTFAM is 0 if not set)
+                        manual (noninclusive) ending family to replot (assumes STARTFAM is
+                        0 if not set)
   -f, --famplot         only replot the family plots, not html files
   -l, --html            only render the html, not any images
   -c CONFIGFILE, --configfile CONFIGFILE
@@ -41,7 +44,7 @@ parser.add_argument("-r", "--resetlp", action="count", default=0,
 parser.add_argument("-s", "--startfam", type=int, default=0,
     help="manual starting family to replot (assumes ENDFAM is -1 if not set)")
 parser.add_argument("-e", "--endfam", type=int, default=0,
-    help="manual ending family to replot (assumes STARTFAM is 0 if not set)")
+    help="manual (noninclusive) ending family to replot (assumes STARTFAM is 0 if not set)")
 parser.add_argument("-f", "--famplot", action="count", default=0,
     help="only replot the family plots, not html files")
 parser.add_argument("-l", "--html", action="count", default=0,
