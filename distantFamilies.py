@@ -51,6 +51,8 @@ flist = np.array(list(itertools.chain.from_iterable(glob.iglob(os.path.join(
 
 fnums = []
 removeNums = ''
+removeNumsReg = ''
+removeNumsTele = ''
 removeNumsETC = ''
 
 # Sort by family number (the list is in a strange order)
@@ -88,13 +90,23 @@ Etc {:5.1f}%".format(
             
         if 100*(reg+tele)/(reg+tele+local+etc) >= args.percent:
             removeNums+=' {}'.format(fnum)
-            
+        
+        if 100*(reg)/(reg+tele+local+etc) >= args.percent:
+            removeNumsReg+=' {}'.format(fnum)
+        
+        if 100*(tele)/(reg+tele+local+etc) >= args.percent:
+            removeNumsTele+=' {}'.format(fnum)
+        
         if args.etc:
             if 100*(etc)/(reg+tele+local+etc) >= args.percent:
                 removeNumsETC+=' {}'.format(fnum)
         
 
 print('\n{}%+ Regional+Teleseismic:\n{}\n'.format(args.percent,removeNums))
+
+print('\n{}%+ Regional:\n{}\n'.format(args.percent,removeNumsReg))
+
+print('\n{}%+ Teleseismic:\n{}\n'.format(args.percent,removeNumsTele))
 
 if args.etc:
     print('{}%+ containing {}:\n{}\n'.format(args.percent,args.etc,removeNumsETC))
