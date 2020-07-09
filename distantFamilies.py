@@ -94,9 +94,10 @@ Etc {:5.1f}%".format(
         
         if 100*(reg)/(reg+tele+local+etc) >= args.percent:
             removeNumsReg+=' {}'.format(fnum)
-            
-        if 100*(reg)/(reg+local+etc) >= args.percent:
-            removeNumsRegiTele+=' {}'.format(fnum)
+        
+        if reg > 0:
+            if 100*(reg)/(reg+local+etc) >= args.percent:
+                removeNumsRegiTele+=' {}'.format(fnum)
         
         if 100*(tele)/(reg+tele+local+etc) >= args.percent:
             removeNumsTele+=' {}'.format(fnum)
