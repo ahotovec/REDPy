@@ -379,13 +379,13 @@ def plotFamilyOccurrence(dt, ftable, mintime, minplot, binsize, barpad):
             
                 if min(dt[members])<mintime:
                     
-                    # add line w arrow
-                    fig.line((matplotlib.dates.num2date(mintime),
+                    # Add line with an arrow
+                    fig.line((matplotlib.dates.num2date(mintime-barpad),
                         matplotlib.dates.num2date(max(dt[members]))), (n, n),
                         color='black')
-                    fig.add_layout(Arrow(end=VeeHead(size=3),
+                    fig.add_layout(Arrow(end=VeeHead(size=5),
                         x_start=matplotlib.dates.num2date(mintime+0.01),
-                        x_end=matplotlib.dates.num2date(mintime-0.5),
+                        x_end=matplotlib.dates.num2date(mintime-barpad),
                         y_start=n, y_end=n))
 
                     idx = np.where(h[np.where(hist>0)[0]]>mintime)[0]
