@@ -20,11 +20,12 @@ left off if a chunk is missed. Use -n if you are backfilling with a large amount
 it will consume less time downloading the data in small chunks if NSEC is an hour or a day
 instead of a few minutes, but at the cost of keeping orphans for longer.
 
-usage: backfill.py [-h] [-v] [-s STARTTIME] [-e ENDTIME] [-c CONFIGFILE] [-n NSEC]
+usage: backfill.py [-h] [-v] [-t] [-s STARTTIME] [-e ENDTIME] [-c CONFIGFILE] [-n NSEC]
 
 optional arguments:
   -h, --help            show this help message and exit
   -v, --verbose         increase written print statements
+  -t, --troubleshoot    run in troubleshoot mode (without try/except)
   -s STARTTIME, --starttime STARTTIME
                         optional start time to begin filling (YYYY-MM-DDTHH:MM:SS)
   -e ENDTIME, --endtime ENDTIME
@@ -39,10 +40,12 @@ t = time.time()
 
 parser = argparse.ArgumentParser(description=
     "Backfills table with data from the past")
-parser.add_argument("-s", "--starttime",
-    help="optional start time to begin filling (YYYY-MM-DDTHH:MM:SS)")
 parser.add_argument("-v", "--verbose", action="count", default=0,
     help="increase written print statements")
+parser.add_argument("-t", "--troubleshoot", action="count", default=0,
+    help="run in troubleshoot mode (without try/except)")
+parser.add_argument("-s", "--starttime",
+    help="optional start time to begin filling (YYYY-MM-DDTHH:MM:SS)")
 parser.add_argument("-e", "--endtime",
     help="optional end time to end filling (YYYY-MM-DDTHH:MM:SS)")
 parser.add_argument("-c", "--configfile",
@@ -92,15 +95,22 @@ while tstart+n*opt.nsec < tend:
     print(tstart+n*opt.nsec)
 
     # Download and trigger
-    try:
+    if args.troubleshoot:
         endtime = tstart+(n+1)*opt.nsec+opt.atrig
         if endtime > tend:
             endtime = tend
         st, stC = redpy.trigger.getData(tstart+n*opt.nsec-opt.atrig, endtime, opt)
         alltrigs = redpy.trigger.trigger(st, stC, rtable, opt)
-    except (TypeError, obspy.clients.fdsn.header.FDSNException, Exception):
-        print('Could not download or trigger data... moving on')
-        alltrigs = []
+    else:
+        try:
+            endtime = tstart+(n+1)*opt.nsec+opt.atrig
+            if endtime > tend:
+                endtime = tend
+            st, stC = redpy.trigger.getData(tstart+n*opt.nsec-opt.atrig, endtime, opt)
+            alltrigs = redpy.trigger.trigger(st, stC, rtable, opt)
+        except (TypeError, obspy.clients.fdsn.header.FDSNException, Exception):
+            print('Could not download or trigger data... moving on')
+            alltrigs = []
 
 	# Clean out data spikes etc.
     trigs, junk, junkFI, junkKurt = redpy.trigger.dataClean(alltrigs, opt, flag=1)
