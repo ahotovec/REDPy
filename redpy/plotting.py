@@ -641,8 +641,9 @@ def plotFamilies(rtable, ftable, ctable, opt):
                         opt.ptrig*opt.samprate)):min(opt.wshape,
                         windowStart[fam[n]]+int(opt.atrig*opt.samprate))]
                     try:
-                        data[n, :] = tmp[int(opt.ptrig*opt.samprate - opt.winlen*0.5):int(
+                        ewarr = tmp[int(opt.ptrig*opt.samprate - opt.winlen*0.5):int(
                             opt.ptrig*opt.samprate + opt.winlen*1.5)]/windowAmp[fam[n]]
+                        data[n, :ewarr.shape[0]] = ewarr
                     except (ValueError, Exception):
                         print('Error in printing family {}, moving on...'.format(cnum))
                 if len(fam) > 12:
