@@ -5,6 +5,7 @@
 import redpy.config
 import redpy.table
 import argparse
+import os
 
 """
 Run this script to manually produce a more detailed 'report' page for a given family
@@ -46,6 +47,14 @@ else:
 
 if args.verbose: print("Opening hdf5 table: {0}".format(opt.filename))
 h5file, rtable, otable, ttable, ctable, jtable, dtable, ftable = redpy.table.openTable(opt)
+
+if args.verbose: print("Creating folder to store images '{}{}/reports'".format(
+    opt.outputPath, opt.groupName))
+    
+try:
+    os.mkdir('{}{}/reports'.format(opt.outputPath,opt.groupName))
+except OSError:
+    print("Folder exists.")
 
 for fnum in args.famnum:
     if args.verbose: print("Creating report for family {}...".format(fnum))

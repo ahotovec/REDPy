@@ -1219,7 +1219,7 @@ def plotReport(rtable, ftable, ctable, fnum, ordered, opt):
 
     # Copy static preview image in case cluster changes
     shutil.copy('{}{}/clusters/{}.png'.format(opt.outputPath, opt.groupName, fnum),
-                '{}{}/clusters/{}-report.png'.format(opt.outputPath, opt.groupName, fnum))
+                '{}{}/reports/{}-report.png'.format(opt.outputPath, opt.groupName, fnum))
     
     # Fill in full correlation matrix
     print('Computing full correlation matrix; this will take time if the family is large')
@@ -1313,7 +1313,7 @@ def plotReport(rtable, ftable, ctable, fnum, ordered, opt):
     
     # Combine and save
     o = gridplot([[o0],[o1],[o2]])
-    output_file('{}{}/clusters/{}-report-bokeh.html'.format(opt.outputPath, opt.groupName,
+    output_file('{}{}/reports/{}-report-bokeh.html'.format(opt.outputPath, opt.groupName,
         fnum), title='{} - Cluster {} Detailed Report'.format(opt.title, fnum))
     save(o)
     
@@ -1378,7 +1378,7 @@ def plotReport(rtable, ftable, ctable, fnum, ordered, opt):
                     ax2.axhline(np.floor(hloc)+0.5,color='k',
                         linewidth=df['Weight'][anot]/2.,linestyle=df['Line Type'][anot])
     plt.tight_layout()
-    plt.savefig('{}{}/clusters/{}-reportcmat.png'.format(opt.outputPath, opt.groupName,
+    plt.savefig('{}{}/reports/{}-reportcmat.png'.format(opt.outputPath, opt.groupName,
                                                          fnum), dpi=100)
     plt.close(fig)
     
@@ -1431,13 +1431,13 @@ def plotReport(rtable, ftable, ctable, fnum, ordered, opt):
         ax.yaxis.set_visible(False)
         plt.xlabel('Time Relative to Trigger (seconds)', style='italic')
     plt.tight_layout()
-    plt.savefig('{}{}/clusters/{}-reportwaves.png'.format(opt.outputPath, opt.groupName,
+    plt.savefig('{}{}/reports/{}-reportwaves.png'.format(opt.outputPath, opt.groupName,
                 fnum), dpi=100)
     plt.close(fig2)
     
     ### HTML OUTPUT PAGE
     tstamp = UTCDateTime.now()
-    with open('{}{}/clusters/{}-report.html'.format(opt.outputPath, opt.groupName, fnum),
+    with open('{}{}/reports/{}-report.html'.format(opt.outputPath, opt.groupName, fnum),
               'w') as f:
         f.write("""
         <html><head><title>{1} - Cluster {0} Detailed Report</title>
