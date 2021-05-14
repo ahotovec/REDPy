@@ -55,6 +55,7 @@ removeNumsReg = ''
 removeNumsRegiTele = ''
 removeNumsTele = ''
 removeNumsETC = ''
+removeNumsReg3 = ''
 
 # Sort by family number (the list is in a strange order)
 for f in flist:
@@ -70,7 +71,8 @@ for f in flist[np.argsort(fnums)]:
 
     reg = data.count("regional")
     tele = data.count("teleseismic")
-    local = data.count("Potential local match:") # excludes the last two lines!
+    local = data.count("Potential local match:") # Excludes the last two lines!
+       
     if args.etc:
         etc = data.count(args.etc)
         local = local-etc
@@ -87,7 +89,7 @@ Etc {:5.1f}%".format(
                     100*(etc)/(reg+tele+local+etc)))
             else:
                 print("Fam {:4} : L {:2} | R {:2} | T {:2} | Distant {:5.1f}%".format(
-                    fnum, local, reg, tele, 100*(reg+tele+etc)/(reg+tele+local+etc)))
+                    fnum, local, reg, tele, 100*(reg+tele)/(reg+tele+local)))
             
         if 100*(reg+tele)/(reg+tele+local+etc) >= args.percent:
             removeNums+=' {}'.format(fnum)
@@ -106,6 +108,11 @@ Etc {:5.1f}%".format(
             if 100*(etc)/(reg+tele+local+etc) >= args.percent:
                 removeNumsETC+=' {}'.format(fnum)
         
+        if reg >= 3: # If at least 3 located regionals regardless of %
+            removeNumsReg3+=' {}'.format(fnum)
+
+
+print('\n{}%+ Teleseismic:\n{}\n'.format(args.percent,removeNumsTele))
 
 print('\n{}%+ Regional+Teleseismic:\n{}\n'.format(args.percent,removeNums))
 
@@ -113,8 +120,7 @@ print('\n{}%+ Regional:\n{}\n'.format(args.percent,removeNumsReg))
 
 print('\n{}%+ Regional (ignore Teleseisms):\n{}\n'.format(args.percent,removeNumsRegiTele))
 
-print('\n{}%+ Teleseismic:\n{}\n'.format(args.percent,removeNumsTele))
+print('\n3+ Regional Matches: \n{}\n'.format(removeNumsReg3))
 
 if args.etc:
     print('{}%+ containing {}:\n{}\n'.format(args.percent,args.etc,removeNumsETC))
-
