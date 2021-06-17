@@ -96,6 +96,8 @@ else:
 if args.verbose: print("Opening hdf5 table: {0}".format(opt.filename))
 h5file, rtable, otable, ttable, ctable, jtable, dtable, ftable = redpy.table.openTable(opt)
 
+oldnClust = ftable.attrs.nClust
+
 if args.minclust:
     m = args.minclust
 else:
@@ -173,6 +175,10 @@ dlist = glob.glob('{}{}/clusters/*.gif'.format(opt.outputPath,opt.groupName))
     
 for tmp in dlist:
     os.remove(tmp) 
+    
+if args.verbose: print("Cleaning up .html files...")
+redpy.plotting.cleanHTML(oldnClust, ftable.attrs.nClust, opt)
+    
 print("Closing table...")
 h5file.close()
 print("Done")

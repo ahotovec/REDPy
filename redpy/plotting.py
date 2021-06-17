@@ -1479,5 +1479,21 @@ def plotReport(rtable, ftable, ctable, fnum, ordered, opt):
         </center></body></html>
         """)
 
+def cleanHTML(oldnClust, newnClust, opt):
 
-
+    """
+    Removes HTML files from deleted/moved family pages.
+    
+    oldnClust: Previous number of clusters (ftable.attrs.nClust)
+    newnClust: New number of clusters
+    opt: Options object describing station/run parameters
+    
+    This function deletes removed family .html files that have fnum above the current
+    maximum family number. 
+    """
+    
+    for fnum in range(newnClust, oldnClust):
+        if os.path.exists('{}{}/clusters/{}.html'.format(opt.outputPath, opt.groupName,
+                          fnum)):
+            os.remove('{}{}/clusters/{}.html'.format(opt.outputPath, opt.groupName, fnum))
+    

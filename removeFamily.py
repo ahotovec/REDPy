@@ -43,10 +43,15 @@ else:
 if args.verbose: print("Opening hdf5 table: {0}".format(opt.filename))
 h5file, rtable, otable, ttable, ctable, jtable, dtable, ftable = redpy.table.openTable(opt)
 
+oldnClust = ftable.attrs.nClust
+
 redpy.table.removeFamilies(rtable, ctable, dtable, ftable, args.famnum, opt)
 
 if args.verbose: print("Creating plots...")
 redpy.plotting.createPlots(rtable, ftable, ttable, ctable, otable, opt)
+
+if args.verbose: print("Cleaning up .html files...")
+redpy.plotting.cleanHTML(oldnClust, ftable.attrs.nClust, opt)
 
 if args.verbose: print("Closing table...")
 h5file.close()
