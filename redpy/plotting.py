@@ -1165,7 +1165,7 @@ def createJunkPlots(jtable, opt):
         plt.close(fig)
           
 
-def plotReport(rtable, ftable, ctable, fnum, ordered, opt):
+def plotReport(rtable, ftable, ctable, fnum, ordered, matrixtofile, opt):
     
     """
     Creates more detailed output plots for a single family
@@ -1175,6 +1175,7 @@ def plotReport(rtable, ftable, ctable, fnum, ordered, opt):
     ctable: Correlation table
     fnum: Family to be inspected
     ordered: 1 if members should be ordered by OPTICS, 0 if by time
+    matrixtofile: 1 if correlation should be written to file
     opt: Options object describing station/run parameters
         
     """
@@ -1338,6 +1339,13 @@ def plotReport(rtable, ftable, ctable, fnum, ordered, opt):
         Cind = Cind[:,order]
         Cfull = Cfull[order,:]
         Cfull = Cfull[:,order]
+        
+    ### SAVE FULL CORRELATION MATRIX TO FILE?
+    if matrixtofile:
+        np.save('{}{}/reports/0-Cfull.npy'.format(opt.outputPath, opt.groupName, fnum),
+            Cfull)
+        np.save('{}{}/reports/0-evTimes.npy'.format(opt.outputPath, opt.groupName, fnum),
+            startTime[famcat])
     
     ### CORRELATION MATRIX
     fig = plt.figure(figsize=(14,5.4))
