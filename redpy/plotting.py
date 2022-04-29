@@ -66,7 +66,8 @@ def createPlots(rtable, ftable, ttable, ctable, otable, opt):
                 printCatalog(rtable, ftable, opt)
             printSwarmCatalog(rtable, ftable, ttable, opt)
             printCoresCatalog(rtable, ftable, opt)
-            printEventsperDay(rtable, ftable, opt)
+            # Need to make this optional. Too slow for very long datasets!
+            #printEventsperDay(rtable, ftable, opt)
             plotCores(rtable, ftable, opt)
             plotFamilies(rtable, ftable, ctable, opt)
             plotFamilyHTML(rtable, ftable, opt)
@@ -1071,9 +1072,9 @@ def checkComCat(rtable, ftable, cnum, f, startTime, windowStart, opt):
             ax = fig.add_subplot(1, 1, 1, projection=stamen_terrain.crs)
             ax.set_extent([np.median(llons)-opt.locdeg/2,np.median(llons)+opt.locdeg/2,
                 np.median(llats)-opt.locdeg/4,np.median(llats)+opt.locdeg/4],
-                crs=ccrs.Geodetic())
+                crs=ccrs.PlateCarree())
             # Shaded terrain
-            ax.add_image(stamen_terrain, 11, alpha=0.75)
+            ax.add_image(stamen_terrain, 11)
             
             # Set up ticks
             ax.set_xticks(np.arange(np.floor(10*(np.median(llons)-opt.locdeg/2))/10,
@@ -1084,18 +1085,18 @@ def checkComCat(rtable, ftable, cnum, f, startTime, windowStart, opt):
                 crs=ccrs.PlateCarree())
             ax.set_extent([np.median(llons)-opt.locdeg/2,np.median(llons)+opt.locdeg/2,
                 np.median(llats)-opt.locdeg/4,np.median(llats)+opt.locdeg/4],
-                crs=ccrs.Geodetic())
+                crs=ccrs.PlateCarree())
             ax.xaxis.set_major_formatter(LongitudeFormatter())
             ax.yaxis.set_major_formatter(LatitudeFormatter())
             plt.yticks(rotation=90, va='center')
             
             # Seismicity in red (halo of white), stations open black triangles
             ax.scatter(llons, llats, s=20, marker='o', color='white',
-                transform=ccrs.Geodetic())
+                transform=ccrs.PlateCarree())
             ax.scatter(llons, llats, s=5, marker='o', color='red',
-                transform=ccrs.Geodetic())
+                transform=ccrs.PlateCarree())
             ax.scatter(stalons, stalats, marker='^', color='k', facecolors='None',
-                transform=ccrs.Geodetic())
+                transform=ccrs.PlateCarree())
             
             # 10 km scale bar
             sbllon = 0.05*(opt.locdeg)+np.median(llons)-opt.locdeg/2
@@ -1103,9 +1104,9 @@ def checkComCat(rtable, ftable, cnum, f, startTime, windowStart, opt):
             sbelon = sbllon + np.arctan2(np.sin(np.pi/2)*np.sin(
                 10./6378.)*np.cos(sbllat*np.pi/180.), np.cos(10./6378.)-np.sin(
                 sbllat*np.pi/180.)*np.sin(sbllat*np.pi/180.))*180./np.pi
-            ax.plot((sbllon, sbelon), (sbllat,sbllat), 'k-', transform=ccrs.Geodetic(),
+            ax.plot((sbllon, sbelon), (sbllat,sbllat), 'k-', transform=ccrs.PlateCarree(),
                 lw=2)
-            geodetic_transform = ccrs.Geodetic()._as_mpl_transform(ax)
+            geodetic_transform = ccrs.PlateCarree()._as_mpl_transform(ax)
             text_transform = offset_copy(geodetic_transform, units='dots', y=5)
             ax.text((sbllon+sbelon)/2., sbllat, '10 km', ha='center',
                 transform=text_transform)
