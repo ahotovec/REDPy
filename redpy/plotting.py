@@ -1167,7 +1167,6 @@ def createJunkPlots(jtable, opt):
         plt.close(fig)
           
 
-<<<<<<< HEAD
 def cleanHTML(oldnClust, newnClust, opt):
 
     """
@@ -1189,8 +1188,6 @@ def cleanHTML(oldnClust, newnClust, opt):
 
 ### USER-GENERATED ###
 
-=======
->>>>>>> d1d430031448a5c0308f45a054785d602f022aa5
 def plotReport(rtable, ftable, ctable, fnum, ordered, matrixtofile, opt):
     
     """
