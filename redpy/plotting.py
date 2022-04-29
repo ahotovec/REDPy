@@ -30,6 +30,7 @@ from bokeh.plotting import figure, output_file, save, gridplot
 from bokeh.models import HoverTool, ColumnDataSource, OpenURL, TapTool, Range1d, Div, Span
 from bokeh.models import Arrow, VeeHead, ColorBar, LogColorMapper, LogTicker, Label
 from bokeh.models.glyphs import Line, Quad
+from bokeh.models.formatters import LogTickFormatter
 from bokeh.layouts import column
 from bokeh.palettes import inferno, all_palettes
 matplotlib.use('Agg')
@@ -465,7 +466,7 @@ def plotFamilyOccurrence(dt, ftable, mintime, minplot, binsize, barpad):
     color_bar = ColorBar(color_mapper=determineColorMapper(binsize), ticker=LogTicker(),
         border_line_color='#eeeeee', location=(7,cloc1), orientation='horizontal',
         width=150, height=15, title='Events per {}'.format(determineLegendText(binsize)),
-        padding=15, major_tick_line_alpha=0)
+        padding=15, major_tick_line_alpha=0, formatter=LogTickFormatter(min_exponent=4))
 
     fig.add_layout(color_bar)
 
