@@ -20,6 +20,7 @@ optional arguments:
   -h, --help            show this help message and exit
   -v, --verbose         increase written print statements
   -o, --ordered         order plots by OPTICS
+  -m, --matrixtofile    save correlation matrix to file
   -c CONFIGFILE, --configfile CONFIGFILE
                         use configuration file named CONFIGFILE instead of
                         default settings.cfg
@@ -34,6 +35,8 @@ parser.add_argument("-v", "--verbose", action="count", default=0,
     help="increase written print statements")
 parser.add_argument("-o", "--ordered", action="count", default=0,
     help="order plots by OPTICS")
+parser.add_argument("-m", "--matrixtofile", action="count", default=0,
+    help="save correlation matrix to file")
 parser.add_argument("-c", "--configfile",
     help="use configuration file named CONFIGFILE instead of default settings.cfg")
 args = parser.parse_args()
@@ -48,8 +51,11 @@ else:
 if args.verbose: print("Opening hdf5 table: {0}".format(opt.filename))
 h5file, rtable, otable, ttable, ctable, jtable, dtable, ftable = redpy.table.openTable(opt)
 
-if args.verbose: print("Creating folder to store images '{}{}/reports'".format(
+if args.verbose: print("Creating folder to store files '{}{}/reports'".format(
     opt.outputPath, opt.groupName))
+
+# Check for MPL version mismatch
+redpy.table.checkMPL(rtable, ftable, ttable, otable, dtable, opt)
     
 try:
     os.mkdir('{}{}/reports'.format(opt.outputPath,opt.groupName))
@@ -58,7 +64,8 @@ except OSError:
 
 for fnum in args.famnum:
     if args.verbose: print("Creating report for family {}...".format(fnum))
-    redpy.plotting.plotReport(rtable, ftable, ctable, fnum, args.ordered, opt)
+    redpy.plotting.plotReport(rtable, ftable, ctable, fnum, args.ordered,
+        args.matrixtofile, opt)
 
 if args.verbose: print("Closing table...")
 h5file.close()

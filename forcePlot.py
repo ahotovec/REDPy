@@ -63,6 +63,9 @@ else:
 if args.verbose: print("Opening hdf5 table: {0}".format(opt.filename))
 h5file, rtable, otable, ttable, ctable, jtable, dtable, ftable = redpy.table.openTable(opt)
 
+# Check for MPL version mismatch
+redpy.table.checkMPL(rtable, ftable, ttable, otable, dtable, opt)
+
 if args.all:
     if args.verbose: print("Resetting plotting column...")
     ftable.cols.printme[0:ftable.attrs.nClust] = np.ones((ftable.attrs.nClust,))
@@ -72,6 +75,7 @@ if args.resetlp:
     ftable.cols.lastprint[:] = np.arange(len(ftable))
     
 if args.startfam or args.endfam:
+    ftable.cols.printme[:] = np.zeros((len(ftable),))
     if args.startfam and not args.endfam:
         ftable.cols.printme[args.startfam:ftable.attrs.nClust] = np.ones(
                                                      (ftable.attrs.nClust-args.startfam,))

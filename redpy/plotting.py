@@ -33,7 +33,14 @@ from bokeh.models.glyphs import Line, Quad
 from bokeh.layouts import column
 from bokeh.palettes import inferno, all_palettes
 matplotlib.use('Agg')
-        
+
+# Adjust rcParams
+matplotlib.rcParams['font.family'] = 'sans-serif'
+matplotlib.rcParams['font.sans-serif'] = ['Arial', 'DejaVu Sans']
+matplotlib.rcParams['font.size'] = 8.0
+matplotlib.rcParams['pdf.fonttype'] = 42 
+
+
 def createPlots(rtable, ftable, ttable, ctable, otable, opt):
     
     """
@@ -73,6 +80,8 @@ def createPlots(rtable, ftable, ttable, ctable, otable, opt):
     for tmp in tmplist:
         os.rename(tmp,tmp[0:-4]) 
     
+
+### BOKEH OVERVIEW RENDERING ###
   
 def plotTimelines(rtable, ftable, ttable, opt):
     
@@ -528,6 +537,8 @@ def createHoverTool():
     return hover
 
 
+### FAMILY PAGES ###
+
 def plotCores(rtable, ftable, opt):
 
     """
@@ -590,12 +601,7 @@ def plotFamilies(rtable, ftable, ctable, opt):
     Third row: Timeline of event spacing
     Last row: Correlation with time relative to best-correlated event (most measurements)
     """
-    
-    # Adjust the font face
-    matplotlib.rcParams['font.family'] = 'sans-serif'
-    matplotlib.rcParams['font.sans-serif'] = ['Arial']
-    matplotlib.rcParams['font.size'] = 8.0
-    
+       
     # Load into memory
     startTimeMPL = rtable.cols.startTimeMPL[:]
     windowAmp = rtable.cols.windowAmp[:][:,opt.printsta]
@@ -829,12 +835,7 @@ def plotFamilyHTML(rtable, ftable, opt):
     HTML will hold navigation, images, and basic statistics. May also include location
     information if external catalog is queried. 
     """
-    
-    # Adjust the font face
-    matplotlib.rcParams['font.family'] = 'sans-serif'
-    matplotlib.rcParams['font.sans-serif'] = ['Arial']
-    matplotlib.rcParams['font.size'] = 8.0    
-    
+       
     # Load into memory
     startTime = rtable.cols.startTime[:]
     startTimeMPL = rtable.cols.startTimeMPL[:]
@@ -1165,7 +1166,28 @@ def createJunkPlots(jtable, opt):
         plt.close(fig)
           
 
-def plotReport(rtable, ftable, ctable, fnum, ordered, opt):
+def cleanHTML(oldnClust, newnClust, opt):
+
+    """
+    Removes HTML files from deleted/moved family pages.
+    
+    oldnClust: Previous number of clusters (ftable.attrs.nClust)
+    newnClust: New number of clusters
+    opt: Options object describing station/run parameters
+    
+    This function deletes removed family .html files that have fnum above the current
+    maximum family number. 
+    """
+    
+    for fnum in range(newnClust, oldnClust):
+        if os.path.exists('{}{}/clusters/{}.html'.format(opt.outputPath, opt.groupName,
+                          fnum)):
+            os.remove('{}{}/clusters/{}.html'.format(opt.outputPath, opt.groupName, fnum))
+    
+
+### USER-GENERATED ###
+
+def plotReport(rtable, ftable, ctable, fnum, ordered, matrixtofile, opt):
     
     """
     Creates more detailed output plots for a single family
@@ -1175,14 +1197,10 @@ def plotReport(rtable, ftable, ctable, fnum, ordered, opt):
     ctable: Correlation table
     fnum: Family to be inspected
     ordered: 1 if members should be ordered by OPTICS, 0 if by time
+    matrixtofile: 1 if correlation should be written to file
     opt: Options object describing station/run parameters
         
     """
-    
-    # Adjust the font face
-    matplotlib.rcParams['font.family'] = 'sans-serif'
-    matplotlib.rcParams['font.sans-serif'] = ['Arial']
-    matplotlib.rcParams['font.size'] = 8.0    
     
     # Read in annotation file (if it exists)
     if opt.anotfile != '':
@@ -1338,6 +1356,13 @@ def plotReport(rtable, ftable, ctable, fnum, ordered, opt):
         Cind = Cind[:,order]
         Cfull = Cfull[order,:]
         Cfull = Cfull[:,order]
+        
+    ### SAVE FULL CORRELATION MATRIX TO FILE
+    if matrixtofile:
+        np.save('{}{}/reports/0-Cfull.npy'.format(opt.outputPath, opt.groupName, fnum),
+            Cfull)
+        np.save('{}{}/reports/0-evTimes.npy'.format(opt.outputPath, opt.groupName, fnum),
+            startTime[famcat])
     
     ### CORRELATION MATRIX
     fig = plt.figure(figsize=(14,5.4))
@@ -1479,21 +1504,5 @@ def plotReport(rtable, ftable, ctable, fnum, ordered, opt):
         </center></body></html>
         """)
 
-def cleanHTML(oldnClust, newnClust, opt):
 
-    """
-    Removes HTML files from deleted/moved family pages.
-    
-    oldnClust: Previous number of clusters (ftable.attrs.nClust)
-    newnClust: New number of clusters
-    opt: Options object describing station/run parameters
-    
-    This function deletes removed family .html files that have fnum above the current
-    maximum family number. 
-    """
-    
-    for fnum in range(newnClust, oldnClust):
-        if os.path.exists('{}{}/clusters/{}.html'.format(opt.outputPath, opt.groupName,
-                          fnum)):
-            os.remove('{}{}/clusters/{}.html'.format(opt.outputPath, opt.groupName, fnum))
-    
+
