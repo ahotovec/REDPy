@@ -51,11 +51,12 @@ else:
 if args.verbose: print("Opening hdf5 table: {0}".format(opt.filename))
 h5file, rtable, otable, ttable, ctable, jtable, dtable, ftable = redpy.table.openTable(opt)
 
-if args.verbose: print("Creating folder to store files '{}{}/reports'".format(
-    opt.outputPath, opt.groupName))
-
 # Check for MPL version mismatch
 redpy.table.checkMPL(rtable, ftable, ttable, otable, dtable, opt)
+
+
+if args.verbose: print("Creating folder to store files '{}{}/reports'".format(
+    opt.outputPath, opt.groupName))
     
 try:
     os.mkdir('{}{}/reports'.format(opt.outputPath,opt.groupName))
