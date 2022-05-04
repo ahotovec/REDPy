@@ -125,12 +125,12 @@ def plotTimelines(rtable, ftable, ttable, opt):
             # Plot EQ Rates (Repeaters and Orphans)
             overview_plots.append(plotRate(alltrigs, dt, opt.dybin, min(alltrigs)))
             recent_plots.append(plotRate(alltrigs, dt, opt.hrbin/24,
-                                max(alltrigs)-opt.recplot))
+                                   max(alltrigs)-opt.recplot))
             
         elif p == 'fi':
             # Plot Frequency Index
-            overview_plots.append(plotFI(dt, fi, min(alltrigs)))
-            recent_plots.append(plotFI(dt, fi, max(alltrigs)-opt.recplot))
+            overview_plots.append(plotFI(alltrigs, dt, fi, min(alltrigs)))
+            recent_plots.append(plotFI(alltrigs, dt, fi, max(alltrigs)-opt.recplot))
     
         elif p == 'longevity':
             # Plot Cluster Longevity — This needs to be further functionalized!
@@ -141,10 +141,10 @@ def plotTimelines(rtable, ftable, ttable, opt):
     
         elif p == 'occurrence':
             # Plot family occurrence
-            overview_plots.append(plotFamilyOccurrence(dt, ftable, min(alltrigs),
-                                  opt.minplot, opt.occurbin, barpad))
-            recent_plots.append(plotFamilyOccurrence(dt, ftable,
-                                max(alltrigs)-opt.recplot, 0, opt.recbin, barpadr))
+            overview_plots.append(plotFamilyOccurrence(alltrigs, dt, ftable,
+                                  min(alltrigs), opt.minplot, opt.occurbin, barpad))
+            recent_plots.append(plotFamilyOccurrence(alltrigs, dt, ftable,
+                                  max(alltrigs)-opt.recplot, 0, opt.recbin, barpadr))
     
         else:
             print('{} is not a valid plot type. Moving on.'.format(p))
@@ -255,11 +255,12 @@ def plotRate(alltrigs, dt, binsize, mintime):
     return fig
 
 
-def plotFI(dt, fi, mintime):
+def plotFI(alltrigs, dt, fi, mintime):
     
     """
     Creates subplot for frequency index scatterplot
     
+    alltrigs: Array containing times of all triggers
     dt: Array containing times of repeaters
     fi: Array containing frequency index values of repeaters
     mintime: Minimum time to be plotted
@@ -270,7 +271,7 @@ def plotFI(dt, fi, mintime):
     fig.yaxis.axis_label = 'FI'
     
     # Always plot at least one invisible point
-    fig.circle(matplotlib.dates.num2date(np.max(dt)), 0, line_alpha=0, fill_alpha=0)
+    fig.circle(matplotlib.dates.num2date(np.max(alltrigs)), 0, line_alpha=0, fill_alpha=0)
     
     # Plot
     fig.circle(matplotlib.dates.num2date(dt[dt>=mintime]), fi[dt>=mintime], color='red',
@@ -346,11 +347,12 @@ def plotLongevity(alltrigs, famstarts, longevity, mintime, barpad, opt):
     return fig
 
 
-def plotFamilyOccurrence(dt, ftable, mintime, minplot, binsize, barpad):
+def plotFamilyOccurrence(alltrigs, dt, ftable, mintime, minplot, binsize, barpad):
     
     """
-    Creates subplot for longevity
+    Creates subplot for family occurrence
     
+    alltrigs: Array containing times of all triggers
     dt: Array containing times of repeaters
     ftable: Families table
     mintime: Minimum time to be plotted; families starting before this time will not be
@@ -368,7 +370,7 @@ def plotFamilyOccurrence(dt, ftable, mintime, minplot, binsize, barpad):
         ' ({}+ Members)'.format(minplot) if minplot>0 else '')
     
     # Always plot at least one invisible point
-    fig.circle(matplotlib.dates.num2date(np.max(dt)), 0, line_alpha=0, fill_alpha=0)
+    fig.circle(matplotlib.dates.num2date(np.max(alltrigs)), 0, line_alpha=0, fill_alpha=0)
     
     # Steal YlOrRd (len=256) colormap from matplotlibdetermine_legend_text
     colormap = matplotlib.cm.get_cmap('YlOrRd')
