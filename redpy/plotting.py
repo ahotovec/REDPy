@@ -165,19 +165,19 @@ def plotTimelines(rtable, ftable, ttable, opt):
                     j.add_layout(Span(location=spantime*1000, dimension='height',
                         line_color=row[2], line_width=row[3], line_dash=row[4],
                         line_alpha=row[5], level='underlay'))
- 
 
     # Create output and save
     # gridplot_items should look like this: [[Div(text=...)],[panel1],[panel2],...]
-    gridplot_items = [[Div(text='<h1>{0}</h1>'.format(opt.title), width=1000)]] + [
-                      [el] for el in overview_plots]
+    gridplot_items = [[Div(text='<h1>{0}</h1>'.format(opt.title), width=1000,
+                       margin=(-40,5,-10,5))]] + [[el] for el in overview_plots]
     o = gridplot(gridplot_items)
     output_file('{}{}/overview.html'.format(opt.outputPath, opt.groupName),
                 title='{} Overview'.format(opt.title))
     save(o)
     
     gridplot_items = [[Div(text='<h1>{0} - Last {1:.1f} Days</h1>'.format(opt.title,
-                      opt.recplot), width=1000)]] + [[el] for el in recent_plots]
+                      opt.recplot), width=1000, margin=(-40,5,-10,5))]] + [
+                      [el] for el in recent_plots]
     r = gridplot(gridplot_items)
     output_file('{}{}/overview_recent.html'.format(opt.outputPath, opt.groupName),
                 title='{0} Overview - Last {1:.1f} Days'.format(opt.title, opt.recplot))
