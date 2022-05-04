@@ -268,6 +268,11 @@ def plotFI(dt, fi, mintime):
     
     fig = bokehFigure(title='Frequency Index')
     fig.yaxis.axis_label = 'FI'
+    
+    # Always plot at least one invisible point
+    fig.circle(matplotlib.dates.num2date(np.max(dt)), 0, line_alpha=0, fill_alpha=0)
+    
+    # Plot
     fig.circle(matplotlib.dates.num2date(dt[dt>=mintime]), fi[dt>=mintime], color='red',
         line_alpha=0, size=3, fill_alpha=0.5)
     
@@ -294,10 +299,12 @@ def plotLongevity(alltrigs, famstarts, longevity, mintime, barpad, opt):
         y_range=[0.01, np.sort(alltrigs)[-1]-np.sort(alltrigs)[0]],
         title='Cluster Longevity')
     fig.yaxis.axis_label = 'Days'
+    
+    # Always plot at least one invisible point
+    fig.circle(matplotlib.dates.num2date(np.max(alltrigs)), 1, line_alpha=0, fill_alpha=0)
 
     # Draw a line for the longevity data (turns off if data don't fall within time window)
     # Draw an arrow if longevity line extends beyond the data window
-
 
     # Plot Data            
     for n in range(len(famstarts)):
@@ -359,6 +366,9 @@ def plotFamilyOccurrence(dt, ftable, mintime, minplot, binsize, barpad):
         title='Occurrence Timeline', plot_height=500, plot_width=1250)
     fig.yaxis.axis_label = 'Cluster by Date' + (
         ' ({}+ Members)'.format(minplot) if minplot>0 else '')
+    
+    # Always plot at least one invisible point
+    fig.circle(matplotlib.dates.num2date(np.max(dt)), 0, line_alpha=0, fill_alpha=0)
     
     # Steal YlOrRd (len=256) colormap from matplotlibdetermine_legend_text
     colormap = matplotlib.cm.get_cmap('YlOrRd')
