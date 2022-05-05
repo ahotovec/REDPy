@@ -100,11 +100,19 @@ class Options(object):
             (corresponds to trigon+7) (default 30 days)
 
         PLOTTING PARAMETERS
+        plotformat: List and order of plots to be included on the timeline, separated by
+            either , (new row) or + (group into tabs) without spaces. List of currently
+            supported plot types are: eqrate, fi, occurrence, and longevity
+            (default 'eqrate,fi,occurrence,longevity')
         minplot: Minimum number of members required in order to be plotted to timeline
         dybin: Width of bin in days for full histogram (default 1 day)
         hrbin: Width of bin in hours for recent histogram (default 1 hour)
-        occurbin: Width of bin for occurrence plot; specified in .cfg as hours, converted to days in redpy/config (default 1 hr -> 1/24 day)
-        recbin: Width of bin for recent occurrence; specified in .cfg as hours, converted to days in redpy/config (default 1 hr -> 1/24 day) 
+        occurbin: Width of bin for occurrence plot; specified in .cfg as hours,
+            converted to days in redpy/config (default 1 hr -> 1/24 day)
+        recbin: Width of bin for recent occurrence; specified in .cfg as hours,
+            converted to days in redpy/config (default 1 hr -> 1/24 day)
+        fixedheight: Whether the occurrence plot should have the same height as the other
+            subplots or expand in height as more families are plotted (default False)
         recplot: Number of days for 'recent' plot (default 14 days)
         plotsta: Station index in station list to be plotted (default 2)
         verbosecatalog: Add additional columns to the catalog file (default False)
@@ -219,18 +227,24 @@ class Options(object):
             'Settings','minorph') else 0.05
         self.maxorph=config.getfloat('Settings','maxorph') if config.has_option(
             'Settings','maxorph') else 7.
+        self.plotformat=config.get('Settings','plotformat') if config.has_option(
+             'Settings','plotformat') else 'eqrate,fi,occurrence,longevity'
         self.minplot=config.getint('Settings','minplot') if config.has_option(
             'Settings','minplot') else 3
         self.dybin=config.getfloat('Settings','dybin') if config.has_option(
             'Settings','dybin') else 1.
         self.hrbin=config.getfloat('Settings','hrbin') if config.has_option(
             'Settings','hrbin') else 1.
-        self.occurbin=config.getfloat('Settings','occurbin')/24 if config.has_option(   # settings.cfg (hours) immediately converted to days
+        # settings.cfg (hours) immediately converted to days
+        self.occurbin=config.getfloat('Settings','occurbin')/24 if config.has_option(
             'Settings','occurbin') else 1/24
-        self.recbin=config.getfloat('Settings','recbin')/24 if config.has_option( # settings.cfg (hours) immediately converted to days
+        # settings.cfg (hours) immediately converted to days
+        self.recbin=config.getfloat('Settings','recbin')/24 if config.has_option(
             'Settings','recbin') else 1/24
         self.recplot=config.getfloat('Settings','recplot') if config.has_option(
             'Settings','recplot') else 14.
+        self.fixedheight=config.getboolean('Settings','fixedheight') if config.has_option(
+            'Settings','fixedheight') else False
         self.printVerboseCat=config.getboolean('Settings','verbosecatalog') if config.has_option(
             'Settings','verbosecatalog') else False
         self.amplims=config.get('Settings','amplims') if config.has_option(

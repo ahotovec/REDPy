@@ -30,6 +30,7 @@ from matplotlib.transforms import offset_copy
 from bokeh.plotting import figure, output_file, save, gridplot
 from bokeh.models import HoverTool, ColumnDataSource, OpenURL, TapTool, Range1d, Div, Span
 from bokeh.models import Arrow, VeeHead, ColorBar, LogColorMapper, LogTicker, Label
+from bokeh.models import Panel, Tabs
 from bokeh.models.glyphs import Line, Quad
 from bokeh.models.formatters import LogTickFormatter
 from bokeh.layouts import column
@@ -89,7 +90,7 @@ def createPlots(rtable, ftable, ttable, ctable, otable, opt):
 def plotTimelines(rtable, ftable, ttable, opt):
     
     """
-    Creates the primary bokeh timelines overview.html and overview_recent.html
+    Wraps the creation of Bokeh timelines like overview.html and overview_recent.html
     
     rtable: Repeater table
     ftable: Families table
@@ -103,85 +104,122 @@ def plotTimelines(rtable, ftable, ttable, opt):
     longevity = ftable.cols.longevity[:]
     famstarts = ftable.cols.startTime[:]
     alltrigs = ttable.cols.startTimeMPL[:]
-    
-    # Read in annotation file (if it exists)
-    if opt.anotfile != '':
-        df = pd.read_csv(opt.anotfile)
-    
+        
     # Determine padding for hover bars (~1% of window range on each side)
     barpad = (max(alltrigs)-min(alltrigs))*0.01
-    barpadr = opt.recplot*0.01    
+    barpadr = opt.recplot*0.01
     
-    # Initialize list of produced plots
-    # (plot_types is a stub variable until the config file offers this option)
-    plot_types = 'eqrate,fi,occurrence,longevity'.split(',')
-    overview_plots = []
-    recent_plots = []
+    # Full overview
+    renderBokehTimeline(ftable, dt, fi, longevity, famstarts, alltrigs, barpad,
+        opt.plotformat, opt.dybin, opt.occurbin, min(alltrigs), opt.minplot,
+        opt.fixedheight, '{}{}/overview.html'.format(opt.outputPath, opt.groupName),
+        '{0} Overview'.format(opt.title), '<h1>{0}</h1>'.format(opt.title), './', opt)
     
+    # Recent
+    renderBokehTimeline(ftable, dt, fi, longevity, famstarts, alltrigs, barpadr,
+        opt.plotformat, opt.hrbin/24, opt.recbin, max(alltrigs)-opt.recplot, 0,
+        opt.fixedheight, '{}{}/overview_recent.html'.format(opt.outputPath,
+        opt.groupName), '{0} Overview - Last {1:.1f} Days'.format(opt.title, opt.recplot),
+        '<h1>{0} - Last {1:.1f} Days</h1>'.format(opt.title,opt.recplot), './', opt)
+    
+
+def renderBokehTimeline(ftable, dt, fi, longevity, famstarts, alltrigs, barpad,
+        plotformat, binsize, obinsize, mintime, minplot, fixedheight, filepath,
+        htmltitle, divtitle, opath, opt):
+        
+    """
+    Generates a Bokeh timeline with given parameters
+    
+    ftable: Families table
+    dt: Array containing times of repeaters
+    fi: Array containing frequency index values of repeaters
+    longevity: Array containing longevity values for all families
+    famstarts: Array containing start times of all families
+    alltrigs: Array containing times of all triggers
+    barpad: Horizontal padding for hover bars (usually ~1% of window range)
+    plotformat: Formatted list of plots to be rendered, separated by ',' or '+' where
+        ',' denotes a new row and '+' groups the plots in tabs
+    binsize: Width (in days) of time bins for rate plot
+    obinsize: Width (in hours) Temporal bin size for occurrence plot
+    mintime: Minimum time to plot; generates arrows if family extends earlier in time
+    minplot: Minimum number of members in a family to include on occurence plot
+    fixedheight: Boolean for whether the plot height should be the same height as
+        the other plots (True), or variable in height (False)
+    filepath: Output file location and name
+    htmltitle: Title of html page
+    divtitle: Title used in div container at top left of plots
+    opath: Relative path to run directory, in case these plots are to be placed
+        outside of it
+    opt: Options object describing station/run parameters
+    
+    """
+    
+    plot_types = plotformat.replace('+',',').split(',')
+    plots = []
+    tabtitles = []
     # Create each of the subplots specified in the configuration file
     for p in plot_types:
     
         if p == 'eqrate':
             # Plot EQ Rates (Repeaters and Orphans)
-            overview_plots.append(plotRate(alltrigs, dt, opt.dybin, min(alltrigs)))
-            recent_plots.append(plotRate(alltrigs, dt, opt.hrbin/24,
-                                   max(alltrigs)-opt.recplot))
+            plots.append(plotRate(alltrigs, dt, binsize, mintime, opt))            
+            tabtitles = tabtitles+['Event Rate']
             
         elif p == 'fi':
             # Plot Frequency Index
-            overview_plots.append(plotFI(alltrigs, dt, fi, min(alltrigs)))
-            recent_plots.append(plotFI(alltrigs, dt, fi, max(alltrigs)-opt.recplot))
+            plots.append(plotFI(alltrigs, dt, fi, mintime, opt))
+            tabtitles = tabtitles+['FI']
     
         elif p == 'longevity':
             # Plot Cluster Longevity — This needs to be further functionalized!
-            overview_plots.append(plotLongevity(alltrigs, famstarts, longevity,
-                                  min(alltrigs), barpad, opt))
-            recent_plots.append(plotLongevity(alltrigs, famstarts, longevity,
-                                  max(alltrigs)-opt.recplot, barpadr, opt))
+            plots.append(plotLongevity(alltrigs, famstarts, longevity,
+                                  mintime, barpad, opt))
+            tabtitles = tabtitles+['Longevity']
     
         elif p == 'occurrence':
             # Plot family occurrence
-            overview_plots.append(plotFamilyOccurrence(alltrigs, dt, ftable,
-                                  min(alltrigs), opt.minplot, opt.occurbin, barpad))
-            recent_plots.append(plotFamilyOccurrence(alltrigs, dt, ftable,
-                                  max(alltrigs)-opt.recplot, 0, opt.recbin, barpadr))
+            plots.append(plotFamilyOccurrence(alltrigs, dt, ftable, mintime, minplot,
+                                  obinsize, barpad, fixedheight, opath, opt))
+            tabtitles = tabtitles+['Occurrence (Color by Rate)']
     
         else:
             print('{} is not a valid plot type. Moving on.'.format(p))
     
     # Set ranges
-    for i in overview_plots:
-        i.x_range = overview_plots[0].x_range
-    for i in recent_plots:
-        i.x_range = recent_plots[0].x_range
+    for i in plots:
+        i.x_range = plots[0].x_range
     
     # Add annotations
     if opt.anotfile != '':
-        for i in [overview_plots, recent_plots]:
-            for j in i:
-                for row in df.itertuples():
-                    spantime = (datetime.datetime.strptime(row[1],
-                        '%Y-%m-%dT%H:%M:%S')-datetime.datetime(1970,1,1)).total_seconds()
-                    j.add_layout(Span(location=spantime*1000, dimension='height',
-                        line_color=row[2], line_width=row[3], line_dash=row[4],
-                        line_alpha=row[5], level='underlay'))
+        df = pd.read_csv(opt.anotfile)
+        for j in plots:
+            for row in df.itertuples():
+                spantime = (datetime.datetime.strptime(row[1],
+                    '%Y-%m-%dT%H:%M:%S')-datetime.datetime(1970,1,1)).total_seconds()
+                j.add_layout(Span(location=spantime*1000, dimension='height',
+                    line_color=row[2], line_width=row[3], line_dash=row[4],
+                    line_alpha=row[5], level='underlay'))
 
     # Create output and save
-    # gridplot_items should look like this: [[Div(text=...)],[panel1],[panel2],...]
-    gridplot_items = [[Div(text='<h1>{0}</h1>'.format(opt.title), width=1000,
-                       margin=(-40,5,-10,5))]] + [[el] for el in overview_plots]
+    gridplot_items = [[Div(text=divtitle, width=1000,  margin=(-40,5,-10,5))]]
+    pnum = 0
+    for pf in plotformat.split(','):
+        # + joining options groups them into tabs
+        if '+' in pf:
+            tabs = []
+            for pft in range(len(pf.split('+'))):
+                tabs = tabs + [Panel(child=plots[pnum+pft],
+                                     title=tabtitles[pnum+pft])]
+            gridplot_items = gridplot_items + [[Tabs(tabs=tabs)]]
+            pnum = pnum+pft+1
+        else:
+            gridplot_items = gridplot_items + [[plots[pnum]]]
+            pnum = pnum+1
+
     o = gridplot(gridplot_items)
-    output_file('{}{}/overview.html'.format(opt.outputPath, opt.groupName),
-                title='{} Overview'.format(opt.title))
+    output_file(filepath,title=htmltitle)
     save(o)
-    
-    gridplot_items = [[Div(text='<h1>{0} - Last {1:.1f} Days</h1>'.format(opt.title,
-                      opt.recplot), width=1000, margin=(-40,5,-10,5))]] + [
-                      [el] for el in recent_plots]
-    r = gridplot(gridplot_items)
-    output_file('{}{}/overview_recent.html'.format(opt.outputPath, opt.groupName),
-                title='{0} Overview - Last {1:.1f} Days'.format(opt.title, opt.recplot))
-    save(r)
+
 
 
 def bokehFigure(**kwargs):
@@ -217,7 +255,7 @@ def bokehFigure(**kwargs):
     return fig
 
 
-def plotRate(alltrigs, dt, binsize, mintime):
+def plotRate(alltrigs, dt, binsize, mintime, opt):
     
     """
     Creates subplot for rate of orphans and repeaters
@@ -226,6 +264,7 @@ def plotRate(alltrigs, dt, binsize, mintime):
     dt: Array containing times of repeaters
     binsize: Width (in days) of each time bin
     mintime: Minimum time to be plotted
+    opt: Options object describing station/run parameters
     
     """
     
@@ -255,7 +294,7 @@ def plotRate(alltrigs, dt, binsize, mintime):
     return fig
 
 
-def plotFI(alltrigs, dt, fi, mintime):
+def plotFI(alltrigs, dt, fi, mintime, opt):
     
     """
     Creates subplot for frequency index scatterplot
@@ -264,6 +303,7 @@ def plotFI(alltrigs, dt, fi, mintime):
     dt: Array containing times of repeaters
     fi: Array containing frequency index values of repeaters
     mintime: Minimum time to be plotted
+    opt: Options object describing station/run parameters
     
     """
     
@@ -347,7 +387,8 @@ def plotLongevity(alltrigs, famstarts, longevity, mintime, barpad, opt):
     return fig
 
 
-def plotFamilyOccurrence(alltrigs, dt, ftable, mintime, minplot, binsize, barpad):
+def plotFamilyOccurrence(alltrigs, dt, ftable, mintime, minplot, binsize, barpad,
+    fixedheight, opath, opt):
     
     """
     Creates subplot for family occurrence
@@ -361,11 +402,16 @@ def plotFamilyOccurrence(alltrigs, dt, ftable, mintime, minplot, binsize, barpad
     minplot: Minimum number of members in a family to be included
     binsize: Width (in days) of each time bin
     barpad: Time padding so arrows have space
+    fixedheight: Boolean for whether the plot height should be the same height as
+        the other plots (True), or variable in height (False)
+    opath: Relative path to run directory, in case these plots are to be placed
+        outside of it
+    opt: Options object describing station/run parameters
     
     """
     
-    fig = bokehFigure(tools=[createHoverTool(),'pan,box_zoom,reset,save,tap'],
-        title='Occurrence Timeline', plot_height=500, plot_width=1250)
+    fig = bokehFigure(tools=[createHoverTool(opath),'pan,box_zoom,reset,save,tap'],
+        title='Occurrence Timeline', plot_height=250, plot_width=1250)
     fig.yaxis.axis_label = 'Cluster by Date' + (
         ' ({}+ Members)'.format(minplot) if minplot>0 else '')
     
@@ -379,7 +425,7 @@ def plotFamilyOccurrence(alltrigs, dt, ftable, mintime, minplot, binsize, barpad
 
     # Build the lists and dictionaries
     n = 0  
-    cloc1 = 335
+    cloc1 = 85
     
     legtext = determineLegendText(binsize)
       
@@ -465,13 +511,13 @@ def plotFamilyOccurrence(alltrigs, dt, ftable, mintime, minplot, binsize, barpad
                         
         # Tapping on one of the patches will open a window to a file with more information
         # on the cluster in question.   
-        url = './clusters/@famnum.html'
+        url = '{}clusters/@famnum.html'.format(opath)
         renderer = fig.select(name='patch')
         taptool = fig.select(type=TapTool)[0]
         taptool.names.append('patch')
         taptool.callback = OpenURL(url=url)
                     
-        if n > 30:
+        if (n > 15) and not fixedheight:
             fig.plot_height = n*15
             fig.y_range = Range1d(-1, n)
             cloc1 = n*15-165
@@ -533,10 +579,13 @@ def determineColorMapper(binsize):
     return color_mapper
 
 
-def createHoverTool():
+def createHoverTool(opath):
     
     """
     Helper function to create family hover preview
+    
+    opath: Relative path to run directory, in case these plots are to be placed
+        outside of it
     
     """
     
@@ -544,13 +593,13 @@ def createHoverTool():
         tooltips="""
         <div>
         <div>
-            <img src="./clusters/@famnum.png" style="height: 100px; width: 500px;
-                vertical-align: middle;" />
+            <img src="{}clusters/@famnum.png" style="height: 100px; width: 500px;
+                vertical-align: middle;"/>
             <span style="font-size: 9px; font-family: Helvetica;">Cluster ID: </span>
             <span style="font-size: 12px; font-family: Helvetica;">@famnum</span>
         </div>
         </div>
-        """, names=["patch"])
+        """.format(opath), names=["patch"])
 
     return hover
 
