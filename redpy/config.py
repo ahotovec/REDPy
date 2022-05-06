@@ -104,18 +104,25 @@ class Options(object):
         PLOTTING PARAMETERS
         plotformat: List and order of plots to be included on the timeline, separated by
             either , (new row) or + (group into tabs) without spaces. List of currently
-            supported plot types are: eqrate, fi, occurrence, and longevity
-            (default 'eqrate,fi,occurrence,longevity')
-        minplot: Minimum number of members required in order to be plotted to timeline
+            supported plot types are: eqrate, fi, occurrence, occurrencefi, and longevity
+            (default 'eqrate,fi,occurrence+occurrencefi,longevity')
+        minplot: Minimum number of members required in order to be plotted to full 
+            overview timeline (default 5)
+        mminplot: Minimum number of members required in order to be plotted to meta
+            timeline (default 0 (all members plotted)) 
         dybin: Width of bin in days for full histogram (default 1 day)
         hrbin: Width of bin in hours for recent histogram (default 1 hour)
+        mhrbin: Width of bin in hours for meta histogram (default 1 hour)
         occurbin: Width of bin for occurrence plot; specified in .cfg as hours,
             converted to days in redpy/config (default 1 hr -> 1/24 day)
         recbin: Width of bin for recent occurrence; specified in .cfg as hours,
             converted to days in redpy/config (default 1 hr -> 1/24 day)
+        mrecbin: Width of bin for recent occurrence in meta plot; specified in .cfg as
+            hours, converted to days in redpy/config (default 1 hr -> 1/24 day)
         fixedheight: Whether the occurrence plot should have the same height as the other
             subplots or expand in height as more families are plotted (default False)
         recplot: Number of days for 'recent' plot (default 14 days)
+        mrecplot: Number of days for meta plot (default 14 days)
         plotsta: Station index in station list to be plotted (default 2)
         verbosecatalog: Add additional columns to the catalog file (default False)
         amplims: Use 'global' or 'family' to define amplitude plot limits (default global)
@@ -236,7 +243,7 @@ class Options(object):
         self.plotformat=config.get('Settings','plotformat') if config.has_option(
              'Settings','plotformat') else 'eqrate,fi,occurrence+occurrencefi,longevity'
         self.minplot=config.getint('Settings','minplot') if config.has_option(
-            'Settings','minplot') else 3
+            'Settings','minplot') else 5
         self.dybin=config.getfloat('Settings','dybin') if config.has_option(
             'Settings','dybin') else 1.
         self.hrbin=config.getfloat('Settings','hrbin') if config.has_option(
@@ -249,6 +256,14 @@ class Options(object):
             'Settings','recbin') else 1/24
         self.recplot=config.getfloat('Settings','recplot') if config.has_option(
             'Settings','recplot') else 14.
+        self.mminplot=config.getint('Settings','mminplot') if config.has_option(
+            'Settings','mminplot') else 0
+        self.mhrbin=config.getfloat('Settings','mhrbin') if config.has_option(
+            'Settings','mhrbin') else 1.
+        self.mrecbin=config.getfloat('Settings','mrecbin')/24 if config.has_option(
+            'Settings','mrecbin') else 1/24
+        self.mrecplot=config.getfloat('Settings','mrecplot') if config.has_option(
+            'Settings','mrecplot') else 14.
         self.fixedheight=config.getboolean('Settings','fixedheight') if config.has_option(
             'Settings','fixedheight') else False
         self.printVerboseCat=config.getboolean('Settings','verbosecatalog') if config.has_option(

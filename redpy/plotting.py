@@ -108,6 +108,7 @@ def plotTimelines(rtable, ftable, ttable, opt):
     # Determine padding for hover bars (~1% of window range on each side)
     barpad = (max(alltrigs)-min(alltrigs))*0.01
     barpadr = opt.recplot*0.01
+    barpadm = opt.mrecplot*0.01
     
     # Full overview
     renderBokehTimeline(ftable, dt, fi, longevity, famstarts, alltrigs, barpad,
@@ -123,14 +124,15 @@ def plotTimelines(rtable, ftable, ttable, opt):
         '<h1>{0} - Last {1:.1f} Days</h1>'.format(opt.title,opt.recplot), opt)
         
     # Meta overview (recent but all in tabs, to be referenced from one folder up)
-    renderBokehTimeline(ftable, dt, fi, longevity, famstarts, alltrigs, barpadr,
-        opt.plotformat.replace(',','+'), opt.hrbin/24, opt.recbin,
-        max(alltrigs)-opt.recplot, 0, True, '{}{}/meta_recent.html'.format(opt.outputPath,
-        opt.groupName), '{0} Overview - Last {1:.1f} Days'.format(
-        opt.title, opt.recplot),("""<h1>{0} - Last {1:.1f} Days | <a href=
-        'overview.html' style='color:red' target='_blank'>Full Overview</a> | 
-        <a href="overview_recent.html" style="color:red" target="_blank">Recent</a></h1>
-        """).format(opt.title,opt.recplot), opt)
+    renderBokehTimeline(ftable, dt, fi, longevity, famstarts, alltrigs, barpadm,
+        opt.plotformat.replace(',','+'), opt.mhrbin/24, opt.mrecbin,
+        max(alltrigs)-opt.mrecplot, opt.mminplot, True, 
+        '{}{}/meta_recent.html'.format(opt.outputPath,opt.groupName),
+        '{0} Overview - Last {1:.1f} Days'.format(opt.title, opt.mrecplot),(
+        """<h1>{0} - Last {1:.1f} Days | <a href='overview.html' style='color:red'
+        target='_blank'>Full Overview</a> | <a href="overview_recent.html"
+        style="color:red" target="_blank">Recent</a></h1>""").format(
+        opt.title,opt.mrecplot), opt)
 
 def renderBokehTimeline(ftable, dt, fi, longevity, famstarts, alltrigs, barpad,
         plotformat, binsize, obinsize, mintime, minplot, fixedheight, filepath,
