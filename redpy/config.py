@@ -227,7 +227,7 @@ class Options(object):
         self.fispanlow=config.getfloat('Settings','fispanlow') if config.has_option(
             'Settings','fispanlow') else -0.5
         self.fispanhigh=config.getfloat('Settings','fispanhigh') if config.has_option(
-            'Settings','fispanhigh') else -0.5
+            'Settings','fispanhigh') else 0.5
         self.telefi=config.getfloat('Settings','telefi') if config.has_option(
             'Settings','telefi') else -1.
         self.teleok=config.getint('Settings','teleok') if config.has_option(
