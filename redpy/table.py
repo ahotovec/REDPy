@@ -697,71 +697,73 @@ def checkMPL(rtable, ftable, ttable, otable, dtable, opt):
     opt: Options object describing station/run parameters
         
     """
+    
+    if len(ttable) > 0:
 
-    # Check and fix matplotlib datetime issues
-    if ttable.cols.startTimeMPL[0] > matplotlib.dates.date2num(
-        np.datetime64('now')):
-        # Explicitly assumes the first trigger will have the issue.
+        # Check and fix matplotlib datetime issues
+        if ttable.cols.startTimeMPL[0] > matplotlib.dates.date2num(
+            np.datetime64('now')):
+            # Explicitly assumes the first trigger will have the issue.
         
-        print('Found matplotlib version mismatch! Fixing...')
-        reftime = matplotlib.dates.date2num(np.datetime64('now'))
-        epoch = matplotlib.dates.date2num(np.datetime64('0000-12-31'))
+            print('Found matplotlib version mismatch! Fixing...')
+            reftime = matplotlib.dates.date2num(np.datetime64('now'))
+            epoch = matplotlib.dates.date2num(np.datetime64('0000-12-31'))
         
-        # Fix triggers
-        for i in range(len(ttable.cols.startTimeMPL[:])):
-            if ttable.cols.startTimeMPL[i] > reftime:
-                ttable.cols.startTimeMPL[i] = ttable.cols.startTimeMPL[i] + epoch
+            # Fix triggers
+            for i in range(len(ttable.cols.startTimeMPL[:])):
+                if ttable.cols.startTimeMPL[i] > reftime:
+                    ttable.cols.startTimeMPL[i] = ttable.cols.startTimeMPL[i] + epoch
         
-        # Fix orphans
-        for i in range(len(otable.cols.startTimeMPL[:])):
-            if otable.cols.startTimeMPL[i] > reftime:
-                otable.cols.startTimeMPL[i] = otable.cols.startTimeMPL[i] + epoch
+            # Fix orphans
+            for i in range(len(otable.cols.startTimeMPL[:])):
+                if otable.cols.startTimeMPL[i] > reftime:
+                    otable.cols.startTimeMPL[i] = otable.cols.startTimeMPL[i] + epoch
         
-        # Fix repeaters
-        for i in range(len(rtable.cols.startTimeMPL[:])):
-            if rtable.cols.startTimeMPL[i] > reftime:
-                rtable.cols.startTimeMPL[i] = rtable.cols.startTimeMPL[i] + epoch
+            # Fix repeaters
+            for i in range(len(rtable.cols.startTimeMPL[:])):
+                if rtable.cols.startTimeMPL[i] > reftime:
+                    rtable.cols.startTimeMPL[i] = rtable.cols.startTimeMPL[i] + epoch
                 
-        # Fix deleted
-        for i in range(len(dtable.cols.startTimeMPL[:])):
-            if dtable.cols.startTimeMPL[i] > reftime:
-                dtable.cols.startTimeMPL[i] = dtable.cols.startTimeMPL[i] + epoch
+            # Fix deleted
+            for i in range(len(dtable.cols.startTimeMPL[:])):
+                if dtable.cols.startTimeMPL[i] > reftime:
+                    dtable.cols.startTimeMPL[i] = dtable.cols.startTimeMPL[i] + epoch
         
-        # Fix families
-        for i in range(len(ftable.cols.startTime[:])):
-            if ftable.cols.startTime[i] > reftime:
-                ftable.cols.startTime[i] = ftable.cols.startTime[i] + epoch
+            # Fix families
+            for i in range(len(ftable.cols.startTime[:])):
+                if ftable.cols.startTime[i] > reftime:
+                    ftable.cols.startTime[i] = ftable.cols.startTime[i] + epoch
         
-    elif ttable.cols.startTimeMPL[0] < matplotlib.dates.date2num(
-        np.datetime64('1900-01-01')):
-        # Same deal, but with the opposite sense. This applies to tables generated
-        # using MPL >=3.3 but the user is currently using MPL <3.3
+        elif ttable.cols.startTimeMPL[0] < matplotlib.dates.date2num(
+            np.datetime64('1900-01-01')):
+            # Same deal, but with the opposite sense. This applies to tables generated
+            # using MPL >=3.3 but the user is currently using MPL <3.3
         
-        print('Found matplotlib version mismatch! Fixing...')
-        reftime = matplotlib.dates.date2num(np.datetime64('1900-01-01'))
-        epoch = matplotlib.dates.date2num(np.datetime64('1970-01-01'))
+            print('Found matplotlib version mismatch! Fixing...')
+            reftime = matplotlib.dates.date2num(np.datetime64('1900-01-01'))
+            epoch = matplotlib.dates.date2num(np.datetime64('1970-01-01'))
         
-        # Fix triggers
-        for i in range(len(ttable.cols.startTimeMPL[:])):
-            if ttable.cols.startTimeMPL[i] < reftime:
-                ttable.cols.startTimeMPL[i] = ttable.cols.startTimeMPL[i] + epoch
+            # Fix triggers
+            for i in range(len(ttable.cols.startTimeMPL[:])):
+                if ttable.cols.startTimeMPL[i] < reftime:
+                    ttable.cols.startTimeMPL[i] = ttable.cols.startTimeMPL[i] + epoch
         
-        # Fix orphans
-        for i in range(len(otable.cols.startTimeMPL[:])):
-            if otable.cols.startTimeMPL[i] < reftime:
-                otable.cols.startTimeMPL[i] = otable.cols.startTimeMPL[i] + epoch
+            # Fix orphans
+            for i in range(len(otable.cols.startTimeMPL[:])):
+                if otable.cols.startTimeMPL[i] < reftime:
+                    otable.cols.startTimeMPL[i] = otable.cols.startTimeMPL[i] + epoch
         
-        # Fix repeaters
-        for i in range(len(rtable.cols.startTimeMPL[:])):
-            if rtable.cols.startTimeMPL[i] < reftime:
-                rtable.cols.startTimeMPL[i] = rtable.cols.startTimeMPL[i] + epoch
+            # Fix repeaters
+            for i in range(len(rtable.cols.startTimeMPL[:])):
+                if rtable.cols.startTimeMPL[i] < reftime:
+                    rtable.cols.startTimeMPL[i] = rtable.cols.startTimeMPL[i] + epoch
                 
-        # Fix deleted
-        for i in range(len(dtable.cols.startTimeMPL[:])):
-            if dtable.cols.startTimeMPL[i] < reftime:
-                dtable.cols.startTimeMPL[i] = dtable.cols.startTimeMPL[i] + epoch
+            # Fix deleted
+            for i in range(len(dtable.cols.startTimeMPL[:])):
+                if dtable.cols.startTimeMPL[i] < reftime:
+                    dtable.cols.startTimeMPL[i] = dtable.cols.startTimeMPL[i] + epoch
         
-        # Fix families
-        for i in range(len(ftable.cols.startTime[:])):
-            if ftable.cols.startTime[i] < reftime:
-                ftable.cols.startTime[i] = ftable.cols.startTime[i] + epoch
+            # Fix families
+            for i in range(len(ftable.cols.startTime[:])):
+                if ftable.cols.startTime[i] < reftime:
+                    ftable.cols.startTime[i] = ftable.cols.startTime[i] + epoch
