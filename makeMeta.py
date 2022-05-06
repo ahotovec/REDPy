@@ -11,14 +11,17 @@ Run this script to generate 'meta.html' in a specified directory and with a list
 This page gathers the 'meta_recent.html' tabbed overviews within the output directories
 into a single page.
 
-usage: makeMeta.py [-h] [-v] [-p PATH] [-r RUNS]
+usage: makeMeta.py [-h] [-v] [-p PATH] [-r RUNS] [-t TOPATH]
 
 optional arguments:
   -h, --help            show this help message and exit
   -v, --verbose         increase written print statements
-  -p PATH, --path PATH  relative path to where meta.html should be created (e.g., './')
+  -p PATH, --path PATH  relative path to where meta.html should be created (e.g., ./)
+                        and ending in /
   -r RUNS, --runs RUNS  comma-separated list of runs to include, which should match their
                         groupName
+  -t TOPATH, --topath TOPATH
+                        relative path from meta.html to the runs, ending in /
 """
 
 parser = argparse.ArgumentParser(description=
@@ -28,9 +31,12 @@ parser = argparse.ArgumentParser(description=
 parser.add_argument("-v", "--verbose", action="count", default=0,
     help="increase written print statements")
 parser.add_argument("-p", "--path",
-    help="relative path to where meta.html should be created", default='./')
+    help="relative path to where meta.html should be created (e.g., ./) and ending in /",
+    default='./')
 parser.add_argument("-r", "--runs",
     help="comma-separated list of runs to include, which should match their groupName")
+parser.add_argument("-t", "--topath",
+    help="relative path from meta.html to the runs, ending in /", default='./')
 
 args = parser.parse_args()
 
@@ -52,7 +58,7 @@ with open(filename, 'w') as f:
         f.write("""
         <iframe src="{0}{1}/meta_recent.html" title="{1}"
                 style="height:350px;width:1300px;border:none;"></iframe>
-                """.format(args.path,run))
+                """.format(args.topath,run))
     f.write('</body></html>')
 
 
