@@ -263,7 +263,7 @@ class Options(object):
         self.mrecbin=config.getfloat('Settings','mrecbin')/24 if config.has_option(
             'Settings','mrecbin') else 1/24
         self.mrecplot=config.getfloat('Settings','mrecplot') if config.has_option(
-            'Settings','mrecplot') else 14.
+            'Settings','mrecplot') else 30. # Default to last month instead of 2 weeks
         self.fixedheight=config.getboolean('Settings','fixedheight') if config.has_option(
             'Settings','fixedheight') else False
         self.printVerboseCat=config.getboolean('Settings','verbosecatalog') if config.has_option(
