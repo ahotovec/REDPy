@@ -22,7 +22,9 @@ optional arguments:
 """
 
 parser = argparse.ArgumentParser(description=
-    "Run this script to output the contents of the junk table for troubleshooting.")
+    """Run this script to generate 'meta.html' in a specified directory and with a list
+       of runs. This page gathers the 'meta_recent.html' tabbed overviews within the
+       output directories into a single page.""")
 parser.add_argument("-v", "--verbose", action="count", default=0,
     help="increase written print statements")
 parser.add_argument("-p", "--path",
