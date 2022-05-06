@@ -84,10 +84,12 @@ class Options(object):
         fmax: Upper band of bandpass filter (default 10.0 Hz)
 
         FREQUENCY INDEX WINDOWS:
-        filomin: Lower bound on low window (default 2.0 Hz)
-        filomax: Upper bound on low window (default 4.0 Hz)
-        fiupmin: Lower bound on upper window (default 7.0 Hz)
-        fiupmax: Upper bound on upper window (default 9.0 Hz)
+        filomin: Lower bound on low window (default 1.0 Hz)
+        filomax: Upper bound on low window (default 2.5 Hz)
+        fiupmin: Lower bound on upper window (default 5.0 Hz)
+        fiupmax: Upper bound on upper window (default 10.0 Hz)
+        fispanlow: Lower bound of frequency index for occurrencefi plot (default -0.5)
+        fispanhigh: Upper bound of frequency index for occurrencefi plot (default 0.5)
 
         CLUSTERING PARAMETERS:
         cmin: Minimum correlation to be considered a repeater (default 0.7)
@@ -215,6 +217,10 @@ class Options(object):
             'Settings','fiupmin') else 5.
         self.fiupmax=config.getfloat('Settings','fiupmax') if config.has_option(
             'Settings','fiupmax') else 10.
+        self.fispanlow=config.getfloat('Settings','fispanlow') if config.has_option(
+            'Settings','fispanlow') else -0.5
+        self.fispanhigh=config.getfloat('Settings','fispanhigh') if config.has_option(
+            'Settings','fispanhigh') else -0.5
         self.telefi=config.getfloat('Settings','telefi') if config.has_option(
             'Settings','telefi') else -1.
         self.teleok=config.getint('Settings','teleok') if config.has_option(
@@ -228,7 +234,7 @@ class Options(object):
         self.maxorph=config.getfloat('Settings','maxorph') if config.has_option(
             'Settings','maxorph') else 7.
         self.plotformat=config.get('Settings','plotformat') if config.has_option(
-             'Settings','plotformat') else 'eqrate,fi,occurrence,longevity'
+             'Settings','plotformat') else 'eqrate,fi,occurrence+occurrencefi,longevity'
         self.minplot=config.getint('Settings','minplot') if config.has_option(
             'Settings','minplot') else 3
         self.dybin=config.getfloat('Settings','dybin') if config.has_option(

@@ -29,8 +29,8 @@ from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 from matplotlib.transforms import offset_copy
 from bokeh.plotting import figure, output_file, save, gridplot
 from bokeh.models import HoverTool, ColumnDataSource, OpenURL, TapTool, Range1d, Div, Span
-from bokeh.models import Arrow, VeeHead, ColorBar, LogColorMapper, LogTicker, Label
-from bokeh.models import Panel, Tabs
+from bokeh.models import Arrow, VeeHead, ColorBar, LogColorMapper, LinearColorMapper
+from bokeh.models import Label, Panel, Tabs, LogTicker
 from bokeh.models.glyphs import Line, Quad
 from bokeh.models.formatters import LogTickFormatter
 from bokeh.layouts import column
@@ -113,19 +113,28 @@ def plotTimelines(rtable, ftable, ttable, opt):
     renderBokehTimeline(ftable, dt, fi, longevity, famstarts, alltrigs, barpad,
         opt.plotformat, opt.dybin, opt.occurbin, min(alltrigs), opt.minplot,
         opt.fixedheight, '{}{}/overview.html'.format(opt.outputPath, opt.groupName),
-        '{0} Overview'.format(opt.title), '<h1>{0}</h1>'.format(opt.title), './', opt)
+        '{0} Overview'.format(opt.title), '<h1>{0}</h1>'.format(opt.title), opt)
     
     # Recent
     renderBokehTimeline(ftable, dt, fi, longevity, famstarts, alltrigs, barpadr,
         opt.plotformat, opt.hrbin/24, opt.recbin, max(alltrigs)-opt.recplot, 0,
         opt.fixedheight, '{}{}/overview_recent.html'.format(opt.outputPath,
         opt.groupName), '{0} Overview - Last {1:.1f} Days'.format(opt.title, opt.recplot),
-        '<h1>{0} - Last {1:.1f} Days</h1>'.format(opt.title,opt.recplot), './', opt)
-    
+        '<h1>{0} - Last {1:.1f} Days</h1>'.format(opt.title,opt.recplot), opt)
+        
+    # Meta overview (recent but all in tabs, to be referenced from one folder up)
+    renderBokehTimeline(ftable, dt, fi, longevity, famstarts, alltrigs, barpadr,
+        opt.plotformat.replace(',','+'), opt.hrbin/24, opt.recbin,
+        max(alltrigs)-opt.recplot, 0, True, '{}{}/meta_recent.html'.format(opt.outputPath,
+        opt.groupName), '{0} Overview - Last {1:.1f} Days'.format(
+        opt.title, opt.recplot),("""<h1>{0} - Last {1:.1f} Days | <a href=
+        'overview.html' style='color:red' target='_blank'>Full Overview</a> | 
+        <a href="overview_recent.html" style="color:red" target="_blank">Recent</a></h1>
+        """).format(opt.title,opt.recplot), opt)
 
 def renderBokehTimeline(ftable, dt, fi, longevity, famstarts, alltrigs, barpad,
         plotformat, binsize, obinsize, mintime, minplot, fixedheight, filepath,
-        htmltitle, divtitle, opath, opt):
+        htmltitle, divtitle, opt):
         
     """
     Generates a Bokeh timeline with given parameters
@@ -148,8 +157,6 @@ def renderBokehTimeline(ftable, dt, fi, longevity, famstarts, alltrigs, barpad,
     filepath: Output file location and name
     htmltitle: Title of html page
     divtitle: Title used in div container at top left of plots
-    opath: Relative path to run directory, in case these plots are to be placed
-        outside of it
     opt: Options object describing station/run parameters
     
     """
@@ -162,7 +169,7 @@ def renderBokehTimeline(ftable, dt, fi, longevity, famstarts, alltrigs, barpad,
     
         if p == 'eqrate':
             # Plot EQ Rates (Repeaters and Orphans)
-            plots.append(plotRate(alltrigs, dt, binsize, mintime, opt))            
+            plots.append(plotRate(alltrigs, dt, binsize, mintime, opt))
             tabtitles = tabtitles+['Event Rate']
             
         elif p == 'fi':
@@ -178,9 +185,15 @@ def renderBokehTimeline(ftable, dt, fi, longevity, famstarts, alltrigs, barpad,
     
         elif p == 'occurrence':
             # Plot family occurrence
-            plots.append(plotFamilyOccurrence(alltrigs, dt, ftable, mintime, minplot,
-                                  obinsize, barpad, fixedheight, opath, opt))
+            plots.append(plotFamilyOccurrence(alltrigs, dt, fi, ftable, mintime, minplot,
+                                  obinsize, barpad, 'rate', fixedheight, opt))
             tabtitles = tabtitles+['Occurrence (Color by Rate)']
+            
+        elif p == 'occurrencefi':
+            # Plot family occurrence with color by FI
+            plots.append(plotFamilyOccurrence(alltrigs, dt, fi, ftable, mintime, minplot,
+                                  obinsize, barpad, 'fi', fixedheight, opt))
+            tabtitles = tabtitles+['Occurrence (Color by FI)']
     
         else:
             print('{} is not a valid plot type. Moving on.'.format(p))
@@ -201,7 +214,7 @@ def renderBokehTimeline(ftable, dt, fi, longevity, famstarts, alltrigs, barpad,
                     line_alpha=row[5], level='underlay'))
 
     # Create output and save
-    gridplot_items = [[Div(text=divtitle, width=1000,  margin=(-40,5,-10,5))]]
+    gridplot_items = [[Div(text=divtitle, width=1000, margin=(-40,5,-10,5))]]
     pnum = 0
     for pf in plotformat.split(','):
         # + joining options groups them into tabs
@@ -219,7 +232,6 @@ def renderBokehTimeline(ftable, dt, fi, longevity, famstarts, alltrigs, barpad,
     o = gridplot(gridplot_items)
     output_file(filepath,title=htmltitle)
     save(o)
-
 
 
 def bokehFigure(**kwargs):
@@ -387,14 +399,15 @@ def plotLongevity(alltrigs, famstarts, longevity, mintime, barpad, opt):
     return fig
 
 
-def plotFamilyOccurrence(alltrigs, dt, ftable, mintime, minplot, binsize, barpad,
-    fixedheight, opath, opt):
+def plotFamilyOccurrence(alltrigs, dt, fi, ftable, mintime, minplot, binsize, barpad,
+    colorby, fixedheight, opt):
     
     """
     Creates subplot for family occurrence
     
     alltrigs: Array containing times of all triggers
     dt: Array containing times of repeaters
+    fi: Array containing frequency index values of repeaters
     ftable: Families table
     mintime: Minimum time to be plotted; families starting before this time will not be
         plotted if they also end before this time, and will have left arrows if they end
@@ -402,15 +415,14 @@ def plotFamilyOccurrence(alltrigs, dt, ftable, mintime, minplot, binsize, barpad
     minplot: Minimum number of members in a family to be included
     binsize: Width (in days) of each time bin
     barpad: Time padding so arrows have space
+    colorby: What to use for color in histograms, 'rate' (YlOrRd) or 'fi' (coolwarm)
     fixedheight: Boolean for whether the plot height should be the same height as
         the other plots (True), or variable in height (False)
-    opath: Relative path to run directory, in case these plots are to be placed
-        outside of it
     opt: Options object describing station/run parameters
     
     """
     
-    fig = bokehFigure(tools=[createHoverTool(opath),'pan,box_zoom,reset,save,tap'],
+    fig = bokehFigure(tools=[createHoverTool(),'pan,box_zoom,reset,save,tap'],
         title='Occurrence Timeline', plot_height=250, plot_width=1250)
     fig.yaxis.axis_label = 'Cluster by Date' + (
         ' ({}+ Members)'.format(minplot) if minplot>0 else '')
@@ -418,8 +430,16 @@ def plotFamilyOccurrence(alltrigs, dt, ftable, mintime, minplot, binsize, barpad
     # Always plot at least one invisible point
     fig.circle(matplotlib.dates.num2date(np.max(alltrigs)), 0, line_alpha=0, fill_alpha=0)
     
-    # Steal YlOrRd (len=256) colormap from matplotlibdetermine_legend_text
-    colormap = matplotlib.cm.get_cmap('YlOrRd')
+    # Steal colormap (len=256) from matplotlib
+    if colorby is 'rate':
+        colormap = matplotlib.cm.get_cmap('YlOrRd')
+    elif colorby is 'fi':
+        colormap = matplotlib.cm.get_cmap('coolwarm')
+    else:
+        print('Unrecognized colorby choice, defaulting to rate')
+        colorby = 'rate'
+        colormap = matplotlib.cm.get_cmap('YlOrRd')
+        
     bokehpalette = [matplotlib.colors.rgb2hex(m) for m in colormap(
         np.arange(colormap.N)[::-1])]
 
@@ -427,8 +447,6 @@ def plotFamilyOccurrence(alltrigs, dt, ftable, mintime, minplot, binsize, barpad
     n = 0  
     cloc1 = 85
     
-    legtext = determineLegendText(binsize)
-      
     for clustNum in range(ftable.attrs.nClust):
         
         members = np.fromstring(ftable[clustNum]['members'], dtype=int, sep=' ')
@@ -438,13 +456,30 @@ def plotFamilyOccurrence(alltrigs, dt, ftable, mintime, minplot, binsize, barpad
             max(dt[members]+binsize), binsize))
         d1 = matplotlib.dates.num2date(h[np.where(hist>0)])
         d2 = matplotlib.dates.num2date(h[np.where(hist>0)]+binsize)
-        histlog = np.log10(hist[hist>0])
-        if binsize >= 1:
-            ind = [int(min(255,255*(i/3))) for i in histlog]
-        else:
-            ind = [int(min(255,255*(i/2))) for i in histlog]
+        
+        if colorby is 'rate':
+            histlog = np.log10(hist[hist>0])
+            if binsize >= 1:
+                ind = [int(min(255,255*(i/3))) for i in histlog]
+            else:
+                ind = [int(min(255,255*(i/2))) for i in histlog]
+        elif colorby is 'fi':
+            h = h[np.where(hist>0)]
+            hist = hist[hist>0]
+            fisum = np.zeros(len(hist))
+            # Loop through bins to get summed fi
+            for i in range(len(hist)):
+                # Find indicies of dt[members] within bins
+                idxs = np.where(np.logical_and(dt[members]>=h[i],
+                                               dt[members]<h[i]+binsize))
+                # Sum fi for those events 
+                fisum[i] = np.sum(fi[members[idxs]])
+            # Convert to mean fi
+            histfi = fisum/hist
+            ind = [int(max(min(255,255*(i-opt.fispanlow)/(opt.fispanhigh-opt.fispanlow)),
+                                0)) for i in histfi]
+
         colors = [bokehpalette[i] for i in ind]
-                    
 
         if len(dt[members]) >= minplot:
 
@@ -493,7 +528,8 @@ def plotFamilyOccurrence(alltrigs, dt, ftable, mintime, minplot, binsize, barpad
                     ys=[[n-0.5, n+0.5, n+0.5, n-0.5]]
                     famnum=[[fnum]]
                 else:
-                    xs.append([matplotlib.dates.num2date(max(min(dt[members]),mintime)-barpad),
+                    xs.append([
+                        matplotlib.dates.num2date(max(min(dt[members]),mintime)-barpad),
                         matplotlib.dates.num2date(max(min(dt[members]),mintime)-barpad),
                         matplotlib.dates.num2date(max(dt[members])+barpad),
                         matplotlib.dates.num2date(max(dt[members])+barpad)])
@@ -511,7 +547,7 @@ def plotFamilyOccurrence(alltrigs, dt, ftable, mintime, minplot, binsize, barpad
                         
         # Tapping on one of the patches will open a window to a file with more information
         # on the cluster in question.   
-        url = '{}clusters/@famnum.html'.format(opath)
+        url = './clusters/@famnum.html'
         renderer = fig.select(name='patch')
         taptool = fig.select(type=TapTool)[0]
         taptool.names.append('patch')
@@ -524,11 +560,19 @@ def plotFamilyOccurrence(alltrigs, dt, ftable, mintime, minplot, binsize, barpad
         
     else: 
         fig.circle(matplotlib.dates.num2date(mintime), 0, line_alpha=0, fill_alpha=0)
-
-    color_bar = ColorBar(color_mapper=determineColorMapper(binsize), ticker=LogTicker(),
-        border_line_color='#eeeeee', location=(7,cloc1), orientation='horizontal',
-        width=150, height=15, title='Events per {}'.format(determineLegendText(binsize)),
-        padding=15, major_tick_line_alpha=0, formatter=LogTickFormatter(min_exponent=4))
+    
+    if colorby is 'rate':
+            color_bar = ColorBar(color_mapper=determineColorMapper(binsize),
+                ticker=LogTicker(), border_line_color='#eeeeee', location=(7,cloc1),
+                orientation='horizontal', width=150, height=15,
+                title='Events per {}'.format(determineLegendText(binsize)),
+                padding=15, major_tick_line_alpha=0,
+                formatter=LogTickFormatter(min_exponent=4))
+    elif colorby is 'fi':
+            color_bar = ColorBar(color_mapper=determineColorMapperFI(opt),
+                border_line_color='#eeeeee', location=(7,cloc1), orientation='horizontal',
+                width=150, height=15, title='Mean Frequency Index', padding=15,
+                major_tick_line_alpha=0)
 
     fig.add_layout(color_bar)
 
@@ -579,7 +623,26 @@ def determineColorMapper(binsize):
     return color_mapper
 
 
-def createHoverTool(opath):
+def determineColorMapperFI(opt):
+    
+    """
+    Helper function to determine color map for occurrencefi plot based on opt.fispan
+    
+    opt: Options object describing station/run parameters
+    
+    """
+    
+    # Steal YlOrRd (len=256) colormap from matplotlib
+    colormap = matplotlib.cm.get_cmap('coolwarm')
+    bokehpalette = [matplotlib.colors.rgb2hex(m) for m in colormap(
+        np.arange(colormap.N)[::-1])]
+    color_mapper = LinearColorMapper(palette=bokehpalette,
+                                     low=opt.fispanlow, high=opt.fispanhigh)
+    
+    return color_mapper
+
+
+def createHoverTool():
     
     """
     Helper function to create family hover preview
@@ -593,13 +656,13 @@ def createHoverTool(opath):
         tooltips="""
         <div>
         <div>
-            <img src="{}clusters/@famnum.png" style="height: 100px; width: 500px;
+            <img src="./clusters/@famnum.png" style="height: 100px; width: 500px;
                 vertical-align: middle;"/>
             <span style="font-size: 9px; font-family: Helvetica;">Cluster ID: </span>
             <span style="font-size: 12px; font-family: Helvetica;">@famnum</span>
         </div>
         </div>
-        """.format(opath), names=["patch"])
+        """, names=["patch"])
 
     return hover
 
