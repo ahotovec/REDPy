@@ -13,7 +13,7 @@ import matplotlib.dates
 Run this script to manually produce an editable PDF version of the overview page
 
 usage: createPDFOverview.py [-h] [-v] [-c CONFIGFILE] [-s STARTTIME] [-e ENDTIME]
-    [-b BINSIZE] [-u] [-m MINMEMBERS] [-o OCCURHEIGHT]
+    [-b BINSIZE] [-u] [-m MINMEMBERS] [-o OCCURHEIGHT] [-f FORMAT]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -35,6 +35,8 @@ optional arguments:
   -o OCCURHEIGHT, --occurheight OCCURHEIGHT
                         integer multiplier for how much taller the occurrence
                         plot should be compared to other plots, defaults to 3
+  -f FORMAT, --format FORMAT
+                        comma separated list of plots to be rendered
 """
 
 parser = argparse.ArgumentParser(description=
@@ -56,6 +58,8 @@ parser.add_argument("-m", "--minmembers",
 parser.add_argument("-o", "--occurheight",
     help="integer multiplier for how much taller the occurrence plot should be compared" +
         " to other plots, defaults to 3")
+parser.add_argument("-f", "--format",
+    help="comma separated list of plots to be rendered")
 args = parser.parse_args()
 
 if args.configfile:
@@ -100,9 +104,14 @@ if args.occurheight:
 else:
     occurheight = 3
 
+if args.format:
+    plotformat = args.format
+else:
+    plotformat = 'eqrate,fi,occurrence,longevity'
+
 if args.verbose: print("Creating overview.pdf in main output directory...")
 redpy.plotting.customPDFoverview(rtable, ftable, ttable, tmin, tmax, binsize, minmembers,
-    occurheight, opt)
+    occurheight, plotformat, opt)
 
 if args.verbose: print("Closing table...")
 h5file.close()
