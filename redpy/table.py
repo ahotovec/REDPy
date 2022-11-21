@@ -468,7 +468,7 @@ def moveOrphan(rtable, otable, ftable, oindex, opt):
     otable.flush()  
     
 
-def removeFamilies(rtable, ctable, dtable, ftable, cnums, opt):
+def removeFamilies(rtable, ctable, dtable, ftable, cnums, opt, verbose=False):
 
     """
     Moves the core of the families into the dtable, deletes the rest of the members.
@@ -480,6 +480,8 @@ def removeFamilies(rtable, ctable, dtable, ftable, cnums, opt):
     cnums: Families to remove
     opt: Options object describing station/run parameters
     """
+
+    if verbose: print("Removing families...")
 
     cnums = np.sort(cnums)
     old = list(range(len(rtable)))
@@ -493,7 +495,8 @@ def removeFamilies(rtable, ctable, dtable, ftable, cnums, opt):
         ftable.flush()
     ftable.attrs.nClust-=len(cnums)
     members = np.sort(members).astype('uint32')
-    
+
+    if verbose: print("Updating cores...")
     cores = rtable[np.intersect1d(members, oldcores)]
     for core in cores:
         trigger = dtable.row
@@ -507,20 +510,23 @@ def removeFamilies(rtable, ctable, dtable, ftable, cnums, opt):
         trigger['windowAmp'] = core['windowAmp']
         trigger['FI'] = core['FI']
         trigger.append()
-        
+
+    if verbose: print("Updating correlation table...")
     ids = ids[members]
     id2 = ctable.cols.id2[:]
     idxc = np.where(np.in1d(id2,ids))[0]
     for c in idxc[::-1]:
         ctable.remove_row(c)
 
+    if verbose: print("Updating repeater table...")
     for m in members[::-1]:
         rtable.remove_row(m)
         old.remove(m)
     
     new = range(len(rtable))
     transform[old] = new
-    
+
+    if verbose: print("Updating family table...")
     np.set_printoptions(threshold=sys.maxsize)
     np.set_printoptions(linewidth=sys.maxsize)
     for n in range(len(ftable)):
@@ -529,10 +535,106 @@ def removeFamilies(rtable, ctable, dtable, ftable, cnums, opt):
         ftable.cols.members[n] = np.array2string(transform[fmembers])[1:-1]
         ftable.cols.core[n] = transform[core]
         ftable.flush()
-    
+
+    if verbose: print("Flushing tables...")
     ftable.cols.printme[-1] = 1
     rtable.flush()
     dtable.flush()
+
+
+def removeSmallFamilies(rtable, ctable, dtable, ftable, ttable, minmembers, maxdays, seedtime, opt, verbose=False, list_only=False):
+    """
+    Searches for families that have less than minmembers and are more than maxdays old. Sends the cluster numbers to
+    removeFamilies for deletion.
+
+    rtable: Repeater table
+    ctable: Correlation matrix table
+    dtable: Deleted table
+    ftable: Families table
+    ttable: Trigger table
+    minmembers: Minimum number of members needed to keep a family
+    maxdays: Maximum number of days
+    seedtime: Date from which to measure maxdays
+    opt: Options object describing station/run parameters
+    verbose: Boolen value for printing
+
+    :return
+    cnums: List of family numbers that were removed
+    """
+
+    """
+    Programmer's notes:
+    ftable[i]["startTime"] : matplotlib integer : start of Family i
+    ftable[i]["longevity"] : int : longevity of family i in days
+    seedTime = UTCDateTime.nowutc()
+    startTime = UTCDateTime(num2date(ftable[i]["startTime"]))  # UTCDateTime object
+    #longevity = ftable[i]["longevity"]*86400  # int (seconds), addable to UTCDateTime object
+    #lastTime = startTime + longevity  # UTCDateTime object
+    #ageOfFamily = (nowTime - lastTime)/86400  # returns ageOfFamily in days (subtracting 2 UTCDateTime objects returns seconds)
+    ageOfFamily = (nowTime - startTime)/86400  # returns ageOfFamily in days (subtracting 2 UTCDateTime objects returns seconds)
+    a = ageOfFamily  # age of Family i in days
+
+    Note: A negative age means the family started after the seed time. It will be kept.
+    """
+
+    from matplotlib.dates import num2date
+    from obspy import UTCDateTime
+
+    if seedtime:
+        seedtime = UTCDateTime(seedtime)
+    else:
+        seedtime = UTCDateTime(num2date(ttable[-1]["startTimeMPL"]))  # UTC time of last trigger
+
+    # If using list_only mode, automatically invoke verbose mode too
+    if list_only:
+        verbose = True
+
+    if verbose:
+        print("::: table.removeSmallFamilies()")
+        print("::: - minmembers : {}".format(minmembers))
+        print("::: - maxdays    : {}".format(maxdays))
+        print("::: - seedtime   : {}".format(seedtime))
+        print()
+
+    cnums = []  # list of cluster numbers to be removed
+    nremoved = 0  # number of repeaters removed
+    nFamiliesRemoved = 0  # number of familiese to be removed
+    if verbose:
+        print("::: Member count per Family :::")
+        print("#{:>12s} | {:>12s} | {:>12s} | {:<12s}".format("Family #", "Members", "Age (d)", "Fate"))
+    for i in range(len(ftable)):
+        fate = "keep"  # initialize fate of family as "keep," for printing purposes only
+        n = len(np.fromstring(ftable[i]['members'], dtype=int, sep=' '))  # number of repeaters in the family
+        a = (seedtime - (UTCDateTime(num2date(ftable[i]["startTime"])))) / 86400  # a = age in days (measured from family beginning), see explanation above
+        if n < minmembers and a > maxdays:  # if family has too few members and is too old
+            cnums.append(i)  # append it to the list to remove
+            fate = "REMOVE"  # update fate as "REMOVE"
+            nremoved += n  # keep track of total number of repeaters removed
+            nFamiliesRemoved += 1  # keep track of number of families removed
+        if True:
+            print("#{:>12d} | {:12d} | {:>12.2f} |  {:<12s}".format(i, n, a, fate))
+
+    if verbose:
+        print()
+        print("Remove families     : {}".format(cnums))
+        print("# Families removed  : {}/{}".format(len(cnums), len(ftable)))
+        percent_removed = nremoved/len(rtable)*100
+        print("# Repeaters removed : {}/{} ({:2.1f}%)".format(nremoved, len(rtable), percent_removed))
+        #print("# Repeaters removed : {}/{} ({:2.1f}%)".format(nremoved, len(rtable), nremoved/len(rtable)*100))  # throws a divide by zero error if no repeaters
+        print()
+
+    if list_only:
+        # If list_only (-l), do not execute removeFamilies()
+        print("Families listed but not removed. Remove -l flag to actually modify table.")
+    else:
+        # removeFamilies() if there are families to remove
+        if nFamiliesRemoved:
+            print("Removing families...")
+            removeFamilies(rtable, ctable, dtable, ftable, cnums, opt, verbose=verbose)
+        else:
+            print("No families to remove.")
+
+    return cnums
 
 
 def clearExpiredOrphans(otable, opt, tend):
@@ -767,3 +869,4 @@ def checkMPL(rtable, ftable, ttable, otable, dtable, opt):
             for i in range(len(ftable.cols.startTime[:])):
                 if ftable.cols.startTime[i] < reftime:
                     ftable.cols.startTime[i] = ftable.cols.startTime[i] + epoch
+
