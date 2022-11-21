@@ -629,7 +629,7 @@ def removeSmallFamilies(rtable, ctable, dtable, ftable, ttable, minmembers, maxd
     else:
         # removeFamilies() if there are families to remove
         if nFamiliesRemoved:
-            print("Removing families...")
+            # print("Removing families...")  # This verbosity message exists in removeFamilies()
             removeFamilies(rtable, ctable, dtable, ftable, cnums, opt, verbose=verbose)
         else:
             print("No families to remove.")
