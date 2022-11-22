@@ -611,7 +611,7 @@ def removeSmallFamilies(rtable, ctable, dtable, ftable, ttable, minmembers, maxd
             fate = "REMOVE"  # update fate as "REMOVE"
             nremoved += n  # keep track of total number of repeaters removed
             nFamiliesRemoved += 1  # keep track of number of families removed
-        if True:
+        if verbose:
             print("#{:>12d} | {:12d} | {:>12.2f} |  {:<12s}".format(i, n, a, fate))
 
     if verbose:
@@ -632,7 +632,8 @@ def removeSmallFamilies(rtable, ctable, dtable, ftable, ttable, minmembers, maxd
             # print("Removing families...")  # This verbosity message exists in removeFamilies()
             removeFamilies(rtable, ctable, dtable, ftable, cnums, opt, verbose=verbose)
         else:
-            print("No families to remove.")
+            if verbose:
+                print("No families to remove.")
 
     return cnums
 
