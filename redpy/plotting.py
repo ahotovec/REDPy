@@ -2016,9 +2016,7 @@ def createJunkPlots(jtable, opt):
 
         for s in range(opt.nsta):
             waveformc = r['waveform'][s*opt.wshape:(s+1)*opt.wshape]
-            tmpc = waveformc[max(0, r['windowStart']-int(
-                opt.ptrig*opt.samprate)):min(opt.wshape,
-                r['windowStart']+int(opt.atrig*opt.samprate))]
+            tmpc = waveformc[r['windowStart']:r['windowStart']+opt.wshape]
             datc = tmpc[int(opt.ptrig*opt.samprate - opt.winlen*0.5):int(
                 opt.ptrig*opt.samprate + opt.winlen*1.5)]
             datc = datc/np.max(np.abs(datc)+1.0/1000)
