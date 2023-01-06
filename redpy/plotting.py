@@ -1902,7 +1902,7 @@ def plotReport(rtable, ftable, ctable, fnum, ordered, matrixtofile, opt):
     for sta in range(opt.nsta):
         n = -1
         data = np.zeros((len(fam), int(opt.winlen*2)))
-        ax = fig2.add_subplot(np.ceil((opt.nsta)/2.), 2, sta+1)
+        ax = fig2.add_subplot(int(np.ceil((opt.nsta)/2.)), 2, sta+1)
         for r in famtable:
             if ordered:
                 plt.title('{0}.{1} (Ordered)'.format(opt.station.split(',')[sta],
